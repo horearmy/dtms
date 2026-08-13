@@ -129,6 +129,7 @@ model Shipment {
   pods           ProofOfDelivery[]
   notifications  Notification[]
   stops          ShipmentStop[]
+  scans          WarehouseScan[]
 }
 
 model ShipmentStop {
@@ -255,6 +256,20 @@ model AuditLog {
   oldData   String?
   newData   String?
   createdAt DateTime @default(now())
+}
+
+model WarehouseScan {
+  id         String   @id @default(cuid())
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  action     String
+  scannedBy  String?
+  latitude   Float?
+  longitude  Float?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([shipmentId])
 }
 
 model Geofence {

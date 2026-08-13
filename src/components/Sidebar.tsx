@@ -21,6 +21,7 @@ export default function Sidebar({ role }: { role: string }) {
     { href: '/drivers', label: 'Drivers', icon: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21v-1a5 5 0 0112 0v1M17 15a5 5 0 014 5H17' },
     { href: '/vehicles', label: 'Vehicles', icon: 'M5 13l1.4-4.2A2 2 0 018.3 7h7.4a2 2 0 011.9 1.4L19 13M5 13h14v5H5v-5zm2 5v2M17 18v2M7 11h10' },
     { href: '/geofences', label: 'Geofencing', icon: 'M12 3a7 7 0 00-7 7c0 5 7 11 7 11s7-6 7-11a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1012 7a2.5 2.5 0 000 5.5z' },
+    { href: '/warehouse/scan', label: 'Warehouse Scan', icon: 'M21 6h-2v2h-2V6h-2V4h2V2h2v2h2v2zm-9 3L9 14h6l-3-5zM5 14a3 3 0 100 6 3 3 0 000-6zm14 0a3 3 0 100 6 3 3 0 000-6z' },
     { href: '/reports', label: 'Reports', icon: 'M3 3v18h18M7 15l4-4 3 3 5-6' },
     { href: '/audit', label: 'Audit Log', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
   ];

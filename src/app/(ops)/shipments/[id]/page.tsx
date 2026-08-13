@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
+import ShipmentQR from '@/components/ShipmentQR';
 import { btnPrimary, btnGhost, inputCls, Field, Modal } from '@/components/ui';
 import {
   STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS, PICKUP_STATUSES,
@@ -325,6 +326,19 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         </div>
 
         <div className="space-y-5">
+          {/* QR resi */}
+          <div className="flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <ShipmentQR value={s.trackingNumber} />
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">QR Resi</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Pindai untuk proses gudang (inbound, sorting, dispatch). Numerik juga dapat diketik/scanner USB.
+              </p>
+              <Link href={`/warehouse/scan?resi=${encodeURIComponent(s.trackingNumber)}`} className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:underline">
+                Buka Scan Gudang →
+              </Link>
+            </div>
+          </div>
           {/* POD */}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="mb-3 text-sm font-bold text-slate-900">Proof of Delivery</h2>
