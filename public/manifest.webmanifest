@@ -1,0 +1,10 @@
+{
+  "name": "DTMS Driver App",
+  "short_name": "DTMS",
+  "description": "Aplikasi driver Delivery Tracking & Management System",
+  "start_url": "/driver",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": []
+}

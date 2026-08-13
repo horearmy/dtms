@@ -1,0 +1,419 @@
+"use client";
+
+import { use, useEffect, useState } from 'react';
+import Link from 'next/link';
+import StatusBadge from '@/components/StatusBadge';
+import { btnPrimary, btnGhost, inputCls, Field, Modal } from '@/components/ui';
+import {
+  STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS,
+  formatDateTime, formatNumber,
+} from '@/lib/constants';
+
+type EventItem = { id: string; status: string; notes: string | null; createdAt: string; latitude: number | null; longitude: number | null };
+type Driver = { id: string; name: string; employeeId: string; status: string };
+type Vehicle = { id: string; vehicleNumber: string; status: string };
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function slaInfo(status: string, deadline: string | null) {
+  if (!deadline) return null;
+  if (['DELIVERED', 'RETURNED'].includes(status)) return { type: 'DONE' as const, label: 'Selesai (dalam SLA)' };
+  const remaining = new Date(deadline).getTime() - Date.now();
+  if (remaining < 0) return { type: 'BREACHED' as const, label: 'SLA Terlambat' };
+  if (remaining < 2.4 * 3600000) return { type: 'AT_RISK' as const, label: 'SLA At Risk', remaining };
+  return { type: 'ON_TIME' as const, label: 'SLA On Time', remaining };
+}
+
+export default function ShipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [shipment, setShipment] = useState<any>(null);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const [statusForm, setStatusForm] = useState({ status: '', notes: '', lat: '', lng: '' });
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [failReason, setFailReason] = useState(FAILURE_REASONS[0]);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignForm, setAssignForm] = useState({ driverId: '', vehicleId: '' });
+
+  async function load() {
+    setLoading(true);
+    const res = await fetch(`/api/shipments/${id}`);
+    if (!res.ok) {
+      setErr('Shipment tidak ditemukan');
+      setLoading(false);
+      return;
+    }
+    setShipment(await res.json());
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, [id]);
+
+  async function postActions(fn: () => Promise<Response>) {
+    setBusy(true);
+    const res = await fn();
+    if (!res.ok) alert((await res.json()).error || 'Gagal');
+    else await load();
+    setBusy(false);
+  }
+
+  // muat daftar driver & kendaraan ketika modal assignment dibuka
+  async function openAssign() {
+    const [dRes, vRes] = await Promise.all([fetch('/api/drivers'), fetch('/api/vehicles')]);
+    if (dRes.ok) setDrivers((await dRes.json()).filter((d: Driver) => d.status === 'ACTIVE'));
+    if (vRes.ok) setVehicles((await vRes.json()).filter((v: Vehicle) => v.status !== 'MAINTENANCE'));
+    const cur = shipment?.assignments?.[0];
+    setAssignForm({
+      driverId: cur?.driver?.id || '',
+      vehicleId: cur?.vehicle?.id || '',
+    });
+    setAssignOpen(true);
+  }
+
+  async function assign(e: React.FormEvent) {
+    e.preventDefault();
+    await postActions(async () =>
+      fetch(`/api/shipments/${id}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assignForm),
+      })
+    );
+    setAssignOpen(false);
+  }
+
+  async function changeStatus(status: string, notes?: string) {
+    await postActions(async () =>
+      fetch(`/api/shipments/${id}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes: notes || null }),
+      })
+    );
+  }
+
+  async function markFailed(next: 'RESCHEDULED' | 'RETURN_TO_SENDER') {
+    await postActions(async () => {
+      const r1 = await fetch(`/api/shipments/${id}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'DELIVERY_FAILED', notes: failReason }),
+      });
+      if (!r1.ok) return r1;
+      return fetch(`/api/shipments/${id}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: next, notes: next === 'RESCHEDULED' ? 'Dijadwalkan ulang' : 'Pengembalian ke pengirim' }),
+      });
+    });
+    setStatusOpen(false);
+  }
+
+  async function submitManualStatus(e: React.FormEvent) {
+    e.preventDefault();
+    await postActions(async () =>
+      fetch(`/api/shipments/${id}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: statusForm.status,
+          notes: statusForm.notes || null,
+          lat: statusForm.lat ? Number(statusForm.lat) : null,
+          lng: statusForm.lng ? Number(statusForm.lng) : null,
+        }),
+      })
+    );
+    setStatusOpen(false);
+  }
+
+  if (loading) return <div className="py-20 text-center text-slate-400">Memuat...</div>;
+  if (err) return <div className="py-20 text-center text-slate-500">{err}</div>;
+
+  const s = shipment;
+  const next = NEXT_STATUS[s.status];
+  const events: EventItem[] = s.events || [];
+  const assignment = s.assignments?.[0];
+  const pod = s.pods?.[0];
+  const terminal = ['DELIVERED', 'RETURNED'].includes(s.status);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="font-mono text-lg font-bold text-brand-700">{s.trackingNumber}</h1>
+            <StatusBadge status={s.status} />
+          </div>
+          <p className="mt-1 text-sm text-slate-500">
+            Dibuat {formatDateTime(s.createdAt)} · Service {s.serviceType} · {formatNumber(s.weight)} kg · {s.itemName || 'Paket'}
+          </p>
+        </div>
+        <Link href="/shipments" className={btnGhost + ' !py-1.5'}>← Kembali</Link>
+      </div>
+
+      {/* SLA & ETA */}
+      {(() => {
+        const si = slaInfo(s.status, s.slaDeadline);
+        if (!si) return null;
+        const lastEv = events[events.length - 1];
+        const distKm = s.destLat ? haversineKm(lastEv?.latitude ?? s.originLat ?? -6.2088, lastEv?.longitude ?? s.originLng ?? 106.8456, s.destLat, s.destLng) : 0;
+        const eta = s.destLat ? new Date(Date.now() + (distKm / 35) * 3600000 + 2 * 15 * 60000) : null;
+        const cls = si.type === 'BREACHED' ? 'bg-red-50 border-red-200 text-red-700' : si.type === 'AT_RISK' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700';
+        return (
+          <div className={`grid gap-3 rounded-xl border px-4 py-3 text-sm md:grid-cols-3 ${cls}`}>
+            <div>
+              <div className="text-xs font-bold uppercase opacity-70">SLA</div>
+              <div className="font-semibold">{si.label}</div>
+              {si.remaining != null && <div className="text-xs opacity-80">{Math.floor(si.remaining / 3600000)} jam {Math.round((si.remaining % 3600000) / 60000)} mnt tersisa</div>}
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase opacity-70">Deadline SLA</div>
+              <div className="font-semibold">{s.slaDeadline ? formatDateTime(s.slaDeadline) : '-'}</div>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase opacity-70">Estimasi Tiba</div>
+              <div className="font-semibold">{eta ? formatDateTime(eta) : 'Menunggu koordinat'}</div>
+              {distKm > 0 && <div className="text-xs opacity-80">{distKm.toFixed(1)} km dari posisi terakhir</div>}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Aksi status */}
+      {!terminal && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 p-4">
+          <span className="text-sm font-bold text-brand-800">Aksi:</span>
+          {next && (
+            <button onClick={() => changeStatus(next)} disabled={busy} className={btnPrimary}>
+              Lanjut → {STATUS_LABELS[next]}
+            </button>
+          )}
+          <button onClick={() => { setStatusForm({ status: s.status, notes: '', lat: '', lng: '' }); setStatusOpen(true); }} disabled={busy} className={btnGhost}>
+            Update Status / Lokasi
+          </button>
+          {s.status === 'OUT_FOR_DELIVERY' && (
+            <button onClick={() => { setStatusForm({ status: 'DELIVERY_FAILED', notes: '', lat: '', lng: '' }); setFailReason(FAILURE_REASONS[0]); setStatusOpen(true); }} disabled={busy} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
+              Gagal Delivery
+            </button>
+          )}
+          {s.status === 'DELIVERY_FAILED' && (
+            <>
+              <button onClick={() => markFailed('RESCHEDULED')} disabled={busy} className={btnGhost}>Jadwalkan Ulang</button>
+              <button onClick={() => markFailed('RETURN_TO_SENDER')} disabled={busy} className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-semibold text-white hover:bg-pink-700">
+                Return ke Pengirim
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Info cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <InfoCard title="Pengirim">
+          <p className="font-semibold text-slate-800">{s.sender.name}</p>
+          <p className="text-xs text-slate-500">{s.sender.phone}</p>
+          <p className="text-xs text-slate-500">{s.sender.address}, {s.sender.city || ''}</p>
+        </InfoCard>
+        <InfoCard title="Penerima">
+          <p className="font-semibold text-slate-800">{s.receiver.name}</p>
+          <p className="text-xs text-slate-500">{s.receiver.phone}</p>
+          <p className="text-xs text-slate-500">{s.receiver.address}, {s.receiver.city || ''}</p>
+        </InfoCard>
+        <InfoCard title="Pengiriman">
+          <div className="space-y-1 text-xs text-slate-600">
+            <div><b>Asal:</b> {s.origin}</div>
+            <div><b>Tujuan:</b> {s.destination}</div>
+            <div><b>Service:</b> {s.serviceType}</div>
+            <div><b>Fragile:</b> {s.fragile ? 'Ya' : 'Tidak'}</div>
+          </div>
+        </InfoCard>
+        <InfoCard title="Penugasan">
+          {assignment ? (
+            <div className="space-y-1 text-xs text-slate-600">
+              <div><b>Driver:</b> {assignment.driver.name}</div>
+              <div><b>Kendaraan:</b> {assignment.vehicle?.vehicleNumber || '-'}</div>
+              <div><b>Tugas:</b> {formatDateTime(assignment.assignedAt)}</div>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400">Belum ditugaskan</p>
+          )}
+          <button onClick={openAssign} className="mt-2 text-xs font-bold text-brand-600 hover:underline">
+            {assignment ? 'Ganti Assignment' : '+ Tugaskan Driver'}
+          </button>
+        </InfoCard>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* Timeline */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-4 text-sm font-bold text-slate-900">Timeline Perjalanan</h2>
+          <div className="space-y-0">
+            {events.map((ev, i) => {
+              const isLast = i === events.length - 1;
+              return (
+                <div key={ev.id} className="relative flex gap-3 pb-5">
+                  {!isLast && <span className="absolute left-[7px] top-4 h-full w-0.5 bg-slate-200" />}
+                  <span className={`relative mt-1 h-4 w-4 shrink-0 rounded-full border-4 ${STATUS_COLORS[ev.status]?.includes('bg-emerald') ? 'border-emerald-300 bg-emerald-500' : STATUS_COLORS[ev.status]?.includes('bg-red') ? 'border-red-300 bg-red-500' : 'border-brand-300 bg-brand-500'}`} />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-slate-800">{STATUS_LABELS[ev.status] || ev.status}</span>
+                      <span className="text-[11px] text-slate-400">{formatDateTime(ev.createdAt)}</span>
+                    </div>
+                    {ev.notes && <p className="text-xs text-slate-500">{ev.notes}</p>}
+                    {ev.latitude != null && (
+                      <p className="text-[11px] font-mono text-slate-400">📍 {ev.latitude.toFixed(5)}, {ev.longitude?.toFixed(5)}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {events.length === 0 && <p className="text-sm text-slate-400">Belum ada event</p>}
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          {/* POD */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 text-sm font-bold text-slate-900">Proof of Delivery</h2>
+            {pod ? (
+              <div className="space-y-1 text-sm text-slate-700">
+                <p><b>Penerima:</b> {pod.receiverName}</p>
+                {pod.notes && <p className="text-xs text-slate-500"><b>Catatan:</b> {pod.notes}</p>}
+                <p className="text-xs text-slate-500"><b>Waktu terima:</b> {formatDateTime(pod.deliveredAt)}</p>
+                {pod.latitude != null && <p className="text-[11px] font-mono text-slate-400">📍 {pod.latitude.toFixed(5)}, {pod.longitude?.toFixed(5)}</p>}
+                {pod.signature && pod.signature.startsWith('data:image') && pod.signature.length > 1000 ? (
+                  <div className="mt-2 rounded-lg border border-slate-200 p-2">
+                    <p className="mb-1 text-xs font-semibold text-slate-500">Tanda tangan digital:</p>
+                    <img src={pod.signature} alt="tanda tangan" className="h-24 w-full object-contain bg-white" />
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400">Tanda tangan tersedia (persist via POD driver app)</p>
+                )}
+                {pod.photo && pod.photo.startsWith('data:image') ? (
+                  <img src={pod.photo} alt="bukti foto" className="mt-2 h-32 w-full rounded-lg object-cover bg-slate-100" />
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400">Belum ada bukti penerimaan. Selesaikan delivery melalui aplikasi driver.</p>
+            )}
+          </div>
+
+          {/* Info barang */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 text-sm font-bold text-slate-900">Detail Barang</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase text-slate-400">
+                    <th className="py-1 pr-3">Nama</th>
+                    <th className="py-1 pr-3">Qty</th>
+                    <th className="py-1 pr-3">Berat</th>
+                    <th className="py-1">Dimensi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(s.items || []).map((it: any) => (
+                    <tr key={it.id} className="border-b border-slate-100 last:border-0">
+                      <td className="py-1.5 pr-3 text-slate-700">{it.itemName}</td>
+                      <td className="py-1.5 pr-3 text-slate-600">{it.quantity}</td>
+                      <td className="py-1.5 pr-3 text-slate-600">{it.weight ? `${it.weight} kg` : '-'}</td>
+                      <td className="py-1.5 text-slate-600">{it.dimension || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal assignment */}
+      <Modal open={assignOpen} title="Tugaskan Driver" onClose={() => setAssignOpen(false)}>
+        <form onSubmit={assign} className="space-y-4">
+          <Field label="Driver" required>
+            <select required value={assignForm.driverId} onChange={(e) => setAssignForm({ ...assignForm, driverId: e.target.value })} className={inputCls}>
+              <option value="">-- Pilih driver --</option>
+              {drivers.map((d) => <option key={d.id} value={d.id}>{d.name} ({d.employeeId})</option>)}
+            </select>
+          </Field>
+          <Field label="Kendaraan">
+            <select value={assignForm.vehicleId} onChange={(e) => setAssignForm({ ...assignForm, vehicleId: e.target.value })} className={inputCls}>
+              <option value="">-- Tanpa kendaraan --</option>
+              {vehicles.map((v) => <option key={v.id} value={v.id}>{v.vehicleNumber} ({v.status})</option>)}
+            </select>
+          </Field>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setAssignOpen(false)} className={btnGhost}>Batal</button>
+            <button type="submit" disabled={busy} className={btnPrimary}>Simpan</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal status */}
+      <Modal open={statusOpen} title="Update Status & Lokasi" onClose={() => setStatusOpen(false)}>
+        {s.status === 'OUT_FOR_DELIVERY'
+          ? (
+            <div className="space-y-4">
+              <Field label="Alasan Gagal" required>
+                <select value={failReason} onChange={(e) => setFailReason(e.target.value)} className={inputCls}>
+                  {FAILURE_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </Field>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setStatusOpen(false)} className={btnGhost}>Batal</button>
+                <button onClick={() => {
+                  setStatusOpen(false);
+                  changeStatus('DELIVERY_FAILED', failReason);
+                }} disabled={busy} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white">Tandai Gagal</button>
+              </div>
+            </div>
+          )
+          : (
+            <form onSubmit={submitManualStatus} className="space-y-4">
+              <Field label="Status Baru" required>
+                <select required value={statusForm.status} onChange={(e) => setStatusForm({ ...statusForm, status: e.target.value })} className={inputCls}>
+                  {Object.keys(STATUS_LABELS).map((st) => (
+                    <option key={st} value={st}>{STATUS_LABELS[st]}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Catatan">
+                <textarea value={statusForm.notes} onChange={(e) => setStatusForm({ ...statusForm, notes: e.target.value })} className={inputCls} rows={2} />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Latitude">
+                  <input value={statusForm.lat} onChange={(e) => setStatusForm({ ...statusForm, lat: e.target.value })} className={inputCls} placeholder="-6.20000" />
+                </Field>
+                <Field label="Longitude">
+                  <input value={statusForm.lng} onChange={(e) => setStatusForm({ ...statusForm, lng: e.target.value })} className={inputCls} placeholder="106.81600" />
+                </Field>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setStatusOpen(false)} className={btnGhost}>Batal</button>
+                <button type="submit" disabled={busy} className={btnPrimary}>Simpan</button>
+              </div>
+            </form>
+          )}
+      </Modal>
+    </div>
+  );
+}
+
+function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">{title}</div>
+      {children}
+    </div>
+  );
+}

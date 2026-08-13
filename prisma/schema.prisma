@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN_OPERASIONAL
+  DISPATCHER
+  WAREHOUSE
+  DRIVER
+  CUSTOMER_SERVICE
+  SUPERVISOR
+  MANAGEMENT
+  CUSTOMER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ShipmentStatus {
+  ORDER_CREATED
+  PICKUP_SCHEDULED
+  PICKED_UP
+  WAREHOUSE_RECEIVED
+  SORTING
+  DISPATCHED
+  IN_TRANSIT
+  ARRIVED_AT_HUB
+  OUT_FOR_DELIVERY
+  DELIVERED
+  DELIVERY_FAILED
+  RESCHEDULED
+  RETURN_TO_SENDER
+  RETURNED
+}
+
+enum ServiceType {
+  SAME_DAY
+  NEXT_DAY
+  REGULAR
+}
+
+enum GeofenceType {
+  WAREHOUSE
+  HUB
+  OPERATIONAL_AREA
+  DESTINATION
+}
+
+enum GeofenceEventType {
+  ENTER
+  EXIT
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  username     String     @unique
+  passwordHash String
+  role         Role
+  status       UserStatus @default(ACTIVE)
+  phone        String?
+  createdAt    DateTime   @default(now())
+  driver       Driver?
+  notifications Notification[]
+  auditLogs    AuditLog[]
+}
+
+model Customer {
+  id         String  @id @default(cuid())
+  name       String
+  phone      String
+  email      String?
+  address    String?
+  city       String?
+  postalCode String?
+  createdAt  DateTime @default(now())
+  sentBy     Shipment[] @relation("sender")
+  receivedBy Shipment[] @relation("receiver")
+}
+
+model Shipment {
+  id             String        @id @default(cuid())
+  trackingNumber String        @unique
+  senderId       String
+  receiverId     String
+  sender         Customer      @relation("sender", fields: [senderId], references: [id])
+  receiver       Customer      @relation("receiver", fields: [receiverId], references: [id])
+  origin         String
+  destination    String
+  originLat      Float?
+  originLng      Float?
+  destLat        Float?
+  destLng        Float?
+  weight         Float
+  volume         Float?
+  serviceType    ServiceType   @default(REGULAR)
+  status         ShipmentStatus @default(ORDER_CREATED)
+  fragile        Boolean       @default(false)
+  itemName       String?
+  itemCount      Int           @default(1)
+  itemCategory   String?
+  itemValue      Float?
+  slaDeadline    DateTime?
+  deliveryTarget DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  items          ShipmentItem[]
+  assignments    DeliveryAssignment[]
+  events         TrackingEvent[]
+  pods           ProofOfDelivery[]
+  notifications  Notification[]
+}
+
+model ShipmentItem {
+  id         String   @id @default(cuid())
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  itemName   String
+  quantity   Int
+  weight     Float?
+  dimension  String?
+}
+
+model Driver {
+  id             String        @id @default(cuid())
+  employeeId     String        @unique
+  name           String
+  phone          String
+  userId         String?       @unique
+  user           User?         @relation(fields: [userId], references: [id])
+  status         DriverStatus  @default(ACTIVE)
+  assignments    DeliveryAssignment[]
+  gpsLogs        GpsLog[]
+  geofenceEvents GeofenceEvent[]
+}
+
+model Vehicle {
+  id            String   @id @default(cuid())
+  vehicleNumber String   @unique
+  type          String
+  capacity      Float    @default(0)
+  status        String   @default("AVAILABLE")
+  assignments   DeliveryAssignment[]
+  gpsLogs       GpsLog[]
+}
+
+model DeliveryAssignment {
+  id         String   @id @default(cuid())
+  shipmentId String
+  driverId   String
+  vehicleId  String?
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  driver     Driver   @relation(fields: [driverId], references: [id])
+  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
+  assignedAt DateTime @default(now())
+}
+
+model TrackingEvent {
+  id         String        @id @default(cuid())
+  shipmentId String
+  shipment   Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  status     ShipmentStatus
+  latitude   Float?
+  longitude  Float?
+  notes      String?
+  createdBy  String?
+  createdAt  DateTime      @default(now())
+}
+
+model GpsLog {
+  id        String   @id @default(cuid())
+  driverId  String
+  vehicleId String?
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  latitude  Float
+  longitude Float
+  speed     Float?
+  heading   Float?
+  accuracy  Float?
+  battery   Float?
+  createdAt DateTime @default(now())
+}
+
+model ProofOfDelivery {
+  id           String   @id @default(cuid())
+  shipmentId   String   @unique
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  receiverName String
+  signature    String?
+  photo        String?
+  latitude     Float?
+  longitude    Float?
+  notes        String?
+  deliveredAt  DateTime @default(now())
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String?
+  shipmentId String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shipment   Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  message    String
+  status     String    @default("UNREAD")
+  createdAt  DateTime  @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  module    String
+  oldData   String?
+  newData   String?
+  createdAt DateTime @default(now())
+}
+
+model Geofence {
+  id           String          @id @default(cuid())
+  name         String
+  latitude     Float
+  longitude    Float
+  radiusMeters Float           @default(500)
+  type         GeofenceType    @default(OPERATIONAL_AREA)
+  description  String?
+  active       Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  events       GeofenceEvent[]
+}
+
+model GeofenceEvent {
+  id          String            @id @default(cuid())
+  geofenceId  String
+  geofence    Geofence          @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
+  driverId    String
+  driver      Driver            @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  shipmentId  String?
+  eventType   GeofenceEventType
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime          @default(now())
+}
