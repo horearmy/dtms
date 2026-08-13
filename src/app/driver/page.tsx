@@ -55,7 +55,6 @@ export default function DriverHomePage() {
         {tasks.map((t) => {
           const shipment = t.shipment;
           const lastEvent = shipment.events[0];
-          const actionable = ['ORDER_CREATED', 'PICKUP_SCHEDULED'].includes(shipment.status);
           const deliverable = shipment.status === 'OUT_FOR_DELIVERY';
           return (
             <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -87,7 +86,7 @@ export default function DriverHomePage() {
 
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Link href={`/driver/tasks/${t.id}`} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-                  {actionable ? 'Mulai / Konfirmasi Pickup' : deliverable ? 'Proses Delivery & POD' : 'Lihat Detail'}
+                  {deliverable ? 'Proses Delivery & POD' : 'Lihat Detail'}
                 </Link>
                 <span className="text-xs text-slate-400">Ditugaskan {formatDateTime(t.assignedAt)}</span>
               </div>

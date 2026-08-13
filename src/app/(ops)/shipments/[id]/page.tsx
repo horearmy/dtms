@@ -6,7 +6,7 @@ import StatusBadge from '@/components/StatusBadge';
 import ShipmentQR from '@/components/ShipmentQR';
 import { btnPrimary, btnGhost, inputCls, Field, Modal } from '@/components/ui';
 import {
-  STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS, PICKUP_STATUSES,
+  STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS,
   formatDateTime, formatNumber,
 } from '@/lib/constants';
 
@@ -197,21 +197,21 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 p-4">
           <span className="text-sm font-bold text-brand-800">Aksi:</span>
           {next && (() => {
-            const pickupBlocked = PICKUP_STATUSES.includes(next) && !hasAssignment;
+            const dispatchBlocked = next === 'DISPATCHED' && !hasAssignment;
             return (
               <button
                 onClick={() => changeStatus(next)}
-                disabled={busy || pickupBlocked}
+                disabled={busy || dispatchBlocked}
                 className={btnPrimary}
-                title={pickupBlocked ? 'Pilih driver dan kendaraan terlebih dahulu' : undefined}
+                title={dispatchBlocked ? 'Pilih driver dan kendaraan terlebih dahulu' : undefined}
               >
                 Lanjut → {STATUS_LABELS[next]}
               </button>
             );
           })()}
-          {next && PICKUP_STATUSES.includes(next) && !hasAssignment && (
+          {next === 'DISPATCHED' && !hasAssignment && (
             <span className="text-xs font-semibold text-red-600">
-              ⚠ Pilih driver &amp; kendaraan dulu untuk melanjutkan penjemputan
+              ⚠ Pilih driver &amp; kendaraan dulu untuk keberangkatan
             </span>
           )}
           <button onClick={() => { setStatusForm({ status: s.status, notes: '', lat: '', lng: '' }); setStatusOpen(true); }} disabled={busy} className={btnGhost}>
@@ -332,7 +332,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
             <div>
               <h2 className="text-sm font-bold text-slate-900">QR Resi</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Pindai untuk proses gudang (inbound, sorting, dispatch). Numerik juga dapat diketik/scanner USB.
+                Pindai untuk proses verifikasi gudang – dispatch. Numerik juga dapat diketik/scanner USB.
               </p>
               <Link href={`/warehouse/scan?resi=${encodeURIComponent(s.trackingNumber)}`} className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:underline">
                 Buka Scan Gudang →

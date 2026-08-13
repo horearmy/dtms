@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
+import { Modal, Field, inputCls, btnPrimary, btnGhost } from '@/components/ui';
 import { formatDate } from '@/lib/constants';
 
 type Geofence = {
@@ -133,7 +133,11 @@ export default function GeofencesPage() {
             </div>
           </div>
         ))}
-        {items.length === 0 && <EmptyRow colSpan={1} text="Belum ada geofence" />}
+        {items.length === 0 && (
+          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400">
+            Belum ada geofence
+          </p>
+        )}
       </div>
 
       <Modal open={open} title={edit ? 'Edit Geofence' : 'Tambah Geofence'} onClose={() => setOpen(false)}>

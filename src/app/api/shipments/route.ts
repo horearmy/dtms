@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
-import { generateTrackingNumber } from '@/lib/constants';
 import { coordForCity } from '@/lib/constants';
 import { slaDeadlineFor } from '@/lib/eta';
 
@@ -88,9 +87,12 @@ export async function POST(req: NextRequest) {
 
   let trackingNumber = '';
   const created = await prisma.$transaction(async (tx) => {
-    const count = await tx.shipment.count();
-    trackingNumber = `DTMS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(count + 1).padStart(6, '0')}`;
-    if (count >= 10000) trackingNumber = generateTrackingNumber();
+    const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    let seq = await tx.shipment.count({ where: { trackingNumber: { startsWith: `DTMS-${ymd}-` } } });
+    do {
+      seq++;
+      trackingNumber = `DTMS-${ymd}-${String(seq).padStart(6, '0')}`;
+    } while (await tx.shipment.findUnique({ where: { trackingNumber } }));
 
     const origin = senderStop.label;
     const destination = lastStop.label;

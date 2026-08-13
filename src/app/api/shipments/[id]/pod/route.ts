@@ -17,6 +17,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Shipment sudah terkirim' }, { status: 400 });
   }
 
+  if (shipment.status !== 'OUT_FOR_DELIVERY') {
+    return NextResponse.json(
+      { error: `POD hanya dapat diselesaikan saat status Sedang Diantar (saat ini: ${shipment.status})` },
+      { status: 400 }
+    );
+  }
+
   // Validasi jika role DRIVER: harus merupakan driver yang ditugaskan
   if (session?.role === 'DRIVER') {
     const driver = await prisma.driver.findUnique({ where: { userId: session.id } });

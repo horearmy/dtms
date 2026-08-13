@@ -32,13 +32,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     data: { shipmentId: id, driverId, vehicleId: vehicleId || null },
   });
 
-  if (shipment.status === 'ORDER_CREATED') {
-    await prisma.shipment.update({ where: { id }, data: { status: 'PICKUP_SCHEDULED' } });
-    await prisma.trackingEvent.create({
-      data: { shipmentId: id, status: 'PICKUP_SCHEDULED', createdBy: session?.id, notes: 'Driver ditugaskan' },
-    });
-  }
-
   await logAudit(session, 'ASSIGN_DRIVER', 'SHIPMENT', `${shipment.trackingNumber} -> ${driverId}`);
   return NextResponse.json({ assignment }, { status: 201 });
 }

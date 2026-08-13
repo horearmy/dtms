@@ -61,26 +61,6 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
     });
   }
 
-  async function withGPSAnd(fn: (lat: number, lng: number) => Promise<Response>) {
-    const { lat, lng } = await getGPS();
-    setBusy(true);
-    const res = await fn(lat, lng);
-    if (!res.ok) setMsg((await res.json()).error || 'Gagal');
-    else setMsg('');
-    setBusy(false);
-    await load();
-  }
-
-  async function confirmPickup() {
-    await withGPSAnd((lat, lng) =>
-      fetch(`/api/shipments/${task!.shipment.id}/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'PICKED_UP', lat, lng, notes: 'Barang diambil kurir' }),
-      })
-    );
-  }
-
   async function submitPOD(e: React.FormEvent) {
     e.preventDefault();
     const { lat, lng } = await getGPS();
@@ -156,16 +136,7 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
       </div>
 
       {/* Aksi */}
-      {!pod && ['ORDER_CREATED', 'PICKUP_SCHEDULED'].includes(s.status) && (
-        <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
-          <button onClick={confirmPickup} disabled={busy} className={btnPrimary + ' w-full sm:w-auto'}>
-            {busy ? 'Memproses...' : '✓ Konfirmasi Pickup (Barang Diambil)'}
-          </button>
-          <p className="mt-2 text-xs text-brand-700">Lokasi GPS akan otomatis tercatat pada event.</p>
-        </div>
-      )}
-
-      {!pod && ['PICKED_UP', 'WAREHOUSE_RECEIVED', 'SORTING', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB'].includes(s.status) && (
+      {!pod && ['WAREHOUSE_RECEIVED', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB'].includes(s.status) && (
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-sm text-slate-600">
             Barang dalam perjalanan. Cek-in lokasi secara berkala dengan tombol <b>📡 Kirim Lokasi</b> di atas.

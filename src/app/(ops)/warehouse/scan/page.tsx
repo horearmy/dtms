@@ -7,9 +7,16 @@ import { STATUS_LABELS, formatDateTime } from '@/lib/constants';
 import StatusBadge from '@/components/StatusBadge';
 
 const WAREHOUSE_FLOW: Record<string, string> = {
+  ORDER_CREATED: 'WAREHOUSE_RECEIVED',
+  PICKUP_SCHEDULED: 'WAREHOUSE_RECEIVED',
   PICKED_UP: 'WAREHOUSE_RECEIVED',
-  WAREHOUSE_RECEIVED: 'SORTING',
+  WAREHOUSE_RECEIVED: 'DISPATCHED',
   SORTING: 'DISPATCHED',
+};
+
+const ACTION_HINT: Record<string, string> = {
+  WAREHOUSE_RECEIVED: 'verifikasi di gudang',
+  DISPATCHED: 'berangkatkan',
 };
 
 type ShipmentHit = {
@@ -151,7 +158,7 @@ function ScanInner() {
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-bold text-slate-900">Warehouse Scan</h1>
-        <p className="text-sm text-slate-500">Scan barcode/QR untuk proses inbound – sorting – dispatch</p>
+        <p className="text-sm text-slate-500">Scan barcode/QR untuk proses verifikasi gudang – dispatch</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -201,11 +208,11 @@ function ScanInner() {
               <div className="mt-3">
                 {nextAction ? (
                   <button onClick={() => doScan(nextAction)} disabled={loading} className={btnPrimary + ' w-full'}>
-                    Scan → {STATUS_LABELS[nextAction]} (terima di gudang)
+                    Scan → {STATUS_LABELS[nextAction]} ({ACTION_HINT[nextAction]})
                   </button>
                 ) : (
                   <p className="text-xs text-slate-400">
-                    Status {hit.status} di luar alur gudang (PICKED_UP → WAREHOUSE_RECEIVED → SORTING → DISPATCHED).
+                    Status {hit.status} di luar alur gudang (ORDER_CREATED → WAREHOUSE_RECEIVED → DISPATCHED).
                   </p>
                 )}
               </div>

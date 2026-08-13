@@ -156,19 +156,12 @@ async function main() {
       events.push({ shipmentId: s.id, status: st, latitude: lat, longitude: lng, notes, createdAt: at });
 
     push(ShipmentStatus.ORDER_CREATED, from);
-    push(ShipmentStatus.PICKUP_SCHEDULED, new Date(from.getTime() + 3 * 3600000));
 
-    if (status !== ShipmentStatus.ORDER_CREATED && status !== ShipmentStatus.PICKUP_SCHEDULED) {
-      push(ShipmentStatus.PICKED_UP, new Date(from.getTime() + 5 * 3600000), -6.2, 106.816);
-    }
-    if ([ShipmentStatus.WAREHOUSE_RECEIVED, ShipmentStatus.SORTING, ShipmentStatus.DISPATCHED, ShipmentStatus.IN_TRANSIT, ShipmentStatus.ARRIVED_AT_HUB, ShipmentStatus.OUT_FOR_DELIVERY, ShipmentStatus.DELIVERED, ShipmentStatus.DELIVERY_FAILED, ShipmentStatus.RETURNED, ShipmentStatus.RESCHEDULED].includes(status)) {
-      push(ShipmentStatus.WAREHOUSE_RECEIVED, new Date(from.getTime() + 8 * 3600000), -6.213, 106.845, 'Gudang Pusat Jakarta');
-    }
-    if ([ShipmentStatus.SORTING, ShipmentStatus.DISPATCHED, ShipmentStatus.IN_TRANSIT, ShipmentStatus.ARRIVED_AT_HUB, ShipmentStatus.OUT_FOR_DELIVERY, ShipmentStatus.DELIVERED, ShipmentStatus.DELIVERY_FAILED, ShipmentStatus.RETURNED, ShipmentStatus.RESCHEDULED].includes(status)) {
-      push(ShipmentStatus.SORTING, new Date(from.getTime() + 10 * 3600000));
+    if (status !== ShipmentStatus.ORDER_CREATED) {
+      push(ShipmentStatus.WAREHOUSE_RECEIVED, new Date(from.getTime() + 3 * 3600000), -6.213, 106.845, 'Gudang Pusat Jakarta');
     }
     if ([ShipmentStatus.DISPATCHED, ShipmentStatus.IN_TRANSIT, ShipmentStatus.ARRIVED_AT_HUB, ShipmentStatus.OUT_FOR_DELIVERY, ShipmentStatus.DELIVERED, ShipmentStatus.DELIVERY_FAILED, ShipmentStatus.RETURNED, ShipmentStatus.RESCHEDULED].includes(status)) {
-      push(ShipmentStatus.DISPATCHED, new Date(from.getTime() + 12 * 3600000), -6.23, 106.86);
+      push(ShipmentStatus.DISPATCHED, new Date(from.getTime() + 5 * 3600000), -6.23, 106.86);
     }
     if ([ShipmentStatus.IN_TRANSIT, ShipmentStatus.ARRIVED_AT_HUB, ShipmentStatus.OUT_FOR_DELIVERY, ShipmentStatus.DELIVERED, ShipmentStatus.DELIVERY_FAILED, ShipmentStatus.RETURNED, ShipmentStatus.RESCHEDULED].includes(status)) {
       push(ShipmentStatus.IN_TRANSIT, new Date(from.getTime() + 15 * 3600000), -6.25, 106.87);
@@ -197,7 +190,7 @@ async function main() {
 
     await prisma.trackingEvent.createMany({ data: events });
 
-    if (status !== ShipmentStatus.ORDER_CREATED && status !== ShipmentStatus.PICKUP_SCHEDULED && status !== ShipmentStatus.DELIVERY_FAILED && status !== ShipmentStatus.RESCHEDULED) {
+    if (status !== ShipmentStatus.ORDER_CREATED && status !== ShipmentStatus.DELIVERY_FAILED && status !== ShipmentStatus.RESCHEDULED) {
       await prisma.deliveryAssignment.create({
         data: {
           shipmentId: s.id,
@@ -231,8 +224,8 @@ async function main() {
   await makeShipment({ sender: customers[0], receiver: customers[6], weight: 12.5, service: ServiceType.SAME_DAY, status: ShipmentStatus.OUT_FOR_DELIVERY, from: today, to: { lat: -6.262, lng: 106.783 } });
   await makeShipment({ sender: customers[1], receiver: customers[7], weight: 8.0, service: ServiceType.SAME_DAY, status: ShipmentStatus.IN_TRANSIT, from: today, to: { lat: -6.255, lng: 106.822 } });
   await makeShipment({ sender: customers[2], receiver: customers[4], weight: 45.0, service: ServiceType.REGULAR, status: ShipmentStatus.ARRIVED_AT_HUB, from: daysAgo(1, 10, 15), to: { lat: -6.91, lng: 107.63 } });
-  await makeShipment({ sender: customers[5], receiver: customers[1], weight: 3.2, service: ServiceType.NEXT_DAY, status: ShipmentStatus.PICKED_UP, from: today, to: { lat: -6.24, lng: 106.83 } });
-  await makeShipment({ sender: customers[3], receiver: customers[0], weight: 200.0, service: ServiceType.REGULAR, status: ShipmentStatus.SORTING, from: daysAgo(1, 9, 0), to: { lat: -7.25, lng: 112.75 } });
+  await makeShipment({ sender: customers[5], receiver: customers[1], weight: 3.2, service: ServiceType.NEXT_DAY, status: ShipmentStatus.WAREHOUSE_RECEIVED, from: today, to: { lat: -6.24, lng: 106.83 } });
+  await makeShipment({ sender: customers[3], receiver: customers[0], weight: 200.0, service: ServiceType.REGULAR, status: ShipmentStatus.DISPATCHED, from: daysAgo(1, 9, 0), to: { lat: -7.25, lng: 112.75 } });
   await makeShipment({ sender: customers[6], receiver: customers[5], weight: 1.5, service: ServiceType.NEXT_DAY, status: ShipmentStatus.ORDER_CREATED, from: today, to: { lat: -6.30, lng: 106.65 } });
   await makeShipment({ sender: customers[4], receiver: customers[2], weight: 60.0, service: ServiceType.REGULAR, status: ShipmentStatus.DELIVERED, from: daysAgo(2, 8, 0), to: { lat: -6.92, lng: 107.60 } });
   await makeShipment({ sender: customers[2], receiver: customers[7], weight: 18.0, service: ServiceType.NEXT_DAY, status: ShipmentStatus.OUT_FOR_DELIVERY, from: daysAgo(0, 7, 45), to: { lat: -6.91, lng: 107.63 } });
@@ -240,7 +233,7 @@ async function main() {
   await makeShipment({ sender: customers[7], receiver: customers[0], weight: 5.0, service: ServiceType.SAME_DAY, status: ShipmentStatus.DELIVERY_FAILED, from: today, to: { lat: -6.21, lng: 106.84 } });
   await makeShipment({ sender: customers[1], receiver: customers[5], weight: 22.0, service: ServiceType.NEXT_DAY, status: ShipmentStatus.RESCHEDULED, from: daysAgo(1, 9, 30), to: { lat: -6.30, lng: 106.65 } });
   await makeShipment({ sender: customers[5], receiver: customers[3], weight: 30.0, service: ServiceType.REGULAR, status: ShipmentStatus.RETURNED, from: daysAgo(3, 9, 0), to: { lat: -6.21, lng: 106.86 } });
-  await makeShipment({ sender: customers[6], receiver: customers[2], weight: 2.0, service: ServiceType.REGULAR, status: ShipmentStatus.PICKUP_SCHEDULED, from: today, to: { lat: -6.91, lng: 107.60 } });
+  await makeShipment({ sender: customers[6], receiver: customers[2], weight: 2.0, service: ServiceType.REGULAR, status: ShipmentStatus.DISPATCHED, from: today, to: { lat: -6.91, lng: 107.60 } });
 
   const { $disconnect } = prisma;
 

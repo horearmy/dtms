@@ -14,7 +14,7 @@ export const STATUS_LABELS: Record<string, string> = {
   ORDER_CREATED: 'Order Dibuat',
   PICKUP_SCHEDULED: 'Penjemputan Dijadwalkan',
   PICKED_UP: 'Barang Diambil',
-  WAREHOUSE_RECEIVED: 'Diterima Gudang',
+  WAREHOUSE_RECEIVED: 'Verifikasi Gudang',
   SORTING: 'Sortir',
   DISPATCHED: 'Diberangkatkan',
   IN_TRANSIT: 'Dalam Perjalanan',
@@ -46,10 +46,7 @@ export const STATUS_COLORS: Record<string, string> = {
 
 export const ACTIVE_STATUSES = [
   'ORDER_CREATED',
-  'PICKUP_SCHEDULED',
-  'PICKED_UP',
   'WAREHOUSE_RECEIVED',
-  'SORTING',
   'DISPATCHED',
   'IN_TRANSIT',
   'ARRIVED_AT_HUB',
@@ -74,11 +71,8 @@ export const FAILURE_REASONS = [
 ];
 
 export const NEXT_STATUS: Record<string, string> = {
-  ORDER_CREATED: 'PICKUP_SCHEDULED',
-  PICKUP_SCHEDULED: 'PICKED_UP',
-  PICKED_UP: 'WAREHOUSE_RECEIVED',
-  WAREHOUSE_RECEIVED: 'SORTING',
-  SORTING: 'DISPATCHED',
+  ORDER_CREATED: 'WAREHOUSE_RECEIVED',
+  WAREHOUSE_RECEIVED: 'DISPATCHED',
   DISPATCHED: 'IN_TRANSIT',
   IN_TRANSIT: 'ARRIVED_AT_HUB',
   ARRIVED_AT_HUB: 'OUT_FOR_DELIVERY',
@@ -86,8 +80,6 @@ export const NEXT_STATUS: Record<string, string> = {
   RESCHEDULED: 'OUT_FOR_DELIVERY',
   RETURN_TO_SENDER: 'RETURNED',
 };
-
-export const PICKUP_STATUSES = ['PICKUP_SCHEDULED', 'PICKED_UP'];
 
 export function generateTrackingNumber() {
   const now = new Date();

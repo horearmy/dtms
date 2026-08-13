@@ -6,11 +6,13 @@ import { STATUS_LABELS } from '@/lib/constants';
 
 const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'SUPERVISOR'];
 const WAREHOUSE_FLOW: Record<string, string> = {
+  ORDER_CREATED: 'WAREHOUSE_RECEIVED',
+  PICKUP_SCHEDULED: 'WAREHOUSE_RECEIVED',
   PICKED_UP: 'WAREHOUSE_RECEIVED',
-  WAREHOUSE_RECEIVED: 'SORTING',
+  WAREHOUSE_RECEIVED: 'DISPATCHED',
   SORTING: 'DISPATCHED',
 };
-const ALLOWED = ['WAREHOUSE_RECEIVED', 'SORTING', 'DISPATCHED'];
+const ALLOWED = ['WAREHOUSE_RECEIVED', 'DISPATCHED'];
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -38,6 +40,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       { error: `Scan ${STATUS_LABELS[action] || action} tidak valid dari status ${STATUS_LABELS[shipment.status] || shipment.status}` },
       { status: 400 }
     );
+  }
+
+  if (action === 'DISPATCHED') {
+    const assignment = await prisma.deliveryAssignment.findFirst({ where: { shipmentId: id } });
+    if (!assignment?.driverId || !assignment?.vehicleId) {
+      return NextResponse.json(
+        { error: 'Lengkapi penugasan terlebih dahulu: pilih driver dan kendaraan sebelum keberangkatan' },
+        { status: 400 }
+      );
+    }
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: assignment.vehicleId } });
+    if (!vehicle || vehicle.status === 'MAINTENANCE') {
+      return NextResponse.json(
+        { error: 'Kendaraan tidak tersedia (status MAINTENANCE). Ganti kendaraan terlebih dahulu.' },
+        { status: 400 }
+      );
+    }
   }
 
   const scan = await prisma.warehouseScan.create({

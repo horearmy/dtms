@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
-import { STATUS_LABELS, PICKUP_STATUSES } from '@/lib/constants';
+import { STATUS_LABELS } from '@/lib/constants';
 
 const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'CUSTOMER_SERVICE', 'SUPERVISOR'];
 
@@ -21,12 +21,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Shipment sudah selesai (terminal status)' }, { status: 400 });
   }
 
-  // proses penjemputan hanya boleh lanjut apabila driver & kendaraan sudah ditugaskan
-  if (PICKUP_STATUSES.includes(status)) {
+  if (status === 'DISPATCHED') {
     const assignment = await prisma.deliveryAssignment.findFirst({ where: { shipmentId: id } });
     if (!assignment?.driverId || !assignment?.vehicleId) {
       return NextResponse.json(
-        { error: 'Lengkapi penugasan terlebih dahulu: pilih driver dan kendaraan sebelum proses penjemputan' },
+        { error: 'Lengkapi penugasan terlebih dahulu: pilih driver dan kendaraan sebelum keberangkatan' },
         { status: 400 }
       );
     }
