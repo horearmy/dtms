@@ -17,6 +17,8 @@ type Vehicle = {
   photoRight: string | null;
   photoLeft: string | null;
   _count?: { assignments: number };
+  busy?: boolean;
+  activeTracking?: string | null;
 };
 
 const emptyForm = {
@@ -171,13 +173,19 @@ export default function VehiclesPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-600">{v._count?.assignments || 0}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      v.status === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-700'
-                      : v.status === 'IN_USE' ? 'bg-amber-100 text-amber-700'
-                      : v.status === 'MAINTENANCE' ? 'bg-red-100 text-red-700'
-                      : 'bg-slate-200 text-slate-500'}`}>
-                      {v.status}
-                    </span>
+                    {v.busy ? (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                        Perjalanan{v.activeTracking ? ` · ${v.activeTracking}` : ''}
+                      </span>
+                    ) : (
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        v.status === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-700'
+                        : v.status === 'IN_USE' ? 'bg-amber-100 text-amber-700'
+                        : v.status === 'MAINTENANCE' ? 'bg-red-100 text-red-700'
+                        : 'bg-slate-200 text-slate-500'}`}>
+                        {v.status}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button onClick={() => openEdit(v)} className="text-xs font-semibold text-brand-600 hover:underline">Edit</button>

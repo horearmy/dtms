@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ShipmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
+import { ON_ROAD_STATUSES } from '@/lib/constants';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,6 +26,42 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         { status: 400 }
       );
     }
+    const activeTrip = await prisma.deliveryAssignment.findFirst({
+      where: {
+        vehicleId,
+        shipmentId: { not: id },
+        shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } },
+      },
+      select: { shipment: { select: { trackingNumber: true } } },
+    });
+    if (activeTrip) {
+      return NextResponse.json(
+        {
+          error: `Kendaraan ${vehicle.vehicleNumber} sedang digunakan untuk resi ${activeTrip.shipment.trackingNumber} (belum kembali). Pilih kendaraan lain.`,
+        },
+        { status: 400 }
+      );
+    }
+  }
+
+  const driver = await prisma.driver.findUnique({ where: { id: driverId } });
+  if (!driver) return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });
+
+  const activeTrip = await prisma.deliveryAssignment.findFirst({
+    where: {
+      driverId,
+      shipmentId: { not: id },
+      shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } },
+    },
+    select: { shipment: { select: { trackingNumber: true } } },
+  });
+  if (activeTrip) {
+    return NextResponse.json(
+      {
+        error: `Driver ${driver.name} masih dalam perjalanan (resi ${activeTrip.shipment.trackingNumber}) dan belum kembali. Pilih driver lain.`,
+      },
+      { status: 400 }
+    );
   }
 
   await prisma.deliveryAssignment.deleteMany({ where: { shipmentId: id } });

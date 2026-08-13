@@ -44,6 +44,14 @@ export const STATUS_COLORS: Record<string, string> = {
   RETURNED: 'bg-slate-200 text-slate-700',
 };
 
+export const ON_ROAD_STATUSES = [
+  'DISPATCHED',
+  'IN_TRANSIT',
+  'ARRIVED_AT_HUB',
+  'OUT_FOR_DELIVERY',
+  'DELIVERY_FAILED',
+];
+
 export const ACTIVE_STATUSES = [
   'ORDER_CREATED',
   'WAREHOUSE_RECEIVED',

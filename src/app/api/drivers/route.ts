@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ShipmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
 import { driverScore } from '@/lib/scoring';
+import { ON_ROAD_STATUSES } from '@/lib/constants';
 
 const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR'];
 
@@ -15,7 +17,11 @@ export async function GET() {
   const scored = [];
   for (const d of drivers) {
     const stat = await driverScore(d.id);
-    scored.push({ ...d, stat });
+    const trip = await prisma.deliveryAssignment.findFirst({
+      where: { driverId: d.id, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
+      select: { shipment: { select: { trackingNumber: true } } },
+    });
+    scored.push({ ...d, stat, busy: !!trip, activeTracking: trip?.shipment.trackingNumber || null });
   }
   return NextResponse.json(scored);
 }

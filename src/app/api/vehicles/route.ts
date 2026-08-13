@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ShipmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
+import { ON_ROAD_STATUSES } from '@/lib/constants';
 
 export async function GET() {
   const { error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR');
@@ -9,7 +11,15 @@ export async function GET() {
     orderBy: { vehicleNumber: 'asc' },
     include: { _count: { select: { assignments: true } } },
   });
-  return NextResponse.json(vehicles);
+  const result = [];
+  for (const v of vehicles) {
+    const trip = await prisma.deliveryAssignment.findFirst({
+      where: { vehicleId: v.id, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
+      select: { shipment: { select: { trackingNumber: true } } },
+    });
+    result.push({ ...v, busy: !!trip, activeTracking: trip?.shipment.trackingNumber || null });
+  }
+  return NextResponse.json(result);
 }
 
 export async function POST(req: NextRequest) {

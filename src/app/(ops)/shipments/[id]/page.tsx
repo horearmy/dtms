@@ -11,8 +11,8 @@ import {
 } from '@/lib/constants';
 
 type EventItem = { id: string; status: string; notes: string | null; createdAt: string; latitude: number | null; longitude: number | null };
-type Driver = { id: string; name: string; employeeId: string; status: string };
-type Vehicle = { id: string; vehicleNumber: string; status: string };
+type Driver = { id: string; name: string; employeeId: string; status: string; busy?: boolean };
+type Vehicle = { id: string; vehicleNumber: string; status: string; busy?: boolean };
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371;
@@ -71,8 +71,8 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
   // muat daftar driver & kendaraan ketika modal assignment dibuka
   async function openAssign() {
     const [dRes, vRes] = await Promise.all([fetch('/api/drivers'), fetch('/api/vehicles')]);
-    if (dRes.ok) setDrivers((await dRes.json()).filter((d: Driver) => d.status === 'ACTIVE'));
-    if (vRes.ok) setVehicles((await vRes.json()).filter((v: Vehicle) => v.status !== 'MAINTENANCE'));
+    if (dRes.ok) setDrivers((await dRes.json()).filter((d: Driver) => d.status === 'ACTIVE' && !d.busy));
+    if (vRes.ok) setVehicles((await vRes.json()).filter((v: Vehicle) => v.status !== 'MAINTENANCE' && !v.busy));
     const cur = shipment?.assignments?.[0];
     setAssignForm({
       driverId: cur?.driver?.id || '',
@@ -402,12 +402,18 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
               <option value="">-- Pilih driver --</option>
               {drivers.map((d) => <option key={d.id} value={d.id}>{d.name} ({d.employeeId})</option>)}
             </select>
+            {drivers.length === 0 && (
+              <p className="mt-1 text-xs text-amber-600">Semua driver aktif sedang dalam perjalanan / belum kembali.</p>
+            )}
           </Field>
           <Field label="Kendaraan" required>
             <select required value={assignForm.vehicleId} onChange={(e) => setAssignForm({ ...assignForm, vehicleId: e.target.value })} className={inputCls}>
               <option value="">-- Pilih kendaraan --</option>
               {vehicles.map((v) => <option key={v.id} value={v.id}>{v.vehicleNumber} ({v.status})</option>)}
             </select>
+            {vehicles.length === 0 && (
+              <p className="mt-1 text-xs text-amber-600">Semua kendaraan sedang dipakai / tidak tersedia.</p>
+            )}
           </Field>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setAssignOpen(false)} className={btnGhost}>Batal</button>
