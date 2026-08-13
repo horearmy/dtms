@@ -3,7 +3,13 @@ import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
 import { STATUS_LABELS } from '@/lib/constants';
 
-const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'CUSTOMER_SERVICE', 'SUPERVISOR'];
+const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'CUSTOMER_SERVICE', 'SUPERVISOR', 'DRIVER'];
+
+const DRIVER_FLOW: Record<string, string> = {
+  DISPATCHED: 'IN_TRANSIT',
+  IN_TRANSIT: 'ARRIVED_AT_HUB',
+  ARRIVED_AT_HUB: 'OUT_FOR_DELIVERY',
+};
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,6 +25,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (['DELIVERED', 'RETURNED'].includes(shipment.status)) {
     return NextResponse.json({ error: 'Shipment sudah selesai (terminal status)' }, { status: 400 });
+  }
+
+  if (session?.role === 'DRIVER') {
+    const driver = await prisma.driver.findUnique({ where: { userId: session.id } });
+    const assignment = await prisma.deliveryAssignment.findFirst({
+      where: { shipmentId: id, driverId: driver?.id },
+    });
+    if (!assignment) {
+      return NextResponse.json({ error: 'Shipment ini bukan tugas Anda' }, { status: 403 });
+    }
+    const expected = DRIVER_FLOW[shipment.status];
+    if (!expected || status !== expected) {
+      return NextResponse.json(
+        {
+          error: expected
+            ? `Driver hanya dapat melanjutkan ke langkah berikutnya (${STATUS_LABELS[expected]}), saat ini ${STATUS_LABELS[shipment.status] || shipment.status}`
+            : 'Driver tidak dapat mengubah status saat ini',
+        },
+        { status: 400 }
+      );
+    }
   }
 
   if (status === 'DISPATCHED') {

@@ -25,6 +25,12 @@ type Assignment = {
   };
 };
 
+const NEXT_STEP: Record<string, { status: string; label: string; hint: string }> = {
+  DISPATCHED: { status: 'IN_TRANSIT', label: 'Mulai Perjalanan', hint: 'Tandai setelah barang diberangkatkan dari gudang.' },
+  IN_TRANSIT: { status: 'ARRIVED_AT_HUB', label: 'Tiba di Hub', hint: 'Tandai saat tiba di hub tujuan.' },
+  ARRIVED_AT_HUB: { status: 'OUT_FOR_DELIVERY', label: 'Mulai Antar', hint: 'Tandai saat mulai mengantar ke penerima.' },
+};
+
 export default function TaskPage({ params }: { params: Promise<{ assignmentId: string }> }) {
   const { assignmentId } = use(params);
   const [task, setTask] = useState<Assignment | null>(null);
@@ -53,11 +59,11 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
   }
   useEffect(() => { load(); }, [assignmentId]);
 
-  function updateStatus(status: string, notes?: string) {
+  function updateStatus(status: string, notes?: string, lat?: number | null, lng?: number | null) {
     return fetch(`/api/shipments/${task!.shipment.id}/events`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, notes: notes || null }),
+      body: JSON.stringify({ status, notes: notes || null, lat: lat ?? null, lng: lng ?? null }),
     });
   }
 
@@ -92,6 +98,31 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
   const vehicle = task!.vehicle;
   const pod = s.pods[0];
   const events = s.events;
+  const step = NEXT_STEP[s.status];
+
+  async function advance() {
+    if (!step || busy) return;
+    setBusy(true);
+    setMsg('');
+    let lat: number | null = null;
+    let lng: number | null = null;
+    try {
+      const pos = await getGPS();
+      lat = pos.lat;
+      lng = pos.lng;
+    } catch {
+      // lokasi opsional
+    }
+    const res = await updateStatus(step.status, `Cek-in driver: ${step.label}`, lat, lng);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Gagal memperbarui status' }));
+      setMsg(err.error || 'Gagal memperbarui status');
+    } else {
+      setMsg('Status diperbarui ✓');
+    }
+    setBusy(false);
+    await load();
+  }
 
   return (
     <div className="space-y-4">
@@ -138,9 +169,21 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
       {/* Aksi */}
       {!pod && ['WAREHOUSE_RECEIVED', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB'].includes(s.status) && (
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-sm text-slate-600">
-            Barang dalam perjalanan. Cek-in lokasi secara berkala dengan tombol <b>📡 Kirim Lokasi</b> di atas.
-          </p>
+          {step ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{step.label}</p>
+                <p className="text-xs text-slate-500">{step.hint}</p>
+              </div>
+              <button onClick={advance} disabled={busy} className={btnPrimary}>
+                {busy ? 'Menyimpan...' : step.label}
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-600">
+              Barang menunggu keberangkatan dari gudang. Gunakan <b>📡 Kirim Lokasi</b> di atas untuk cek-in posisi.
+            </p>
+          )}
         </div>
       )}
 
