@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
+import LocationPicker, { type PickedLocation } from '@/components/LocationPicker';
 import { formatDate } from '@/lib/constants';
 
 type Customer = {
@@ -12,6 +13,8 @@ type Customer = {
   address: string | null;
   city: string | null;
   postalCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
   createdAt: string;
   _count?: { sentBy: number; receivedBy: number };
 };
@@ -23,6 +26,7 @@ export default function CustomersPage() {
   const [edit, setEdit] = useState<Customer | null>(null);
   const [form, setForm] = useState({
     name: '', phone: '', email: '', address: '', city: '', postalCode: '',
+    latitude: '', longitude: '',
   });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,7 +43,7 @@ export default function CustomersPage() {
 
   function openNew() {
     setEdit(null);
-    setForm({ name: '', phone: '', email: '', address: '', city: '', postalCode: '' });
+    setForm({ name: '', phone: '', email: '', address: '', city: '', postalCode: '', latitude: '', longitude: '' });
     setMsg('');
     setOpen(true);
   }
@@ -49,6 +53,8 @@ export default function CustomersPage() {
     setForm({
       name: c.name, phone: c.phone, email: c.email || '', address: c.address || '',
       city: c.city || '', postalCode: c.postalCode || '',
+      latitude: c.latitude != null ? String(c.latitude) : '',
+      longitude: c.longitude != null ? String(c.longitude) : '',
     });
     setMsg('');
     setOpen(true);
@@ -79,6 +85,25 @@ export default function CustomersPage() {
     else alert((await res.json()).error || 'Gagal menghapus');
   }
 
+  const pickedLocation: PickedLocation = {
+    lat: form.latitude !== '' ? Number(form.latitude) : null,
+    lng: form.longitude !== '' ? Number(form.longitude) : null,
+    address: form.address,
+    city: form.city,
+    postalCode: form.postalCode,
+  };
+
+  function onPick(loc: PickedLocation) {
+    setForm({
+      ...form,
+      address: loc.address,
+      city: loc.city,
+      postalCode: loc.postalCode,
+      latitude: loc.lat != null ? String(loc.lat) : '',
+      longitude: loc.lng != null ? String(loc.lng) : '',
+    });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -103,6 +128,7 @@ export default function CustomersPage() {
                 <th className="px-4 py-3">Telepon</th>
                 <th className="px-4 py-3">Alamat</th>
                 <th className="px-4 py-3">Kota</th>
+                <th className="px-4 py-3">Koordinat</th>
                 <th className="px-4 py-3">Kiriman</th>
                 <th className="px-4 py-3">Dibuat</th>
                 <th className="px-4 py-3 text-right">Aksi</th>
@@ -115,6 +141,11 @@ export default function CustomersPage() {
                   <td className="px-4 py-3 text-slate-600">{c.phone}</td>
                   <td className="px-4 py-3 text-slate-600">{c.address || '-'}</td>
                   <td className="px-4 py-3 text-slate-600">{c.city || '-'}</td>
+                  <td className="px-4 py-3 text-slate-500">
+                    {c.latitude != null && c.longitude != null
+                      ? `${c.latitude.toFixed(5)}, ${c.longitude.toFixed(5)}`
+                      : '-'}
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{(c._count?.sentBy || 0) + (c._count?.receivedBy || 0)}</td>
                   <td className="px-4 py-3 text-slate-500">{formatDate(c.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
@@ -123,13 +154,13 @@ export default function CustomersPage() {
                   </td>
                 </tr>
               ))}
-              {items.length === 0 && <EmptyRow colSpan={7} text="Belum ada customer" />}
+              {items.length === 0 && <EmptyRow colSpan={8} text="Belum ada customer" />}
             </tbody>
           </table>
         </div>
       </div>
 
-      <Modal open={open} title={edit ? 'Edit Customer' : 'Tambah Customer'} onClose={() => setOpen(false)}>
+      <Modal open={open} wide title={edit ? 'Edit Customer' : 'Tambah Customer'} onClose={() => setOpen(false)}>
         <form onSubmit={save} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Nama" required>
@@ -145,6 +176,9 @@ export default function CustomersPage() {
               <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} />
             </Field>
           </div>
+          <Field label="Lokasi (peta)">
+            <LocationPicker value={pickedLocation} onChange={onPick} />
+          </Field>
           <Field label="Alamat">
             <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputCls} rows={2} />
           </Field>

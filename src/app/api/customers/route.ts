@@ -16,6 +16,12 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(customers);
 }
 
+function toNum(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) return Number(v);
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   const { session, error } = await guard(...MANAGE);
   if (error) return error;
@@ -31,6 +37,8 @@ export async function POST(req: NextRequest) {
       address: body.address || null,
       city: body.city || null,
       postalCode: body.postalCode || null,
+      latitude: toNum(body.latitude),
+      longitude: toNum(body.longitude),
     },
   });
   await logAudit(session, 'CREATE_CUSTOMER', 'CUSTOMER', customer.name);

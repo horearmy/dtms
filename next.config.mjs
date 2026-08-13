@@ -12,7 +12,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.google.com https://*.basemaps.cartocdn.com",
-      "connect-src 'self' https://tile.openstreetmap.org https://*.openstreetmap.org https://*.google.com https://*.basemaps.cartocdn.com https://router.project-osrm.org",
+      "connect-src 'self' https://tile.openstreetmap.org https://*.openstreetmap.org https://nominatim.openstreetmap.org https://*.google.com https://*.basemaps.cartocdn.com https://router.project-osrm.org",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

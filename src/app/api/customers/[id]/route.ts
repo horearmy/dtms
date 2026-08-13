@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
 
+function toNum(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) return Number(v);
+  return null;
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'CUSTOMER_SERVICE');
@@ -17,6 +23,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         address: body.address,
         city: body.city,
         postalCode: body.postalCode,
+        latitude: toNum(body.latitude),
+        longitude: toNum(body.longitude),
       },
     });
     await logAudit(session, 'UPDATE_CUSTOMER', 'CUSTOMER', customer.name);

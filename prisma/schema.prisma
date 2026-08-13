@@ -89,6 +89,8 @@ model Customer {
   address    String?
   city       String?
   postalCode String?
+  latitude   Float?
+  longitude  Float?
   createdAt  DateTime @default(now())
   sentBy     Shipment[] @relation("sender")
   receivedBy Shipment[] @relation("receiver")
