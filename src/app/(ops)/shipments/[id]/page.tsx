@@ -5,7 +5,7 @@ import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
 import { btnPrimary, btnGhost, inputCls, Field, Modal } from '@/components/ui';
 import {
-  STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS,
+  STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS, PICKUP_STATUSES,
   formatDateTime, formatNumber,
 } from '@/lib/constants';
 
@@ -82,6 +82,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
 
   async function assign(e: React.FormEvent) {
     e.preventDefault();
+    if (!assignForm.vehicleId) return alert('Kendaraan wajib dipilih untuk penugasan');
     await postActions(async () =>
       fetch(`/api/shipments/${id}/assign`, {
         method: 'POST',
@@ -143,6 +144,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
   const next = NEXT_STATUS[s.status];
   const events: EventItem[] = s.events || [];
   const assignment = s.assignments?.[0];
+  const hasAssignment = !!assignment?.driver?.id && !!assignment?.vehicle?.id;
   const pod = s.pods?.[0];
   const terminal = ['DELIVERED', 'RETURNED'].includes(s.status);
 
@@ -193,10 +195,23 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
       {!terminal && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 p-4">
           <span className="text-sm font-bold text-brand-800">Aksi:</span>
-          {next && (
-            <button onClick={() => changeStatus(next)} disabled={busy} className={btnPrimary}>
-              Lanjut → {STATUS_LABELS[next]}
-            </button>
+          {next && (() => {
+            const pickupBlocked = PICKUP_STATUSES.includes(next) && !hasAssignment;
+            return (
+              <button
+                onClick={() => changeStatus(next)}
+                disabled={busy || pickupBlocked}
+                className={btnPrimary}
+                title={pickupBlocked ? 'Pilih driver dan kendaraan terlebih dahulu' : undefined}
+              >
+                Lanjut → {STATUS_LABELS[next]}
+              </button>
+            );
+          })()}
+          {next && PICKUP_STATUSES.includes(next) && !hasAssignment && (
+            <span className="text-xs font-semibold text-red-600">
+              ⚠ Pilih driver &amp; kendaraan dulu untuk melanjutkan penjemputan
+            </span>
           )}
           <button onClick={() => { setStatusForm({ status: s.status, notes: '', lat: '', lng: '' }); setStatusOpen(true); }} disabled={busy} className={btnGhost}>
             Update Status / Lokasi
@@ -374,9 +389,9 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
               {drivers.map((d) => <option key={d.id} value={d.id}>{d.name} ({d.employeeId})</option>)}
             </select>
           </Field>
-          <Field label="Kendaraan">
-            <select value={assignForm.vehicleId} onChange={(e) => setAssignForm({ ...assignForm, vehicleId: e.target.value })} className={inputCls}>
-              <option value="">-- Tanpa kendaraan --</option>
+          <Field label="Kendaraan" required>
+            <select required value={assignForm.vehicleId} onChange={(e) => setAssignForm({ ...assignForm, vehicleId: e.target.value })} className={inputCls}>
+              <option value="">-- Pilih kendaraan --</option>
               {vehicles.map((v) => <option key={v.id} value={v.id}>{v.vehicleNumber} ({v.status})</option>)}
             </select>
           </Field>

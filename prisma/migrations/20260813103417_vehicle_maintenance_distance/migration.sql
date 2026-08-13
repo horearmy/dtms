@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Vehicle" ADD COLUMN     "totalDistanceKm" DOUBLE PRECISION NOT NULL DEFAULT 0;

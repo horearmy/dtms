@@ -175,6 +175,7 @@ model Vehicle {
   type          String
   capacity      Float    @default(0)
   status        String   @default("AVAILABLE")
+  totalDistanceKm Float  @default(0)
   photoFront    String?
   photoBack     String?
   photoRight    String?

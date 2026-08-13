@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
-import { formatNumber } from '@/lib/constants';
+import { formatNumber, MAINTENANCE_DISTANCE_KM } from '@/lib/constants';
 import PhotoField from '@/components/PhotoField';
 
 type Vehicle = {
@@ -11,6 +11,7 @@ type Vehicle = {
   type: string;
   capacity: number;
   status: string;
+  totalDistanceKm: number;
   photoFront: string | null;
   photoBack: string | null;
   photoRight: string | null;
@@ -23,6 +24,7 @@ const emptyForm = {
   type: '',
   capacity: '',
   status: 'AVAILABLE',
+  totalDistanceKm: '',
   photoFront: null as string | null,
   photoBack: null as string | null,
   photoRight: null as string | null,
@@ -63,6 +65,7 @@ export default function VehiclesPage() {
       type: v.type,
       capacity: String(v.capacity),
       status: v.status,
+      totalDistanceKm: String(v.totalDistanceKm ?? 0),
       photoFront: v.photoFront,
       photoBack: v.photoBack,
       photoRight: v.photoRight,
@@ -73,11 +76,18 @@ export default function VehiclesPage() {
   }
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (!edit && (!form.photoFront || !form.photoBack || !form.photoRight || !form.photoLeft)) {
+      return setMsg('Foto kendaraan (depan, belakang, samping kanan & kiri) wajib diisi');
+    }
     setLoading(true);
+    const payload = {
+      ...form,
+      totalDistanceKm: form.totalDistanceKm === '' ? undefined : Number(form.totalDistanceKm),
+    };
     const res = await fetch(edit ? `/api/vehicles/${edit.id}` : '/api/vehicles', {
       method: edit ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     setLoading(false);
@@ -111,6 +121,7 @@ export default function VehiclesPage() {
                 <th className="px-4 py-3">No. Kendaraan</th>
                 <th className="px-4 py-3">Jenis</th>
                 <th className="px-4 py-3">Kapasitas (kg)</th>
+                <th className="px-4 py-3">Jarak Tempuh</th>
                 <th className="px-4 py-3">Foto</th>
                 <th className="px-4 py-3">Penugasan</th>
                 <th className="px-4 py-3">Status</th>
@@ -123,6 +134,25 @@ export default function VehiclesPage() {
                   <td className="px-4 py-3 font-mono text-xs font-medium text-slate-800">{v.vehicleNumber}</td>
                   <td className="px-4 py-3 text-slate-600">{v.type}</td>
                   <td className="px-4 py-3 text-slate-600">{formatNumber(v.capacity)}</td>
+                  <td className="px-4 py-3">
+                    <div className="min-w-[110px]">
+                      <div className="mb-1 flex items-center justify-between text-[11px]">
+                        <span className={v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'font-semibold text-red-600' : 'text-slate-500'}>
+                          {formatNumber(Math.round(v.totalDistanceKm || 0))} km
+                        </span>
+                        <span className="text-slate-400">{formatNumber(MAINTENANCE_DISTANCE_KM)} km</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'bg-red-500' : v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM * 0.8 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${Math.min(100, ((v.totalDistanceKm || 0) / MAINTENANCE_DISTANCE_KM) * 100)}%` }}
+                        />
+                      </div>
+                      {v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM && (
+                        <div className="mt-1 text-[10px] font-bold text-red-600">⚠ Perlu Perawatan</div>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     {photoCount(v) > 0 ? (
                       <div className="flex gap-1">
@@ -144,6 +174,7 @@ export default function VehiclesPage() {
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                       v.status === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-700'
                       : v.status === 'IN_USE' ? 'bg-amber-100 text-amber-700'
+                      : v.status === 'MAINTENANCE' ? 'bg-red-100 text-red-700'
                       : 'bg-slate-200 text-slate-500'}`}>
                       {v.status}
                     </span>
@@ -154,7 +185,7 @@ export default function VehiclesPage() {
                   </td>
                 </tr>
               ))}
-              {items.length === 0 && <EmptyRow colSpan={7} text="Belum ada kendaraan" />}
+              {items.length === 0 && <EmptyRow colSpan={8} text="Belum ada kendaraan" />}
             </tbody>
           </table>
         </div>
@@ -179,9 +210,20 @@ export default function VehiclesPage() {
                 <option value="MAINTENANCE">Perawatan</option>
               </select>
             </Field>
+            {edit && (
+              <Field label="Jarak Tempuh (km)">
+                <input
+                  type="number"
+                  value={form.totalDistanceKm}
+                  onChange={(e) => setForm({ ...form, totalDistanceKm: e.target.value })}
+                  className={inputCls}
+                  min={0}
+                />
+              </Field>
+            )}
           </div>
           <div>
-            <div className="mb-2 text-xs font-semibold text-slate-600">Foto Kendaraan</div>
+            <div className="mb-2 text-xs font-semibold text-slate-600">Foto Kendaraan <span className="text-red-500">*</span></div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {PHOTO_LABELS.map(({ key, label }) => (
                 <PhotoField key={key} label={label} value={form[key]} onChange={(url) => setForm({ ...form, [key]: url })} />

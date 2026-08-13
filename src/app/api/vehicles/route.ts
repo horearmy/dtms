@@ -19,6 +19,9 @@ export async function POST(req: NextRequest) {
   if (!body.vehicleNumber || !body.type) {
     return NextResponse.json({ error: 'Nomor kendaraan dan jenis wajib diisi' }, { status: 400 });
   }
+  if (!body.photoFront || !body.photoBack || !body.photoRight || !body.photoLeft) {
+    return NextResponse.json({ error: 'Foto kendaraan (depan, belakang, samping kanan & kiri) wajib diisi' }, { status: 400 });
+  }
   try {
     const vehicle = await prisma.vehicle.create({
       data: {

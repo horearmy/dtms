@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guard, logAudit } from '@/lib/api-guard';
 import { checkGeofences } from '@/lib/geofence';
+import { haversineKm } from '@/lib/eta';
+import { MAINTENANCE_DISTANCE_KM } from '@/lib/constants';
 
 export async function POST(req: NextRequest) {
   const { session, error } = await guard('DRIVER', 'SUPER_ADMIN', 'DISPATCHER', 'ADMIN_OPERASIONAL');
@@ -38,6 +40,33 @@ export async function POST(req: NextRequest) {
   });
 
   const geofenceEvents = await checkGeofences(driver.id, lat, lng, assignment?.shipmentId);
+
+  // akumulasi jarak tempuh kendaraan dari jarak antar titik GPS
+  if (log.vehicleId) {
+    const prev = await prisma.gpsLog.findFirst({
+      where: { vehicleId: log.vehicleId, id: { not: log.id } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (prev) {
+      const km = haversineKm(prev.latitude, prev.longitude, lat, lng);
+      if (km > 0) {
+        await prisma.vehicle.update({
+          where: { id: log.vehicleId },
+          data: { totalDistanceKm: { increment: km } },
+        });
+      }
+    }
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: log.vehicleId } });
+    if (vehicle && vehicle.totalDistanceKm >= MAINTENANCE_DISTANCE_KM && vehicle.status !== 'MAINTENANCE') {
+      await prisma.vehicle.update({ where: { id: vehicle.id }, data: { status: 'MAINTENANCE' } });
+      await prisma.notification.create({
+        data: {
+          message: `Kendaraan ${vehicle.vehicleNumber} mencapai ${Math.round(vehicle.totalDistanceKm)} km dan wajib perawatan (status otomatis MAINTENANCE).`,
+        },
+      });
+      await logAudit(session, 'VEHICLE_MAINTENANCE', 'VEHICLE', `${vehicle.vehicleNumber} -> MAINTENANCE (${Math.round(vehicle.totalDistanceKm)} km)`);
+    }
+  }
 
   return NextResponse.json({ ok: true, id: log.id, geofenceEvents });
 }

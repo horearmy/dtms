@@ -15,6 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         type: body.type,
         capacity: body.capacity != null ? Number(body.capacity) : undefined,
         status: body.status,
+        totalDistanceKm: body.totalDistanceKm != null ? Number(body.totalDistanceKm) : undefined,
         photoFront: body.photoFront || null,
         photoBack: body.photoBack || null,
         photoRight: body.photoRight || null,

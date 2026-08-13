@@ -87,6 +87,8 @@ export const NEXT_STATUS: Record<string, string> = {
   RETURN_TO_SENDER: 'RETURNED',
 };
 
+export const PICKUP_STATUSES = ['PICKUP_SCHEDULED', 'PICKED_UP'];
+
 export function generateTrackingNumber() {
   const now = new Date();
   const ymd = now.toISOString().slice(0, 10).replace(/-/g, '');
@@ -148,6 +150,8 @@ export const SLA_HOURS: Record<string, number> = {
   NEXT_DAY: 24,
   REGULAR: 96,
 };
+
+export const MAINTENANCE_DISTANCE_KM = 2000;
 
 export function formatKm(km: number) {
   if (km < 1) return `${Math.round(km * 1000)} m`;
