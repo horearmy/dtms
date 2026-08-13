@@ -14,20 +14,23 @@ function cityCoord(city: string | null): LatLng | null {
   return CITY_COORDS[city.toLowerCase().trim()] || null;
 }
 
-async function fetchRoute(o: LatLng, d: LatLng): Promise<[number, number][]> {
+async function fetchRoute(o: LatLng, d: LatLng): Promise<{ points: [number, number][]; distanceKm: number; durationMin: number }> {
   const res = await fetch(`${OSRM_URL}${o.lng},${o.lat};${d.lng},${d.lat}?overview=full&geometries=geojson`);
   if (!res.ok) throw new Error('osrm');
   const json = await res.json();
-  const coords: number[][] = json?.routes?.[0]?.geometry?.coordinates || [];
+  const route = json?.routes?.[0];
+  const coords: number[][] = route?.geometry?.coordinates || [];
   if (!coords.length) throw new Error('osrm empty');
   const points = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
   const MAX = 150;
-  if (points.length <= MAX) return points;
-  const step = Math.ceil(points.length / MAX);
-  const sampled: [number, number][] = [];
-  for (let i = 0; i < points.length; i += step) sampled.push(points[i]);
-  if (sampled[sampled.length - 1] !== points[points.length - 1]) sampled.push(points[points.length - 1]);
-  return sampled;
+  const sampled = points.length <= MAX ? points : (() => {
+    const step = Math.ceil(points.length / MAX);
+    const out: [number, number][] = [];
+    for (let i = 0; i < points.length; i += step) out.push(points[i]);
+    if (out[out.length - 1] !== points[points.length - 1]) out.push(points[points.length - 1]);
+    return out;
+  })();
+  return { points: sampled, distanceKm: Math.round((route.distance || 0) / 1000), durationMin: Math.round((route.duration || 0) / 60) };
 }
 
 export default function RoutePreviewMap({ origin, dest }: { origin: Point | null; dest: Point | null }) {
@@ -36,6 +39,7 @@ export default function RoutePreviewMap({ origin, dest }: { origin: Point | null
   const markerLayer = useRef<L.LayerGroup | null>(null);
   const routeLayer = useRef<L.LayerGroup | null>(null);
   const [status, setStatus] = useState('Pilih pengirim & penerima untuk melihat rute di peta.');
+  const [info, setInfo] = useState<string | null>(null);
 
   const o = origin ? cityCoord(origin.city) : null;
   const d = dest ? cityCoord(dest.city) : null;
@@ -67,6 +71,7 @@ export default function RoutePreviewMap({ origin, dest }: { origin: Point | null
       if (cancelled) return;
       markerLayer.current?.clearLayers();
       routeLayer.current?.clearLayers();
+      setInfo(null);
 
       if (!origin || !dest) {
         setStatus('Pilih pengirim & penerima untuk melihat rute di peta.');
@@ -94,11 +99,12 @@ export default function RoutePreviewMap({ origin, dest }: { origin: Point | null
       L.marker([d.lat, d.lng], { icon: red }).addTo(markerLayer.current!).bindPopup(`<div style="font-size:12px;"><b>Penerima</b><br/>${dest.label}</div>`);
 
       try {
-        const points = await fetchRoute(o, d);
+        const route = await fetchRoute(o, d);
         if (cancelled) return;
-        const line = L.polyline(points, { color: '#2563eb', weight: 3, opacity: 0.65 }).addTo(routeLayer.current!);
-        line.bindPopup(`<div style="font-size:12px;">Rute pengiriman (${points.length} titik)</div>`);
+        const line = L.polyline(route.points, { color: '#2563eb', weight: 3, opacity: 0.65 }).addTo(routeLayer.current!);
+        line.bindPopup(`<div style="font-size:12px;">Rute pengiriman · ${route.distanceKm} km · ±${route.durationMin} mnt</div>`);
         setStatus(`Rute ${origin.label.split(',')[0]} → ${dest.label.split(',')[0]} ditampilkan.`);
+        setInfo(`${route.distanceKm} km · ±${Math.floor(route.durationMin / 60)} jam ${route.durationMin % 60} mnt`);
         map.fitBounds(L.latLngBounds([o.lat, o.lng], [d.lat, d.lng]).pad(0.2));
       } catch {
         if (cancelled) return;
@@ -113,12 +119,19 @@ export default function RoutePreviewMap({ origin, dest }: { origin: Point | null
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
-        <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Peta Rute</span>
-        <span className="text-[11px] text-slate-400">{status}</span>
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <svg className="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.5-2.5V5L9 7.5 15 5l5.5 2.5V18L15 15.5 9 18zM9 7.5V18M15 5v12.5" /></svg>
+          <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Peta Rute Pengiriman</span>
+        </div>
+        {info ? (
+          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold text-brand-700">{info}</span>
+        ) : (
+          <span className="text-[11px] text-slate-400">{status}</span>
+        )}
       </div>
-      <div ref={mapRef} className="h-72 w-full" />
-      <div className="flex items-center gap-4 border-t border-slate-100 px-4 py-2 text-[11px] text-slate-500">
+      <div ref={mapRef} className="h-96 w-full" />
+      <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 px-4 py-2 text-[11px] text-slate-500">
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-full bg-emerald-500" /> Pengirim
         </span>
@@ -128,6 +141,7 @@ export default function RoutePreviewMap({ origin, dest }: { origin: Point | null
         <span className="flex items-center gap-1.5">
           <span className="h-1 w-5 rounded bg-blue-500" /> Rute
         </span>
+        {status && info && <span className="ml-auto text-[11px] text-slate-400">{status}</span>}
       </div>
     </div>
   );

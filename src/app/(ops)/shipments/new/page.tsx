@@ -77,6 +77,12 @@ export default function NewShipmentPage() {
               </select>
             </Field>
           </div>
+          <div className="mt-4">
+            <RoutePreviewMap
+              origin={origin ? { label: `${origin.name} (${origin.city || '-'})`, city: origin.city, address: origin.address } : null}
+              dest={dest ? { label: `${dest.name} (${dest.city || '-'})`, city: dest.city, address: dest.address } : null}
+            />
+          </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-500 md:grid-cols-2">
             <div className="rounded-lg bg-slate-50 p-3">
               <b>Asal:</b> {origin ? `${origin.address || '-'}, ${origin.city || '-'}` : '-'}
@@ -84,13 +90,6 @@ export default function NewShipmentPage() {
             <div className="rounded-lg bg-slate-50 p-3">
               <b>Tujuan:</b> {dest ? `${dest.address || '-'}, ${dest.city || '-'}` : '-'}
             </div>
-          </div>
-
-          <div className="mt-4">
-            <RoutePreviewMap
-              origin={origin ? { label: `${origin.name} (${origin.city || '-'})`, city: origin.city, address: origin.address } : null}
-              dest={dest ? { label: `${dest.name} (${dest.city || '-'})`, city: dest.city, address: dest.address } : null}
-            />
           </div>
         </div>
 
