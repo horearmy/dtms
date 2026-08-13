@@ -48,6 +48,7 @@ export const config = {
     '/reports/:path*',
     '/audit/:path*',
     '/geofences/:path*',
+    '/account/:path*',
     '/driver/:path*',
   ],
 };

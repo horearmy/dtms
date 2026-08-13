@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ROLE_LABELS } from '@/lib/constants';
 import SearchBox from './SearchBox';
 import NotificationsBell from './NotificationsBell';
@@ -10,6 +11,9 @@ export default function Header({ name, role }: { name: string; role: string }) {
         <div className="text-sm font-bold text-white lg:hidden">DTMS</div>
         <SearchBox />
         <div className="ml-auto flex items-center gap-3">
+          <Link href="/account/password" className="hidden rounded-lg border border-white/30 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 sm:block">
+            Ganti Password
+          </Link>
           <NotificationsBell />
           <div className="hidden text-right sm:block">
             <div className="text-sm font-semibold text-white">{name}</div>

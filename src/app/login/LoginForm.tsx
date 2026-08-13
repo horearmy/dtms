@@ -26,7 +26,7 @@ export default function LoginForm() {
         setLoading(false);
         return;
       }
-      const target = data.role === 'DRIVER' ? '/driver' : '/dashboard';
+      const target = data.mustChangePassword ? '/account/password?first=1' : data.role === 'DRIVER' ? '/driver' : '/dashboard';
       router.push(target);
       router.refresh();
     } catch {

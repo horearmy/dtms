@@ -15,20 +15,21 @@ export type SessionUser = {
   role: string;
 };
 
-export async function signToken(user: SessionUser) {
+export async function signToken(user: SessionUser & { pwdVersion?: number }) {
   return new SignJWT({
     id: user.id,
     name: user.name,
     username: user.username,
     role: user.role,
+    pwd: user.pwdVersion ?? 1,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('12h')
+    .setExpirationTime(process.env.SESSION_HOURS ? `${process.env.SESSION_HOURS}h` : '12h')
     .sign(secret);
 }
 
-export async function verifyToken(token: string): Promise<SessionUser | null> {
+export async function verifyToken(token: string): Promise<SessionUser & { pwd: number } | null> {
   try {
     const { payload } = await jwtVerify(token, secret);
     return {
@@ -36,6 +37,7 @@ export async function verifyToken(token: string): Promise<SessionUser | null> {
       name: payload.name as string,
       username: payload.username as string,
       role: payload.role as string,
+      pwd: (payload.pwd as number) ?? 1,
     };
   } catch {
     return null;
@@ -50,10 +52,11 @@ export async function getSession(): Promise<SessionUser | null> {
   if (!payload) return null;
   const user = await prisma.user.findUnique({ where: { id: payload.id } });
   if (!user || user.status !== 'ACTIVE') return null;
+  if (user.pwdVersion !== payload.pwd) return null;
   return { id: user.id, name: user.name, username: user.username, role: user.role };
 }
 
-export async function setSession(user: SessionUser) {
+export async function setSession(user: SessionUser & { pwdVersion?: number }) {
   const token = await signToken(user);
   const store = await cookies();
   store.set(COOKIE_NAME, token, {
@@ -61,7 +64,7 @@ export async function setSession(user: SessionUser) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 12,
+    maxAge: 60 * 60 * (Number(process.env.SESSION_HOURS) || 12),
   });
 }
 
