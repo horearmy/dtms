@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Field, inputCls, btnPrimary, btnGhost } from '@/components/ui';
+import RoutePreviewMap from '@/components/RoutePreviewMap';
 import { SERVICE_TYPES } from '@/lib/constants';
 
 type Customer = { id: string; name: string; phone: string; city: string | null; address: string | null };
@@ -83,6 +84,13 @@ export default function NewShipmentPage() {
             <div className="rounded-lg bg-slate-50 p-3">
               <b>Tujuan:</b> {dest ? `${dest.address || '-'}, ${dest.city || '-'}` : '-'}
             </div>
+          </div>
+
+          <div className="mt-4">
+            <RoutePreviewMap
+              origin={origin ? { label: `${origin.name} (${origin.city || '-'})`, city: origin.city, address: origin.address } : null}
+              dest={dest ? { label: `${dest.name} (${dest.city || '-'})`, city: dest.city, address: dest.address } : null}
+            />
           </div>
         </div>
 
