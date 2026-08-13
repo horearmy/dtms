@@ -94,6 +94,7 @@ model Customer {
   createdAt  DateTime @default(now())
   sentBy     Shipment[] @relation("sender")
   receivedBy Shipment[] @relation("receiver")
+  stopsShipped ShipmentStop[] @relation("customerStop")
 }
 
 model Shipment {
@@ -127,6 +128,22 @@ model Shipment {
   events         TrackingEvent[]
   pods           ProofOfDelivery[]
   notifications  Notification[]
+  stops          ShipmentStop[]
+}
+
+model ShipmentStop {
+  id         String    @id @default(cuid())
+  shipmentId String
+  shipment   Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  seq        Int
+  customerId String?
+  customer   Customer? @relation("customerStop", fields: [customerId], references: [id], onDelete: SetNull)
+  label      String
+  address    String?
+  city       String?
+  postalCode String?
+  latitude   Float?
+  longitude  Float?
 }
 
 model ShipmentItem {
@@ -158,6 +175,10 @@ model Vehicle {
   type          String
   capacity      Float    @default(0)
   status        String   @default("AVAILABLE")
+  photoFront    String?
+  photoBack     String?
+  photoRight    String?
+  photoLeft     String?
   assignments   DeliveryAssignment[]
   gpsLogs       GpsLog[]
 }

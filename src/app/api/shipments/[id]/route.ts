@@ -17,6 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       assignments: { include: { driver: true, vehicle: true } },
       events: { orderBy: { createdAt: 'asc' } },
       pods: true,
+      stops: { orderBy: { seq: 'asc' } },
     },
   });
   if (!shipment) return NextResponse.json({ error: 'Shipment tidak ditemukan' }, { status: 404 });

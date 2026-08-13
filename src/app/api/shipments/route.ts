@@ -27,7 +27,12 @@ export async function GET(req: NextRequest) {
   const shipments = await prisma.shipment.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    include: { sender: true, receiver: true, assignments: { include: { driver: true, vehicle: true } } },
+    include: {
+      sender: true,
+      receiver: true,
+      assignments: { include: { driver: true, vehicle: true } },
+      stops: { orderBy: { seq: 'asc' } },
+    },
   });
   return NextResponse.json(shipments);
 }
@@ -37,8 +42,48 @@ export async function POST(req: NextRequest) {
   if (error) return error;
   const body = await req.json();
 
-  if (!body.senderId || !body.receiverId || !body.weight) {
-    return NextResponse.json({ error: 'Pengirim, penerima, dan berat wajib diisi' }, { status: 400 });
+  if (!body.weight) {
+    return NextResponse.json({ error: 'Berat wajib diisi' }, { status: 400 });
+  }
+
+  // Daftar perjalanan (stops). Bila tidak dikirim, dibentuk dari sender+receiver lama.
+  let stopsIn = Array.isArray(body.stops) && body.stops.length ? body.stops : null;
+  if (!stopsIn) {
+    if (!body.senderId || !body.receiverId) {
+      return NextResponse.json({ error: 'Pengirim dan penerima wajib diisi' }, { status: 400 });
+    }
+    stopsIn = [
+      { seq: 0, customerId: body.senderId, label: body.origin || 'Pengirim', city: body.origin || null },
+      { seq: 1, customerId: body.receiverId, label: body.destination || 'Penerima', city: body.destination || null },
+    ];
+  }
+
+  const toNum = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? v :
+    typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null;
+
+  const stopsData = (stopsIn as Array<Record<string, unknown>>)
+    .sort((a, b) => Number(a.seq ?? 0) - Number(b.seq ?? 0))
+    .map((s, i) => {
+      const city = (s.city as string) || null;
+      const cc = city ? coordForCity(city) : null;
+      return {
+        seq: i,
+        customerId: (s.customerId as string) || null,
+        label: (s.label as string) || city || `Perhentian ${i + 1}`,
+        address: (s.address as string) || null,
+        city,
+        postalCode: (s.postalCode as string) || null,
+        latitude: toNum(s.lat) ?? toNum(s.latitude) ?? cc?.lat ?? null,
+        longitude: toNum(s.lng) ?? toNum(s.longitude) ?? cc?.lng ?? null,
+      };
+    });
+
+  const senderStop = stopsData[0];
+  const lastStop = stopsData[stopsData.length - 1];
+  const receiverId = lastStop.customerId;
+  if (!senderStop.customerId || !receiverId) {
+    return NextResponse.json({ error: 'Pengirim dan minimal satu tujuan wajib dipilih' }, { status: 400 });
   }
 
   let trackingNumber = '';
@@ -47,23 +92,21 @@ export async function POST(req: NextRequest) {
     trackingNumber = `DTMS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(count + 1).padStart(6, '0')}`;
     if (count >= 10000) trackingNumber = generateTrackingNumber();
 
-    const origin = body.origin || 'Jakarta';
-    const destination = body.destination || '-';
-    const originC = coordForCity(origin);
-    const destC = coordForCity(destination);
+    const origin = senderStop.label;
+    const destination = lastStop.label;
     const serviceType = body.serviceType || 'REGULAR';
 
     const shipment = await tx.shipment.create({
       data: {
         trackingNumber,
-        senderId: body.senderId,
-        receiverId: body.receiverId,
+        senderId: senderStop.customerId as string,
+        receiverId,
         origin,
         destination,
-        originLat: body.originLat != null ? Number(body.originLat) : originC?.lat ?? null,
-        originLng: body.originLng != null ? Number(body.originLng) : originC?.lng ?? null,
-        destLat: body.destLat != null ? Number(body.destLat) : destC?.lat ?? null,
-        destLng: body.destLng != null ? Number(body.destLng) : destC?.lng ?? null,
+        originLat: senderStop.latitude,
+        originLng: senderStop.longitude,
+        destLat: lastStop.latitude,
+        destLng: lastStop.longitude,
         weight: Number(body.weight),
         volume: body.volume ? Number(body.volume) : null,
         serviceType,
@@ -74,6 +117,7 @@ export async function POST(req: NextRequest) {
         itemValue: body.itemValue ? Number(body.itemValue) : null,
         slaDeadline: slaDeadlineFor(serviceType, new Date()),
         deliveryTarget: body.deliveryTarget ? new Date(body.deliveryTarget) : null,
+        stops: { create: stopsData },
         items: body.items?.length
           ? { create: body.items.map((it: { itemName: string; quantity: number; weight?: number; dimension?: string }) => ({ itemName: it.itemName, quantity: Number(it.quantity) || 1, weight: it.weight ? Number(it.weight) : null, dimension: it.dimension || null })) }
           : { create: { itemName: body.itemName || 'Paket', quantity: Number(body.itemCount) || 1, weight: Number(body.weight) } },

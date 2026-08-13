@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Field, inputCls, btnPrimary, btnGhost } from '@/components/ui';
-import RoutePreviewMap from '@/components/RoutePreviewMap';
+import RoutePreviewMap, { type RoutePoint } from '@/components/RoutePreviewMap';
 import { SERVICE_TYPES } from '@/lib/constants';
 
 type Customer = { id: string; name: string; phone: string; city: string | null; address: string | null; latitude: number | null; longitude: number | null };
@@ -12,10 +12,11 @@ export default function NewShipmentPage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [form, setForm] = useState({
-    senderId: '', receiverId: '', itemName: '', itemCount: '1',
+    senderId: '', itemName: '', itemCount: '1',
     weight: '', volume: '', serviceType: 'REGULAR', fragile: false,
     itemCategory: '', itemValue: '', deliveryTarget: '',
   });
+  const [destinations, setDestinations] = useState<string[]>(['']);
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -26,19 +27,51 @@ export default function NewShipmentPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setMsg('');
-    if (!form.senderId || !form.receiverId) {
-      setMsg('Pilih pengirim dan penerima (jika belum ada, tambahkan di menu Customers)');
+    if (!form.senderId) {
+      setMsg('Pilih pengirim (jika belum ada, tambahkan di menu Customers)');
       return;
     }
-    if (form.senderId === form.receiverId) {
-      setMsg('Pengirim dan penerima tidak boleh sama');
+    const validDests = destinations.map((d) => d.trim()).filter(Boolean);
+    if (validDests.length === 0) {
+      setMsg('Tambahkan minimal satu tujuan');
       return;
     }
+    if (validDests.some((d) => d === form.senderId)) {
+      setMsg('Tujuan tidak boleh sama dengan pengirim');
+      return;
+    }
+    const byId = (id: string) => customers.find((c) => c.id === id);
+    const sender = byId(form.senderId);
+    if (!sender) {
+      setMsg('Pengirim tidak valid');
+      return;
+    }
+    const stops = [
+      { seq: 0, customerId: sender.id, label: sender.name, address: sender.address, city: sender.city, postalCode: null, lat: sender.latitude, lng: sender.longitude },
+      ...validDests.map((id, i) => {
+        const c = byId(id);
+        return {
+          seq: i + 1,
+          customerId: c!.id,
+          label: c!.name,
+          address: c!.address,
+          city: c!.city,
+          postalCode: null,
+          lat: c!.latitude,
+          lng: c!.longitude,
+        };
+      }),
+    ];
+
     setLoading(true);
     const res = await fetch('/api/shipments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        receiverId: stops[stops.length - 1].customerId,
+        stops,
+      }),
     });
     const data = await res.json();
     setLoading(false);
@@ -50,45 +83,77 @@ export default function NewShipmentPage() {
     router.refresh();
   }
 
-  const origin = customers.find((c) => c.id === form.senderId);
-  const dest = customers.find((c) => c.id === form.receiverId);
+  const sender = customers.find((c) => c.id === form.senderId);
+  const destCustomers = destinations.map((id) => customers.find((c) => c.id === id));
+
+  const previewStops: Array<RoutePoint | null> = [
+    sender ? { label: `${sender.name} (${sender.city || '-'})`, city: sender.city, address: sender.address, lat: sender.latitude, lng: sender.longitude } : null,
+    ...destCustomers.map((c) => (c ? { label: `${c.name} (${c.city || '-'})`, city: c.city, address: c.address, lat: c.latitude, lng: c.longitude } : null)),
+  ];
+
+  function setDest(i: number, id: string) {
+    setDestinations((prev) => prev.map((d, idx) => (idx === i ? id : d)));
+  }
+  function addDest() {
+    setDestinations((prev) => [...prev, '']);
+  }
+  function removeDest(i: number) {
+    setDestinations((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : ['']));
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div>
         <h1 className="text-xl font-bold text-slate-900">Buat Shipment Baru</h1>
-        <p className="text-sm text-slate-500">Nomor resi akan dibuat otomatis</p>
+        <p className="text-sm text-slate-500">Nomor resi dibuat otomatis · satu shipment bisa punya beberapa tujuan (multi-stop)</p>
       </div>
 
       <form onSubmit={submit} className="space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Pengirim & Penerima</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Pengirim" required>
-              <select required value={form.senderId} onChange={(e) => setForm({ ...form, senderId: e.target.value })} className={inputCls}>
-                <option value="">-- Pilih customer --</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.city || '-'}</option>)}
-              </select>
-            </Field>
-            <Field label="Penerima" required>
-              <select required value={form.receiverId} onChange={(e) => setForm({ ...form, receiverId: e.target.value })} className={inputCls}>
-                <option value="">-- Pilih customer --</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.city || '-'}</option>)}
-              </select>
-            </Field>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Pengirim & Daftar Tujuan</h2>
+
+          <Field label="Pengirim" required>
+            <select required value={form.senderId} onChange={(e) => setForm({ ...form, senderId: e.target.value })} className={inputCls}>
+              <option value="">-- Pilih customer --</option>
+              {customers.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.city || '-'}</option>)}
+            </select>
+          </Field>
+
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Daftar Perjalanan (Tujuan)</span>
+            </div>
+            {destinations.map((id, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-600">{i + 1}</span>
+                <select value={id} onChange={(e) => setDest(i, e.target.value)} className={inputCls}>
+                  <option value="">-- Pilih customer tujuan --</option>
+                  {customers.filter((c) => c.id !== form.senderId).map((c) => <option key={c.id} value={c.id}>{c.name} · {c.city || '-'}</option>)}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removeDest(i)}
+                  title="Hapus tujuan"
+                  className="shrink-0 rounded-lg border border-slate-200 px-2.5 py-2 text-xs text-slate-400 hover:bg-red-50 hover:text-red-500"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={addDest} className={btnGhost + ' !py-1.5 text-xs'}>+ Tambah Tujuan</button>
           </div>
+
           <div className="mt-4">
-            <RoutePreviewMap
-              origin={origin ? { label: `${origin.name} (${origin.city || '-'})`, city: origin.city, address: origin.address, lat: origin.latitude, lng: origin.longitude } : null}
-              dest={dest ? { label: `${dest.name} (${dest.city || '-'})`, city: dest.city, address: dest.address, lat: dest.latitude, lng: dest.longitude } : null}
-            />
+            <RoutePreviewMap stops={previewStops} />
           </div>
+
           <div className="mt-3 grid gap-2 text-xs text-slate-500 md:grid-cols-2">
             <div className="rounded-lg bg-slate-50 p-3">
-              <b>Asal:</b> {origin ? `${origin.address || '-'}, ${origin.city || '-'}` : '-'}
+              <b>Asal:</b> {sender ? `${sender.address || '-'}, ${sender.city || '-'}` : '-'}
             </div>
             <div className="rounded-lg bg-slate-50 p-3">
-              <b>Tujuan:</b> {dest ? `${dest.address || '-'}, ${dest.city || '-'}` : '-'}
+              <b>Tujuan:</b>{' '}
+              {destCustomers.filter(Boolean).map((c) => `${c?.city || c?.name || '-'}`).join(' → ') || '-'}
             </div>
           </div>
         </div>

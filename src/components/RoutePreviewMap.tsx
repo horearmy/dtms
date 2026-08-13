@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { CITY_COORDS } from '@/lib/constants';
 import { addGoogleStyleTiles } from '@/lib/mapTiles';
 
-type Point = { label: string; city: string | null; address: string | null; lat?: number | null; lng?: number | null };
+export type RoutePoint = { label: string; city: string | null; address: string | null; lat?: number | null; lng?: number | null };
 type LatLng = { lat: number; lng: number };
 
 const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving/';
@@ -15,19 +15,20 @@ function cityCoord(city: string | null): LatLng | null {
   return CITY_COORDS[city.toLowerCase().trim()] || null;
 }
 
-function resolveCoord(p: Point): LatLng | null {
+function resolveCoord(p: RoutePoint): LatLng | null {
   if (p.lat != null && p.lng != null) return { lat: p.lat, lng: p.lng };
   return cityCoord(p.city);
 }
 
-async function fetchRoute(o: LatLng, d: LatLng): Promise<{ points: [number, number][]; distanceKm: number; durationMin: number }> {
-  const res = await fetch(`${OSRM_URL}${o.lng},${o.lat};${d.lng},${d.lat}?overview=full&geometries=geojson`);
+async function fetchRoute(coords: LatLng[]): Promise<{ points: [number, number][]; distanceKm: number; durationMin: number }> {
+  const q = coords.map((c) => `${c.lng},${c.lat}`).join(';');
+  const res = await fetch(`${OSRM_URL}${q}?overview=full&geometries=geojson`);
   if (!res.ok) throw new Error('osrm');
   const json = await res.json();
   const route = json?.routes?.[0];
-  const coords: number[][] = route?.geometry?.coordinates || [];
-  if (!coords.length) throw new Error('osrm empty');
-  const points = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
+  const rc: number[][] = route?.geometry?.coordinates || [];
+  if (!rc.length) throw new Error('osrm empty');
+  const points = rc.map(([lng, lat]) => [lat, lng] as [number, number]);
   const MAX = 150;
   const sampled = points.length <= MAX ? points : (() => {
     const step = Math.ceil(points.length / MAX);
@@ -39,16 +40,18 @@ async function fetchRoute(o: LatLng, d: LatLng): Promise<{ points: [number, numb
   return { points: sampled, distanceKm: Math.round((route.distance || 0) / 1000), durationMin: Math.round((route.duration || 0) / 60) };
 }
 
-export default function RoutePreviewMap({ origin, dest }: { origin: Point | null; dest: Point | null }) {
+export default function RoutePreviewMap({ stops }: { stops: Array<RoutePoint | null> }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInst = useRef<L.Map | null>(null);
   const markerLayer = useRef<L.LayerGroup | null>(null);
   const routeLayer = useRef<L.LayerGroup | null>(null);
-  const [status, setStatus] = useState('Pilih pengirim & penerima untuk melihat rute di peta.');
+  const [status, setStatus] = useState('Pilih pengirim & tujuan untuk melihat rute di peta.');
   const [info, setInfo] = useState<string | null>(null);
 
-  const o = origin ? resolveCoord(origin) : null;
-  const d = dest ? resolveCoord(dest) : null;
+  // koordinat ter-resolve per stop (nilai null = belum tersedia)
+  const resolved = stops.map((p) => (p ? resolveCoord(p) : null));
+  const senderCoord = resolved[0] || null;
+  const destCoords = resolved.slice(1).filter((c): c is LatLng => c != null);
 
   useEffect(() => {
     if (!mapRef.current || mapInst.current) return;
@@ -76,49 +79,59 @@ export default function RoutePreviewMap({ origin, dest }: { origin: Point | null
       routeLayer.current?.clearLayers();
       setInfo(null);
 
-      if (!origin || !dest) {
-        setStatus('Pilih pengirim & penerima untuk melihat rute di peta.');
+      const points = resolved.filter((c): c is LatLng => c != null);
+      if (!stops[0] || stops.length < 2) {
+        setStatus('Lengkapi pengirim & minimal satu tujuan untuk melihat rute di peta.');
         return;
       }
-      if (!o || !d) {
-        setStatus('Koordinat kota pengirim/penerima belum tersedia di database kota.');
+      if (points.length < 2) {
+        setStatus('Koordinat belum tersedia. Tetapkan lokasi pengirim/tujuan pada peta customer.');
         return;
       }
 
-      const green = L.divIcon({
-        className: '',
-        html: `<div style="width:22px;height:22px;background:#059669;border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:11px;">🏭</span></div>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 22],
-      });
-      const red = L.divIcon({
-        className: '',
-        html: `<div style="width:22px;height:22px;background:#dc2626;border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:11px;">📍</span></div>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 22],
-      });
+      // placeholder icon: pengirim (hijau) & tujuan bernomor (merah)
+      const green = (n: string, cls: string, color: string) =>
+        L.divIcon({
+          className: '',
+          html: `<div style="width:24px;height:24px;background:${color};border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:11px;${cls}">${n}</span></div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 24],
+        });
 
-      L.marker([o.lat, o.lng], { icon: green }).addTo(markerLayer.current!).bindPopup(`<div style="font-size:12px;"><b>Pengirim</b><br/>${origin.label}</div>`);
-      L.marker([d.lat, d.lng], { icon: red }).addTo(markerLayer.current!).bindPopup(`<div style="font-size:12px;"><b>Penerima</b><br/>${dest.label}</div>`);
+      // marker per stop yang ter-resolve
+      resolved.forEach((c, i) => {
+        if (!c || !stops[i]) return;
+        const isSender = i === 0;
+        const icon = green(isSender ? '🏭' : String(i), isSender ? '' : 'font-weight:700;color:#fff;', isSender ? '#059669' : '#dc2626');
+        L.marker([c.lat, c.lng], { icon }).addTo(markerLayer.current!).bindPopup(
+          `<div style="font-size:12px;"><b>${isSender ? 'Pengirim' : `Tujuan ${i}`}</b><br/>${stops[i]!.label}</div>`
+        );
+      });
 
       try {
-        const route = await fetchRoute(o, d);
+        const route = await fetchRoute(points);
         if (cancelled) return;
         const line = L.polyline(route.points, { color: '#2563eb', weight: 3, opacity: 0.65 }).addTo(routeLayer.current!);
-        line.bindPopup(`<div style="font-size:12px;">Rute pengiriman · ${route.distanceKm} km · ±${route.durationMin} mnt</div>`);
-        setStatus(`Rute ${origin.label.split(',')[0]} → ${dest.label.split(',')[0]} ditampilkan.`);
+        line.bindPopup(`<div style="font-size:12px;">Rute pengiriman (${points.length} titik) · ${route.distanceKm} km · ±${route.durationMin} mnt</div>`);
+        const firstLabel = stops[0]!.label.split(',')[0];
+        let lastIdx = -1;
+        for (let i = resolved.length - 1; i > 0; i--) {
+          if (resolved[i] != null) { lastIdx = i; break; }
+        }
+        const lastLabel = lastIdx >= 0 && stops[lastIdx] ? stops[lastIdx]!.label.split(',')[0] : '';
+        setStatus(`Rute ${firstLabel}${destCoords.length > 1 ? ` +${stops.length - 2} tujuan` : ''} → ${lastLabel} ditampilkan.`);
         setInfo(`${route.distanceKm} km · ±${Math.floor(route.durationMin / 60)} jam ${route.durationMin % 60} mnt`);
-        map.fitBounds(L.latLngBounds([o.lat, o.lng], [d.lat, d.lng]).pad(0.2));
+        map.fitBounds(L.latLngBounds(points).pad(0.2));
       } catch {
         if (cancelled) return;
-        L.polyline([[o.lat, o.lng], [d.lat, d.lng]], { color: '#2563eb', weight: 3, opacity: 0.6, dashArray: '4 6' }).addTo(routeLayer.current!);
+        L.polyline(points, { color: '#2563eb', weight: 3, opacity: 0.6, dashArray: '4 6' }).addTo(routeLayer.current!);
         setStatus('Rute lurus (layanan routing tidak merespons).');
-        map.fitBounds(L.latLngBounds([o.lat, o.lng], [d.lat, d.lng]).pad(0.2));
+        map.fitBounds(L.latLngBounds(points).pad(0.2));
       }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [origin, dest]);
+  }, [stops]);
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -138,9 +151,11 @@ export default function RoutePreviewMap({ origin, dest }: { origin: Point | null
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-full bg-emerald-500" /> Pengirim
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-red-500" /> Penerima
-        </span>
+        {stops.slice(1).map((_, i) => (
+          <span key={i} className="flex items-center gap-1.5">
+            <span className="flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">{i + 1}</span> Tujuan {i + 1}
+          </span>
+        ))}
         <span className="flex items-center gap-1.5">
           <span className="h-1 w-5 rounded bg-blue-500" /> Rute
         </span>

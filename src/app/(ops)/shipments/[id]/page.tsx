@@ -253,6 +253,34 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         </InfoCard>
       </div>
 
+      {/* Daftar perjalanan multi-stop */}
+      {s.stops && s.stops.length >= 2 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-sm font-bold text-slate-900">Daftar Perjalanan ({s.stops.length} titik)</h2>
+          <ol className="space-y-0">
+            {s.stops.map((st: any, i: number) => (
+              <li key={st.id} className="relative flex gap-3 pb-4 last:pb-0">
+                {i < s.stops.length - 1 && <span className="absolute left-[15px] top-8 h-full w-0.5 bg-slate-200" />}
+                <span
+                  className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${i === 0 ? 'bg-emerald-500' : 'bg-red-500'}`}
+                >
+                  {i === 0 ? '🏭' : i}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">
+                    {i === 0 ? 'Pengirim' : `Tujuan ${i}`}: {st.label}
+                  </p>
+                  <p className="text-xs text-slate-500">{st.city || '-'}{st.address ? ` · ${st.address}` : ''}</p>
+                  {st.latitude != null && st.longitude != null && (
+                    <p className="text-[11px] font-mono text-slate-400">📍 {st.latitude.toFixed(5)}, {st.longitude.toFixed(5)}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-2">
         {/* Timeline */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     include: {
       assignments: { include: { driver: true, vehicle: true }, take: 1 },
       events: { orderBy: { createdAt: 'desc' }, take: 1 },
+      stops: { orderBy: { seq: 'asc' } },
     },
   });
 
@@ -55,6 +56,9 @@ export async function GET(req: NextRequest) {
       originLng: s.originLng ?? s.events[0]?.longitude ?? null,
       destLat: s.destLat ?? s.events[0]?.latitude ?? null,
       destLng: s.destLng ?? s.events[0]?.longitude ?? null,
+      stops: s.stops
+        .filter((st) => st.latitude != null && st.longitude != null)
+        .map((st) => ({ seq: st.seq, label: st.label, latitude: st.latitude, longitude: st.longitude })),
     })),
   });
 }

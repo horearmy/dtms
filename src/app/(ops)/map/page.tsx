@@ -13,6 +13,7 @@ type ShipPos = {
   id: string; trackingNumber: string; status: string; destination: string; origin: string;
   driver: string | null; vehicle: string | null;
   originLat: number | null; originLng: number | null; destLat: number | null; destLng: number | null;
+  stops?: { seq: number; label: string; latitude: number; longitude: number }[];
 };
 type Geofence = {
   id: string; name: string; latitude: number; longitude: number; radiusMeters: number; type: string; active: boolean;
@@ -30,13 +31,14 @@ function statusColor(status: string) {
 
 const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving/';
 
-async function fetchRoute(originLat: number, originLng: number, destLat: number, destLng: number): Promise<[number, number][]> {
-  const res = await fetch(`${OSRM_URL}${originLng},${originLat};${destLng},${destLat}?overview=full&geometries=geojson`);
+async function fetchRoute(coords: Array<[number, number]>): Promise<[number, number][]> {
+  const q = coords.map(([lat, lng]) => `${lng},${lat}`).join(';');
+  const res = await fetch(`${OSRM_URL}${q}?overview=full&geometries=geojson`);
   if (!res.ok) throw new Error('osrm');
   const json = await res.json();
-  const coords: number[][] = json?.routes?.[0]?.geometry?.coordinates || [];
-  if (!coords.length) throw new Error('osrm empty');
-  const points = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
+  const c: number[][] = json?.routes?.[0]?.geometry?.coordinates || [];
+  if (!c.length) throw new Error('osrm empty');
+  const points = c.map(([lng, lat]) => [lat, lng] as [number, number]);
   const MAX = 150;
   if (points.length <= MAX) return points;
   const step = Math.ceil(points.length / MAX);
@@ -118,11 +120,16 @@ export default function MapPage() {
       const result: RouteLine[] = [];
       await Promise.all(
         routable.map(async (s) => {
+          // jika shipment multi-stop, gunakan seluruh titik perjalanan sebagai waypoint
+          const waypoints: Array<[number, number]> =
+            s.stops && s.stops.length >= 3
+              ? s.stops.map((st) => [st.latitude, st.longitude])
+              : [[s.originLat!, s.originLng!], [s.destLat!, s.destLng!]];
           try {
-            const points = await fetchRoute(s.originLat!, s.originLng!, s.destLat!, s.destLng!);
+            const points = await fetchRoute(waypoints);
             if (active) result.push({ id: s.id, trackingNumber: s.trackingNumber, points, status: s.status });
           } catch {
-            if (active) result.push({ id: s.id, trackingNumber: s.trackingNumber, points: [[s.originLat!, s.originLng!], [s.destLat!, s.destLng!]], status: s.status });
+            if (active) result.push({ id: s.id, trackingNumber: s.trackingNumber, points: waypoints, status: s.status });
           }
         })
       );

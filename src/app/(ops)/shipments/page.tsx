@@ -26,6 +26,7 @@ type Shipment = {
   createdAt: string;
   sender: { name: string };
   receiver: { name: string };
+  stops?: unknown[];
   assignments: { driver: { name: string }; vehicle: { vehicleNumber: string } | null }[];
 };
 
@@ -103,7 +104,12 @@ function ShipmentsInner() {
                   </td>
                   <td className="px-4 py-3 text-slate-700">{s.sender.name}</td>
                   <td className="px-4 py-3 text-slate-700">{s.receiver.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{s.destination}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {s.destination}
+                    {(s.stops?.length || 0) > 2 && (
+                      <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-600">multi-stop · {s.stops?.length} titik</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{formatNumber(s.weight)} kg</td>
                   <td className="px-4 py-3 text-xs text-slate-500">{s.serviceType}</td>
                   <td className="px-4 py-3"><StatusBadge status={s.status} /></td>
