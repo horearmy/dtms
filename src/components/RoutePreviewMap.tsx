@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { CITY_COORDS } from '@/lib/constants';
+import { addGoogleStyleTiles } from '@/lib/mapTiles';
 
 type Point = { label: string; city: string | null; address: string | null };
 type LatLng = { lat: number; lng: number };
@@ -51,10 +52,7 @@ export default function RoutePreviewMap({ origin, dest }: { origin: Point | null
       const L = (await import('leaflet')).default;
       if (cancelled || !mapRef.current) return;
       const map = L.map(mapRef.current).setView([-6.21, 106.83], 11);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(map);
+      addGoogleStyleTiles(map, L);
       markerLayer.current = L.layerGroup().addTo(map);
       routeLayer.current = L.layerGroup().addTo(map);
       mapInst.current = map;

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import StatusBadge from '@/components/StatusBadge';
+import { addGoogleStyleTiles } from '@/lib/mapTiles';
 
 type DriverPos = {
   driverId: string; name: string; vehicleNumber: string | null;
@@ -68,10 +69,7 @@ export default function MapPage() {
       const L = (await import('leaflet')).default;
       if (cancelled || !mapRef.current) return;
       const map = L.map(mapRef.current).setView(center, 12);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(map);
+      addGoogleStyleTiles(map, L);
       driverLayer.current = L.layerGroup().addTo(map);
       shipLayer.current = L.layerGroup().addTo(map);
       geofenceLayer.current = L.layerGroup().addTo(map);
