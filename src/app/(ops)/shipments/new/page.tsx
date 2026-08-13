@@ -6,7 +6,7 @@ import { Field, inputCls, btnPrimary, btnGhost } from '@/components/ui';
 import RoutePreviewMap from '@/components/RoutePreviewMap';
 import { SERVICE_TYPES } from '@/lib/constants';
 
-type Customer = { id: string; name: string; phone: string; city: string | null; address: string | null };
+type Customer = { id: string; name: string; phone: string; city: string | null; address: string | null; latitude: number | null; longitude: number | null };
 
 export default function NewShipmentPage() {
   const router = useRouter();
@@ -79,8 +79,8 @@ export default function NewShipmentPage() {
           </div>
           <div className="mt-4">
             <RoutePreviewMap
-              origin={origin ? { label: `${origin.name} (${origin.city || '-'})`, city: origin.city, address: origin.address } : null}
-              dest={dest ? { label: `${dest.name} (${dest.city || '-'})`, city: dest.city, address: dest.address } : null}
+              origin={origin ? { label: `${origin.name} (${origin.city || '-'})`, city: origin.city, address: origin.address, lat: origin.latitude, lng: origin.longitude } : null}
+              dest={dest ? { label: `${dest.name} (${dest.city || '-'})`, city: dest.city, address: dest.address, lat: dest.latitude, lng: dest.longitude } : null}
             />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-500 md:grid-cols-2">

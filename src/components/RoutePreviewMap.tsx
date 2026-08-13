@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { CITY_COORDS } from '@/lib/constants';
 import { addGoogleStyleTiles } from '@/lib/mapTiles';
 
-type Point = { label: string; city: string | null; address: string | null };
+type Point = { label: string; city: string | null; address: string | null; lat?: number | null; lng?: number | null };
 type LatLng = { lat: number; lng: number };
 
 const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving/';
@@ -13,6 +13,11 @@ const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving/';
 function cityCoord(city: string | null): LatLng | null {
   if (!city) return null;
   return CITY_COORDS[city.toLowerCase().trim()] || null;
+}
+
+function resolveCoord(p: Point): LatLng | null {
+  if (p.lat != null && p.lng != null) return { lat: p.lat, lng: p.lng };
+  return cityCoord(p.city);
 }
 
 async function fetchRoute(o: LatLng, d: LatLng): Promise<{ points: [number, number][]; distanceKm: number; durationMin: number }> {
@@ -42,8 +47,8 @@ export default function RoutePreviewMap({ origin, dest }: { origin: Point | null
   const [status, setStatus] = useState('Pilih pengirim & penerima untuk melihat rute di peta.');
   const [info, setInfo] = useState<string | null>(null);
 
-  const o = origin ? cityCoord(origin.city) : null;
-  const d = dest ? cityCoord(dest.city) : null;
+  const o = origin ? resolveCoord(origin) : null;
+  const d = dest ? resolveCoord(dest) : null;
 
   useEffect(() => {
     if (!mapRef.current || mapInst.current) return;
