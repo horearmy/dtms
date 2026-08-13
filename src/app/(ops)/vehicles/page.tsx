@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
 import { formatNumber } from '@/lib/constants';
+import PhotoField from '@/components/PhotoField';
 
 type Vehicle = {
   id: string;
@@ -10,14 +11,36 @@ type Vehicle = {
   type: string;
   capacity: number;
   status: string;
+  photoFront: string | null;
+  photoBack: string | null;
+  photoRight: string | null;
+  photoLeft: string | null;
   _count?: { assignments: number };
 };
+
+const emptyForm = {
+  vehicleNumber: '',
+  type: '',
+  capacity: '',
+  status: 'AVAILABLE',
+  photoFront: null as string | null,
+  photoBack: null as string | null,
+  photoRight: null as string | null,
+  photoLeft: null as string | null,
+};
+
+const PHOTO_LABELS: { key: keyof typeof emptyForm; label: string }[] = [
+  { key: 'photoFront', label: 'Depan' },
+  { key: 'photoBack', label: 'Belakang' },
+  { key: 'photoRight', label: 'Samping Kanan' },
+  { key: 'photoLeft', label: 'Samping Kiri' },
+];
 
 export default function VehiclesPage() {
   const [items, setItems] = useState<Vehicle[]>([]);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Vehicle | null>(null);
-  const [form, setForm] = useState({ vehicleNumber: '', type: '', capacity: '', status: 'AVAILABLE' });
+  const [form, setForm] = useState(emptyForm);
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -29,13 +52,22 @@ export default function VehiclesPage() {
 
   function openNew() {
     setEdit(null);
-    setForm({ vehicleNumber: '', type: '', capacity: '', status: 'AVAILABLE' });
+    setForm(emptyForm);
     setMsg('');
     setOpen(true);
   }
   function openEdit(v: Vehicle) {
     setEdit(v);
-    setForm({ vehicleNumber: v.vehicleNumber, type: v.type, capacity: String(v.capacity), status: v.status });
+    setForm({
+      vehicleNumber: v.vehicleNumber,
+      type: v.type,
+      capacity: String(v.capacity),
+      status: v.status,
+      photoFront: v.photoFront,
+      photoBack: v.photoBack,
+      photoRight: v.photoRight,
+      photoLeft: v.photoLeft,
+    });
     setMsg('');
     setOpen(true);
   }
@@ -59,6 +91,8 @@ export default function VehiclesPage() {
     if (res.ok) await load();
   }
 
+  const photoCount = (v: Vehicle) => [v.photoFront, v.photoBack, v.photoRight, v.photoLeft].filter(Boolean).length;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -77,6 +111,7 @@ export default function VehiclesPage() {
                 <th className="px-4 py-3">No. Kendaraan</th>
                 <th className="px-4 py-3">Jenis</th>
                 <th className="px-4 py-3">Kapasitas (kg)</th>
+                <th className="px-4 py-3">Foto</th>
                 <th className="px-4 py-3">Penugasan</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Aksi</th>
@@ -88,6 +123,22 @@ export default function VehiclesPage() {
                   <td className="px-4 py-3 font-mono text-xs font-medium text-slate-800">{v.vehicleNumber}</td>
                   <td className="px-4 py-3 text-slate-600">{v.type}</td>
                   <td className="px-4 py-3 text-slate-600">{formatNumber(v.capacity)}</td>
+                  <td className="px-4 py-3">
+                    {photoCount(v) > 0 ? (
+                      <div className="flex gap-1">
+                        {[v.photoFront, v.photoBack, v.photoRight, v.photoLeft].map((p, i) =>
+                          p ? (
+                            <img key={i} src={p} alt={`foto ${i + 1}`}
+                              className="h-9 w-12 rounded border border-slate-200 object-cover"
+                              onClick={() => window.open(p, '_blank')}
+                            />
+                          ) : null
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">-</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{v._count?.assignments || 0}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
@@ -103,14 +154,14 @@ export default function VehiclesPage() {
                   </td>
                 </tr>
               ))}
-              {items.length === 0 && <EmptyRow colSpan={6} text="Belum ada kendaraan" />}
+              {items.length === 0 && <EmptyRow colSpan={7} text="Belum ada kendaraan" />}
             </tbody>
           </table>
         </div>
       </div>
 
-      <Modal open={open} title={edit ? 'Edit Kendaraan' : 'Tambah Kendaraan'} onClose={() => setOpen(false)}>
-        <form onSubmit={save} className="space-y-3">
+      <Modal open={open} title={edit ? 'Edit Kendaraan' : 'Tambah Kendaraan'} onClose={() => setOpen(false)} wide>
+        <form onSubmit={save} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <Field label="No. Kendaraan" required>
               <input required value={form.vehicleNumber} onChange={(e) => setForm({ ...form, vehicleNumber: e.target.value })} className={inputCls} placeholder="B 1234 CD" />
@@ -128,6 +179,14 @@ export default function VehiclesPage() {
                 <option value="MAINTENANCE">Perawatan</option>
               </select>
             </Field>
+          </div>
+          <div>
+            <div className="mb-2 text-xs font-semibold text-slate-600">Foto Kendaraan</div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {PHOTO_LABELS.map(({ key, label }) => (
+                <PhotoField key={key} label={label} value={form[key]} onChange={(url) => setForm({ ...form, [key]: url })} />
+              ))}
+            </div>
           </div>
           {msg && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{msg}</div>}
           <div className="flex justify-end gap-2 pt-2">

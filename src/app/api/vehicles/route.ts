@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
         type: body.type,
         capacity: Number(body.capacity) || 0,
         status: body.status || 'AVAILABLE',
+        photoFront: body.photoFront || null,
+        photoBack: body.photoBack || null,
+        photoRight: body.photoRight || null,
+        photoLeft: body.photoLeft || null,
       },
     });
     await logAudit(session, 'CREATE_VEHICLE', 'VEHICLE', vehicle.vehicleNumber);

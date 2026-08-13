@@ -15,6 +15,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         type: body.type,
         capacity: body.capacity != null ? Number(body.capacity) : undefined,
         status: body.status,
+        photoFront: body.photoFront || null,
+        photoBack: body.photoBack || null,
+        photoRight: body.photoRight || null,
+        photoLeft: body.photoLeft || null,
       },
     });
     await logAudit(session, 'UPDATE_VEHICLE', 'VEHICLE', vehicle.vehicleNumber);
