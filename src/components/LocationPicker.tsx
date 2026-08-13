@@ -45,11 +45,20 @@ export default function LocationPicker({ value, onChange, mapHeight = 'h-72' }: 
     value.lat != null && value.lng != null ? `${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}` : 'Belum dipilih'
   );
 
+  function makePinIcon(L: typeof import('leaflet')) {
+    return L.divIcon({
+      className: '',
+      html: `<div style="width:28px;height:28px;background:#2563eb;border:2.5px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.35);"><span style="transform:rotate(45deg);font-size:13px;line-height:1;">📍</span></div>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 28],
+    });
+  }
+
   function placeMarker(lat: number, lng: number): void {
     const L = LRef.current;
     if (!L || !mapInst.current) return;
     if (markerRef.current) markerRef.current.remove();
-    markerRef.current = L.marker([lat, lng]).addTo(mapInst.current);
+    markerRef.current = L.marker([lat, lng], { icon: makePinIcon(L) }).addTo(mapInst.current);
   }
 
   async function reverseGeocode(lat: number, lng: number) {
@@ -77,7 +86,7 @@ export default function LocationPicker({ value, onChange, mapHeight = 'h-72' }: 
       );
       addGoogleStyleTiles(map, L);
       if (hasCoords) {
-        markerRef.current = L.marker([value.lat as number, value.lng as number]).addTo(map);
+        markerRef.current = L.marker([value.lat as number, value.lng as number], { icon: makePinIcon(L) }).addTo(map);
       }
       map.on('click', (e: { latlng: { lat: number; lng: number } }) => {
         placeMarker(e.latlng.lat, e.latlng.lng);
