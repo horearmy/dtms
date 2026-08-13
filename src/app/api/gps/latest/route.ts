@@ -48,10 +48,13 @@ export async function GET(req: NextRequest) {
       trackingNumber: s.trackingNumber,
       status: s.status,
       destination: s.destination,
+      origin: s.origin,
       driver: s.assignments[0]?.driver.name || null,
       vehicle: s.assignments[0]?.vehicle?.vehicleNumber || null,
-      destLat: s.events[0]?.latitude,
-      destLng: s.events[0]?.longitude,
+      originLat: s.originLat ?? s.events[0]?.latitude ?? null,
+      originLng: s.originLng ?? s.events[0]?.longitude ?? null,
+      destLat: s.destLat ?? s.events[0]?.latitude ?? null,
+      destLng: s.destLng ?? s.events[0]?.longitude ?? null,
     })),
   });
 }
