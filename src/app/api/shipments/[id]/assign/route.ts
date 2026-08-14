@@ -42,6 +42,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         { status: 400 }
       );
     }
+    if (vehicle.returning) {
+      return NextResponse.json(
+        { error: `Kendaraan ${vehicle.vehicleNumber} sedang kembali ke gudang. Pilih kendaraan lain.` },
+        { status: 400 }
+      );
+    }
   }
 
   const driver = await prisma.driver.findUnique({ where: { id: driverId } });
@@ -60,6 +66,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       {
         error: `Driver ${driver.name} masih dalam perjalanan (resi ${activeTrip.shipment.trackingNumber}) dan belum kembali. Pilih driver lain.`,
       },
+      { status: 400 }
+    );
+  }
+  if (driver.returning) {
+    return NextResponse.json(
+      { error: `Driver ${driver.name} sedang kembali ke gudang. Pilih driver lain.` },
       { status: 400 }
     );
   }

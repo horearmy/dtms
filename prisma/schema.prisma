@@ -165,9 +165,12 @@ model Driver {
   userId         String?       @unique
   user           User?         @relation(fields: [userId], references: [id])
   status         DriverStatus  @default(ACTIVE)
+  returning      Boolean       @default(false)
+  returnedAt     DateTime?
   assignments    DeliveryAssignment[]
   gpsLogs        GpsLog[]
   geofenceEvents GeofenceEvent[]
+  dailyReports   DailyReport[]
 }
 
 model Vehicle {
@@ -181,8 +184,27 @@ model Vehicle {
   photoBack     String?
   photoRight    String?
   photoLeft     String?
+  returning     Boolean @default(false)
+  returnedAt    DateTime?
   assignments   DeliveryAssignment[]
   gpsLogs       GpsLog[]
+}
+
+model DailyReport {
+  id              String   @id @default(cuid())
+  driverId        String
+  driver          Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  reportDate      DateTime
+  deliveredCount  Int      @default(0)
+  failedCount     Int      @default(0)
+  rescheduledCount Int     @default(0)
+  fuelLiter       Float?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([driverId, reportDate])
+  @@index([reportDate])
 }
 
 model DeliveryAssignment {

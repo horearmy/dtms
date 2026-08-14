@@ -31,19 +31,58 @@ export async function GET(req: NextRequest) {
     if (!latestByDriver.has(g.driverId)) latestByDriver.set(g.driverId, g);
   }
 
+  // gudang asal per driver (asal shipment pada penugasan terbarunya) utk rute kembali
+  const driverIds = Array.from(latestByDriver.keys());
+  const latestAssignments = driverIds.length
+    ? await prisma.deliveryAssignment.findMany({
+        where: { driverId: { in: driverIds } },
+        orderBy: { assignedAt: 'asc' },
+        distinct: ['driverId'],
+        select: {
+          driverId: true,
+          shipment: {
+            select: {
+              originLat: true,
+              originLng: true,
+              origin: true,
+              events: { orderBy: { createdAt: 'desc' }, take: 1 },
+            },
+          },
+        },
+      })
+    : [];
+  const warehouseByDriver = new Map(
+    latestAssignments.map((a) => [
+      a.driverId,
+      {
+        name: a.shipment.origin,
+        lat: a.shipment.originLat ?? a.shipment.events[0]?.latitude ?? null,
+        lng: a.shipment.originLng ?? a.shipment.events[0]?.longitude ?? null,
+      },
+    ])
+  );
+
   return NextResponse.json({
-    drivers: Array.from(latestByDriver.values()).map((g) => ({
-      driverId: g.driverId,
-      name: g.driver.name,
-      vehicleNumber: g.vehicle?.vehicleNumber || null,
-      latitude: g.latitude,
-      longitude: g.longitude,
-      speed: g.speed,
-      heading: g.heading,
-      accuracy: g.accuracy,
-      battery: g.battery,
-      updatedAt: g.createdAt,
-    })),
+    drivers: Array.from(latestByDriver.values()).map((g) => {
+      const w = warehouseByDriver.get(g.driverId);
+      return {
+        driverId: g.driverId,
+        name: g.driver.name,
+        vehicleNumber: g.vehicle?.vehicleNumber || null,
+        latitude: g.latitude,
+        longitude: g.longitude,
+        speed: g.speed,
+        heading: g.heading,
+        accuracy: g.accuracy,
+        battery: g.battery,
+        returning: g.driver.returning,
+        returnedAt: g.driver.returnedAt,
+        warehouseName: w?.name || null,
+        warehouseLat: w?.lat ?? null,
+        warehouseLng: w?.lng ?? null,
+        updatedAt: g.createdAt,
+      };
+    }),
     shipments: shipments.map((s) => ({
       id: s.id,
       trackingNumber: s.trackingNumber,

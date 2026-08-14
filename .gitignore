@@ -12,3 +12,4 @@ prisma/dev.db-journal
 .env.production
 .env.*.local
 storage
+*.tsbuildinfo

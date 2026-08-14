@@ -8,6 +8,8 @@ import { addGoogleStyleTiles } from '@/lib/mapTiles';
 type DriverPos = {
   driverId: string; name: string; vehicleNumber: string | null;
   latitude: number; longitude: number; speed: number | null; battery: number | null; updatedAt: string;
+  returning: boolean; returnedAt: string | null;
+  warehouseName: string | null; warehouseLat: number | null; warehouseLng: number | null;
 };
 type ShipPos = {
   id: string; trackingNumber: string; status: string; destination: string; origin: string;
@@ -19,6 +21,7 @@ type Geofence = {
   id: string; name: string; latitude: number; longitude: number; radiusMeters: number; type: string; active: boolean;
 };
 type RouteLine = { id: string; trackingNumber: string; points: [number, number][]; status: string };
+type ReturnRoute = { id: string; name: string; points: [number, number][] };
 
 function statusColor(status: string) {
   if (status === 'DELIVERED') return '#059669';
@@ -59,6 +62,7 @@ export default function MapPage() {
   const [ships, setShips] = useState<ShipPos[]>([]);
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [routes, setRoutes] = useState<RouteLine[]>([]);
+  const [returnRoutes, setReturnRoutes] = useState<ReturnRoute[]>([]);
   const [showRoutes, setShowRoutes] = useState(true);
   const [routeLoaded, setRouteLoaded] = useState(false);
   const [lastUpdate, setLastUpdate] = useState('');
@@ -140,6 +144,36 @@ export default function MapPage() {
     return () => { active = false; };
   }, [ships]);
 
+  // rute kembali (kuning) untuk driver yang sedang kembali ke gudang
+  useEffect(() => {
+    let active = true;
+    const returning = drivers.filter(
+      (d) => d.returning && d.warehouseLat != null && d.warehouseLng != null
+    );
+    if (returning.length === 0) {
+      setReturnRoutes([]);
+      return;
+    }
+    (async () => {
+      const result: ReturnRoute[] = [];
+      await Promise.all(
+        returning.map(async (d) => {
+          const from: [number, number] = [d.latitude, d.longitude];
+          const to: [number, number] = [d.warehouseLat!, d.warehouseLng!];
+          try {
+            const points = await fetchRoute([from, to]);
+            if (active) result.push({ id: d.driverId, name: d.name, points });
+          } catch {
+            if (active) result.push({ id: d.driverId, name: d.name, points: [from, to] });
+          }
+        })
+      );
+      if (!active) return;
+      setReturnRoutes(result);
+    })();
+    return () => { active = false; };
+  }, [drivers]);
+
   useEffect(() => {
     const map = leafletRef.current;
     if (!map) return;
@@ -179,15 +213,23 @@ export default function MapPage() {
         iconSize: [34, 34],
         iconAnchor: [17, 30],
       });
+      const driverReturnIcon = L.divIcon({
+        className: '',
+        html: `<div style="width:34px;height:34px;background:#facc15;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:14px;">🚚</span></div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 30],
+      });
 
       drivers.forEach((d) => {
-        const m = L.marker([d.latitude, d.longitude], { icon: driverIcon }).addTo(driverLayer.current!);
+        const m = L.marker([d.latitude, d.longitude], { icon: d.returning ? driverReturnIcon : driverIcon }).addTo(driverLayer.current!);
         m.bindPopup(
           `<div style="font-size:12px;min-width:170px;">
              <b style="font-size:13px;">${d.name}</b><br/>
+             ${d.returning ? '<span style="display:inline-block;background:#fef3c7;color:#92400e;padding:0 6px;border-radius:9999px;font-weight:700;">🚚 Kembali ke Gudang</span><br/>' : ''}
              Kendaraan: ${d.vehicleNumber || '-'}<br/>
              Kecepatan: ${d.speed != null ? d.speed + ' km/h' : '-'}<br/>
              Baterai: ${d.battery != null ? d.battery + '%' : '-'}<br/>
+             Gudang asal: ${d.warehouseName || '-'}<br/>
              Update: ${new Date(d.updatedAt).toLocaleTimeString('id-ID')}
            </div>`
         );
@@ -228,6 +270,29 @@ export default function MapPage() {
       if (cancelled) return;
       routeLayer.current?.clearLayers();
       if (!showRoutes) return;
+
+      // rute kembali kuning (driver sedang kembali ke gudang)
+      returnRoutes.forEach((r) => {
+        const line = L.polyline(r.points, {
+          color: '#facc15',
+          weight: 4,
+          opacity: 0.9,
+          dashArray: '8 6',
+        }).addTo(routeLayer.current!);
+        line.bindPopup(
+          `<div style="font-size:12px;min-width:160px;">
+             <b>${r.name}</b> — kembali ke gudang<br/>
+             Rute kembali · ${r.points.length} titik
+           </div>`
+        );
+        if (r.points.length > 1) {
+          const [aLat, aLng] = r.points[0];
+          L.circleMarker([aLat, aLng], { radius: 4, color: '#fff', weight: 2, fillColor: '#facc15', fillOpacity: 1 }).addTo(routeLayer.current!);
+          const [bLat, bLng] = r.points[r.points.length - 1];
+          L.circleMarker([bLat, bLng], { radius: 5, color: '#fff', weight: 2, fillColor: '#a16207', fillOpacity: 1 }).addTo(routeLayer.current!);
+        }
+      });
+
       routes.forEach((r) => {
         const color = statusColor(r.status);
         const line = L.polyline(r.points, {
@@ -253,7 +318,7 @@ export default function MapPage() {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routes, showRoutes]);
+  }, [routes, showRoutes, returnRoutes]);
 
   const routeFallback = (r: RouteLine) => r.points.length === 2;
 
@@ -269,9 +334,11 @@ export default function MapPage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-brand-600" /> Driver</span>
+            <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-yellow-400" /> Driver Kembali</span>
             <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-amber-600" /> Shipment</span>
             <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-violet-500" /> Geofence</span>
             <span className="flex items-center gap-1"><span className="h-1.5 w-5 rounded bg-emerald-500" /> Rute</span>
+            <span className="flex items-center gap-1"><span className="h-1.5 w-5 rounded bg-yellow-300" /> Rute Kembali</span>
           </div>
           <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600">
             <input
@@ -300,10 +367,16 @@ export default function MapPage() {
             {drivers.map((d) => (
               <div key={d.driverId} className="rounded-lg border border-slate-100 p-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-800">{d.name}</span>
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    {d.name}
+                    {d.returning && (
+                      <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-bold text-yellow-700">Kembali ke Gudang</span>
+                    )}
+                  </span>
                   <span className="text-xs text-slate-400">{d.speed != null ? `${d.speed} km/h` : '-'}</span>
                 </div>
                 <div className="text-xs text-slate-500">{d.vehicleNumber || '-'} · Update {new Date(d.updatedAt).toLocaleTimeString('id-ID')}</div>
+                {d.returning && d.warehouseName && <div className="mt-1 text-[11px] text-yellow-700">Menuju: {d.warehouseName}</div>}
               </div>
             ))}
             {drivers.length === 0 && <p className="text-sm text-slate-400">Belum ada data GPS 2 jam terakhir</p>}

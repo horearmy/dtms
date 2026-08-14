@@ -57,6 +57,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         { status: 400 }
       );
     }
+    if (vehicle.returning) {
+      return NextResponse.json(
+        { error: 'Kendaraan sedang kembali ke gudang. Selesaikan status kembali terlebih dahulu.' },
+        { status: 400 }
+      );
+    }
   }
 
   const scan = await prisma.warehouseScan.create({

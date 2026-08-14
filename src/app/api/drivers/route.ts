@@ -21,7 +21,7 @@ export async function GET() {
       where: { driverId: d.id, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
       select: { shipment: { select: { trackingNumber: true } } },
     });
-    scored.push({ ...d, stat, busy: !!trip, activeTracking: trip?.shipment.trackingNumber || null });
+    scored.push({ ...d, stat, busy: !!trip || d.returning, activeTracking: trip?.shipment.trackingNumber || null });
   }
   return NextResponse.json(scored);
 }

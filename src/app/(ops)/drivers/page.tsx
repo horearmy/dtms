@@ -14,6 +14,8 @@ type Driver = {
   _count?: { assignments: number };
   busy?: boolean;
   activeTracking?: string | null;
+  returning?: boolean;
+  returnedAt?: string | null;
 };
 
 export default function DriversPage() {
@@ -95,7 +97,11 @@ export default function DriversPage() {
                   <td className="px-4 py-3 text-slate-500">{d.user?.username || '-'}</td>
                   <td className="px-4 py-3 text-slate-600">{d._count?.assignments || 0}</td>
                   <td className="px-4 py-3">
-                    {d.busy ? (
+                    {d.returning ? (
+                      <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700">
+                        Kembali ke Gudang
+                      </span>
+                    ) : d.busy ? (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
                         Perjalanan{d.activeTracking ? ` · ${d.activeTracking}` : ''}
                       </span>

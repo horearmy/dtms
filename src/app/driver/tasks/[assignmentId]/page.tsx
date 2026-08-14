@@ -21,12 +21,12 @@ type Assignment = {
     sender: { name: string; phone: string };
     receiver: { name: string; phone: string; address: string | null; city: string | null };
     events: { id: string; status: string; notes: string | null; createdAt: string }[];
-    pods: { receiverName: string; deliveredAt: string; signature: string | null; notes: string | null }[];
+    pods: { receiverName: string; deliveredAt: string; signature: string | null; photo: string | null; notes: string | null }[];
   };
 };
 
 const NEXT_STEP: Record<string, { status: string; label: string; hint: string }> = {
-  DISPATCHED: { status: 'IN_TRANSIT', label: 'Mulai Perjalanan', hint: 'Tandai setelah barang diberangkatkan dari gudang.' },
+  DISPATCHED: { status: 'IN_TRANSIT', label: 'Mulai Pengiriman', hint: 'Tandai setelah barang diberangkatkan dari gudang.' },
   IN_TRANSIT: { status: 'ARRIVED_AT_HUB', label: 'Tiba di Hub', hint: 'Tandai saat tiba di hub tujuan.' },
   ARRIVED_AT_HUB: { status: 'OUT_FOR_DELIVERY', label: 'Mulai Antar', hint: 'Tandai saat mulai mengantar ke penerima.' },
 };
@@ -44,6 +44,36 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
   const [photo, setPhoto] = useState('');
   const [notes, setNotes] = useState('');
 
+  const [returning, setReturning] = useState(false);
+  const [returnedAt, setReturnedAt] = useState<string | null>(null);
+  const [retBusy, setRetBusy] = useState(false);
+
+  async function loadDriverStatus() {
+    const res = await fetch('/api/driver/status');
+    if (res.ok) {
+      const d = (await res.json()).driver;
+      setReturning(!!d.returning);
+      setReturnedAt(d.returnedAt || null);
+    }
+  }
+
+  async function toggleReturn(action: 'start' | 'complete') {
+    if (retBusy) return;
+    setRetBusy(true);
+    setMsg('');
+    const res = await fetch('/api/driver/return', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    });
+    if (!res.ok) setMsg((await res.json()).error || 'Gagal menyimpan status kembali');
+    else {
+      setMsg(action === 'start' ? 'Berhasil! Perjalanan kembali ke gudang dimulai ✓' : 'Berhasil! Driver sudah kembali ke gudang.');
+      await loadDriverStatus();
+    }
+    setRetBusy(false);
+  }
+
   async function load() {
     setLoading(true);
     const res = await fetch(`/api/driver/tasks/${assignmentId}`);
@@ -57,7 +87,7 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
     setReceiverName(data.shipment.receiver.name);
     setLoading(false);
   }
-  useEffect(() => { load(); }, [assignmentId]);
+  useEffect(() => { load(); loadDriverStatus(); }, [assignmentId]);
 
   function updateStatus(status: string, notes?: string, lat?: number | null, lng?: number | null) {
     return fetch(`/api/shipments/${task!.shipment.id}/events`, {
@@ -226,16 +256,85 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
         </form>
       )}
 
-      {/* Sudah selesai */}
+      {/* Laporan Pengiriman (setelah POD) */}
       {pod && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center">
-          <div className="text-lg font-bold text-emerald-700">✓ Delivery Selesai</div>
-          <div className="mt-1 text-sm text-emerald-600">
-            Diterima oleh <b>{pod.receiverName}</b> · {formatDateTime(pod.deliveredAt)}
+        <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold text-emerald-700">Laporan Pengiriman</h2>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">✓ Delivery Selesai</span>
           </div>
-          {pod.signature && pod.signature.startsWith('data:image') && pod.signature.length > 1000 && (
-            <img src={pod.signature} alt="tanda tangan" className="mx-auto mt-3 h-24 bg-white rounded-lg" />
-          )}
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                <span className="text-slate-500">Resi</span>
+                <span className="font-mono font-semibold text-slate-800">{s.trackingNumber}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                <span className="text-slate-500">Penerima</span>
+                <span className="font-semibold text-slate-800">{pod.receiverName}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                <span className="text-slate-500">Waktu Terima</span>
+                <span className="font-semibold text-slate-800">{formatDateTime(pod.deliveredAt)}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                <span className="text-slate-500">Lokasi Terima</span>
+                <span className="font-semibold text-slate-800">{s.destination}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-1.5">
+                <span className="text-slate-500">Catatan Driver</span>
+                <span className="max-w-[55%] text-right font-semibold text-slate-800">{pod.notes || '-'}</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {pod.signature && pod.signature.startsWith('data:image') && pod.signature.length > 1000 && (
+                <div>
+                  <div className="mb-1 text-[11px] uppercase text-slate-400">Tanda Tangan Penerima</div>
+                  <img src={pod.signature} alt="tanda tangan" className="h-20 rounded-lg border border-slate-200 bg-white" />
+                </div>
+              )}
+              {pod.photo && (
+                <div>
+                  <div className="mb-1 text-[11px] uppercase text-slate-400">Foto Bukti</div>
+                  <img src={pod.photo} alt="bukti" className="h-20 rounded-lg border border-slate-200 bg-white object-cover" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Kembali ke Gudang Asal (muncul otomatis setelah delivery selesai) */}
+          <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-amber-800">
+                  {returning ? 'Dalam perjalanan kembali ke gudang asal' : 'Pengiriman selesai'}
+                </p>
+                <p className="text-xs text-amber-600">
+                  {returning
+                    ? 'Aktifkan GPS supaya rute kembali tampil kuning di peta admin, lalu tandai saat tiba.'
+                    : 'Tandai untuk mulai perjalanan kembali ke gudang asal (rute kembali tampil kuning di peta admin).'}
+                  {!returning && returnedAt && ` · Kembali terakhir: ${formatDateTime(returnedAt)}`}
+                </p>
+              </div>
+              {returning ? (
+                <button
+                  onClick={() => toggleReturn('complete')}
+                  disabled={retBusy}
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+                >
+                  {retBusy ? 'Menyimpan...' : '📍 Tiba di Gudang — Selesai'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => toggleReturn('start')}
+                  disabled={retBusy}
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+                >
+                  {retBusy ? 'Menyimpan...' : '🚚 Kembali ke Gudang Asal'}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
