@@ -23,13 +23,15 @@ export default function Sidebar({ role }: { role: string }) {
     { href: '/geofences', label: 'Geofencing', icon: 'M12 3a7 7 0 00-7 7c0 5 7 11 7 11s7-6 7-11a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1012 7a2.5 2.5 0 000 5.5z' },
     { href: '/warehouse/scan', label: 'Warehouse Scan', icon: 'M21 6h-2v2h-2V6h-2V4h2V2h2v2h2v2zm-9 3L9 14h6l-3-5zM5 14a3 3 0 100 6 3 3 0 000-6zm14 0a3 3 0 100 6 3 3 0 000-6z' },
     { href: '/reports', label: 'Reports', icon: 'M3 3v18h18M7 15l4-4 3 3 5-6' },
+    { href: '/users', label: 'Users', icon: 'M5 13a4 4 0 100-8 4 4 0 000 8zM3 21v-1a5 5 0 0110 0v1M11 7a3 3 0 100-6 3 3 0 000 6zM17 12h5M19.5 9.5l-5 5M19.5 14.5l-5-5' },
     { href: '/audit', label: 'Audit Log', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
   ];
 
   const showOps = opsRoles.includes(role);
+  const showUsers = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'].includes(role);
 
-  function render(items: NavItem[]) {
-    return items.map((item) => {
+  function render(items: NavItem[], filter?: (i: NavItem) => boolean) {
+    return items.filter(filter || (() => true)).map((item) => {
       const active = pathname === item.href || pathname.startsWith(item.href + '/');
       return (
         <Link
@@ -63,7 +65,7 @@ export default function Sidebar({ role }: { role: string }) {
         {showOps && (
           <>
             <div className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-brand-300">Operasional</div>
-            {render(ops)}
+            {render(ops, (i) => (i.href === '/users' ? showUsers : true))}
           </>
         )}
       </nav>

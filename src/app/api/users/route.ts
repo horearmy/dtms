@@ -1,0 +1,101 @@
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import type { Role } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { guard, logAudit } from '@/lib/api-guard';
+
+const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'];
+
+const ASSIGNABLE_ROLES: string[] = [
+  'SUPER_ADMIN',
+  'ADMIN_OPERASIONAL',
+  'DISPATCHER',
+  'WAREHOUSE',
+  'CUSTOMER_SERVICE',
+  'SUPERVISOR',
+  'MANAGEMENT',
+];
+
+const safeUser = <T extends { passwordHash?: string }>(u: T) => {
+  const { passwordHash, ...rest } = u;
+  void passwordHash;
+  return rest;
+};
+
+export async function GET() {
+  const { error } = await guard(...MANAGE);
+  if (error) return error;
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      role: true,
+      status: true,
+      phone: true,
+      mustChangePassword: true,
+      lastPasswordChange: true,
+      createdAt: true,
+      driver: { select: { id: true, employeeId: true, name: true } },
+    },
+  });
+  return NextResponse.json(users);
+}
+
+export async function POST(req: NextRequest) {
+  const { session, error } = await guard(...MANAGE);
+  if (error) return error;
+  const body = await req.json();
+
+  const name = body.name?.toString().trim();
+  const username = body.username?.toString().trim().toLowerCase();
+  const password = body.password?.toString() || '';
+  const role = body.role?.toString() || '';
+  const phone = body.phone?.toString().trim() || null;
+  const status = body.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+  if (!name || !username || !role) {
+    return NextResponse.json({ error: 'Nama, username, dan role wajib diisi' }, { status: 400 });
+  }
+  if (!ASSIGNABLE_ROLES.includes(role)) {
+    return NextResponse.json({ error: 'Role tidak valid' }, { status: 400 });
+  }
+  if (password.length < 8) {
+    return NextResponse.json({ error: 'Password minimal 8 karakter' }, { status: 400 });
+  }
+  if (role === 'SUPER_ADMIN' && session?.role !== 'SUPER_ADMIN') {
+    return NextResponse.json({ error: 'Hanya Super Admin yang dapat membuat akun Super Admin' }, { status: 403 });
+  }
+
+  try {
+    const user = await prisma.user.create({
+      data: {
+        name,
+        username,
+        passwordHash: bcrypt.hashSync(password, 10),
+        role: role as Role,
+        status,
+        phone,
+        pwdVersion: 1,
+        mustChangePassword: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        role: true,
+        status: true,
+        phone: true,
+        mustChangePassword: true,
+        lastPasswordChange: true,
+        createdAt: true,
+        driver: { select: { id: true, employeeId: true, name: true } },
+      },
+    });
+    await logAudit(session, 'CREATE_USER', 'USER', `${user.username} (${role})`);
+    return NextResponse.json(user, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: 'Username sudah terdaftar. Pilih username lain.' }, { status: 400 });
+  }
+}

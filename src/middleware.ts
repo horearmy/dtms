@@ -17,6 +17,7 @@ export async function middleware(req: NextRequest) {
 
   const isDriverRoute = pathname === '/driver' || pathname.startsWith('/driver/');
   const isOpsDash = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
+  const isUsersRoute = pathname === '/users' || pathname.startsWith('/users/');
 
   try {
     const { payload } = await jwtVerify(token, secret);
@@ -29,6 +30,11 @@ export async function middleware(req: NextRequest) {
     if (isOpsDash && role === 'DRIVER') {
       const url = req.nextUrl.clone();
       url.pathname = '/driver';
+      return NextResponse.redirect(url);
+    }
+    if (isUsersRoute && role !== 'SUPER_ADMIN' && role !== 'ADMIN_OPERASIONAL') {
+      const url = req.nextUrl.clone();
+      url.pathname = '/dashboard';
       return NextResponse.redirect(url);
     }
     return NextResponse.next();
@@ -45,6 +51,7 @@ export const config = {
     '/vehicles/:path*',
     '/customers/:path*',
     '/map/:path*',
+    '/users/:path*',
     '/reports/:path*',
     '/audit/:path*',
     '/geofences/:path*',
