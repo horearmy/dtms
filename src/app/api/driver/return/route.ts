@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     });
     const updated = await prisma.driver.update({
       where: { id: driver.id },
-      data: { returning: true, returnedAt: null },
+      data: { returning: true, returnedAt: null, returnStartedAt: new Date() },
     });
     if (latest?.vehicleId) {
       await prisma.vehicle.update({

@@ -168,6 +168,7 @@ model Driver {
   status         DriverStatus  @default(ACTIVE)
   returning      Boolean       @default(false)
   returnedAt     DateTime?
+  returnStartedAt DateTime?
   assignments    DeliveryAssignment[]
   gpsLogs        GpsLog[]
   geofenceEvents GeofenceEvent[]

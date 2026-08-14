@@ -17,6 +17,7 @@ export async function GET() {
       status: driver.status,
       returning: driver.returning,
       returnedAt: driver.returnedAt,
+      returnStartedAt: driver.returnStartedAt,
     },
   });
 }

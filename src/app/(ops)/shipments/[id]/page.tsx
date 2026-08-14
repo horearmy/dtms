@@ -5,6 +5,7 @@ import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
 import ShipmentQR from '@/components/ShipmentQR';
 import ShipmentLiveMap from '@/components/ShipmentLiveMap';
+import ReturnTimeline from '@/components/ReturnTimeline';
 import { btnPrimary, btnGhost, inputCls, Field, Modal } from '@/components/ui';
 import {
   STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS,
@@ -311,7 +312,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-3">
         {/* Timeline */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-sm font-bold text-slate-900">Timeline Perjalanan</h2>
@@ -338,6 +339,9 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
             {events.length === 0 && <p className="text-sm text-slate-400">Belum ada event</p>}
           </div>
         </div>
+
+        {/* Timeline Perjalanan Kembali (samping kanan Timeline Perjalanan) */}
+        <ReturnTimeline driverId={assignment?.driver?.id} driverName={assignment?.driver?.name} />
 
         <div className="space-y-5">
           {/* QR resi */}
