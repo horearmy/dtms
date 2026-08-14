@@ -217,6 +217,8 @@ export default function DriverLaporanPage() {
   const [returnedAt, setReturnedAt] = useState<string | null>(null);
   const [retBusy, setRetBusy] = useState(false);
   const [retMsg, setRetMsg] = useState('');
+  const [gpsChecking, setGpsChecking] = useState(false);
+  const [gpsResult, setGpsResult] = useState<{ on: boolean; lat: number; lng: number; ts: string } | null>(null);
 
   async function load() {
     const res = await fetch('/api/driver/tasks');
@@ -251,6 +253,23 @@ export default function DriverLaporanPage() {
       await loadStatus();
     }
     setRetBusy(false);
+  }
+
+  async function checkGps() {
+    if (gpsChecking) return;
+    setGpsChecking(true);
+    setGpsResult(null);
+    const ts = new Date().toLocaleTimeString('id-ID');
+    const pos = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
+      );
+    });
+    setGpsResult({ on: !!pos, lat: pos?.lat || 0, lng: pos?.lng || 0, ts });
+    setGpsChecking(false);
   }
 
   const active = tasks.filter((t) => ['DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY'].includes(t.shipment.status));
@@ -344,6 +363,27 @@ export default function DriverLaporanPage() {
             </table>
           </div>
         )}
+
+        {/* Cek status GPS */}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-800">Status GPS Perangkat</p>
+            <p className="text-xs text-slate-500">
+              Periksa kembali status lokasi perangkat agar posisi & rute kembali tetap terkirim ke admin.
+            </p>
+            {gpsResult && (
+              <div className={`mt-2 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold ${gpsResult.on ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
+                <span className="h-2 w-2 rounded-full" style={{ background: gpsResult.on ? '#16a34a' : '#dc2626' }} />
+                {gpsResult.on
+                  ? `GPS Aktif · ${gpsResult.lat.toFixed(5)}, ${gpsResult.lng.toFixed(5)} · ${gpsResult.ts}`
+                  : `GPS Mati / Tidak Aktif · ${gpsResult.ts}`}
+              </div>
+            )}
+          </div>
+          <button onClick={checkGps} disabled={gpsChecking} className={btnGhost + ' shrink-0 disabled:opacity-50'}>
+            {gpsChecking ? 'Memeriksa...' : '🛰️ Cek Status GPS'}
+          </button>
+        </div>
       </div>
     </div>
   );
