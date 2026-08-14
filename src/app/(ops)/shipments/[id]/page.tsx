@@ -4,6 +4,7 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
 import ShipmentQR from '@/components/ShipmentQR';
+import ShipmentLiveMap from '@/components/ShipmentLiveMap';
 import { btnPrimary, btnGhost, inputCls, Field, Modal } from '@/components/ui';
 import {
   STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS,
@@ -191,6 +192,19 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
           </div>
         );
       })()}
+
+      {/* Peta lokasi paket: posisi nyata driver saat ini */}
+      <ShipmentLiveMap
+        trackingNumber={s.trackingNumber}
+        origin={s.origin}
+        destination={s.destination}
+        originLat={s.originLat}
+        originLng={s.originLng}
+        destLat={s.destLat}
+        destLng={s.destLng}
+        driver={assignment?.driver || null}
+        status={s.status}
+      />
 
       {/* Aksi status */}
       {!terminal && (
