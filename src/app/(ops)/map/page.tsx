@@ -58,6 +58,7 @@ export default function MapPage() {
   const shipLayer = useRef<L.LayerGroup | null>(null);
   const geofenceLayer = useRef<L.LayerGroup | null>(null);
   const routeLayer = useRef<L.LayerGroup | null>(null);
+  const shipMarkers = useRef<Map<string, L.Marker>>(new Map());
   const [drivers, setDrivers] = useState<DriverPos[]>([]);
   const [ships, setShips] = useState<ShipPos[]>([]);
   const [geofences, setGeofences] = useState<Geofence[]>([]);
@@ -66,6 +67,7 @@ export default function MapPage() {
   const [showRoutes, setShowRoutes] = useState(true);
   const [routeLoaded, setRouteLoaded] = useState(false);
   const [lastUpdate, setLastUpdate] = useState('');
+  const [selectedShipId, setSelectedShipId] = useState<string | null>(null);
   const [center] = useState<[number, number]>([-6.21, 106.83]);
 
   useEffect(() => {
@@ -206,6 +208,7 @@ export default function MapPage() {
       if (cancelled) return;
       driverLayer.current?.clearLayers();
       shipLayer.current?.clearLayers();
+      shipMarkers.current.clear();
 
       const driverIcon = L.divIcon({
         className: '',
@@ -253,6 +256,7 @@ export default function MapPage() {
           iconAnchor: [11, 11],
         });
         const m = L.marker([s.destLat, s.destLng], { icon }).addTo(shipLayer.current!);
+        shipMarkers.current.set(s.id, m);
         m.bindPopup(
           `<div style="font-size:12px;min-width:180px;">
              <b style="font-family:monospace;">${s.trackingNumber}</b><br/>
@@ -330,6 +334,32 @@ export default function MapPage() {
 
   const routeFallback = (r: RouteLine) => r.points.length === 2;
 
+  function focusShip(s: ShipPos) {
+    setSelectedShipId(s.id);
+    const map = leafletRef.current;
+    if (!map) return;
+    // lokasi terkini shipment: posisi driver sekarang jika sedang di jalan
+    const driverPos = s.driver ? drivers.find((d) => d.name === s.driver) : undefined;
+    const target: [number, number] | null =
+      driverPos && (s.status === 'IN_TRANSIT' || s.status === 'DISPATCHED' || s.status === 'OUT_FOR_DELIVERY' || s.status === 'ARRIVED_AT_HUB')
+        ? [driverPos.latitude, driverPos.longitude]
+        : null;
+    // fallback ke marker di peta (tujuan), lalu koordinat tujuan
+    const marker = shipMarkers.current.get(s.id);
+    const z = Math.max(map.getZoom(), 13);
+    if (target) {
+      map.flyTo(target, Math.max(z, 14), { duration: 0.6 });
+      return;
+    }
+    if (marker) {
+      const ll = marker.getLatLng();
+      map.flyTo([ll.lat, ll.lng], z, { duration: 0.6 });
+      setTimeout(() => marker.openPopup(), 650);
+      return;
+    }
+    if (s.destLat != null && s.destLng != null) map.flyTo([s.destLat, s.destLng], z, { duration: 0.6 });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -397,7 +427,13 @@ export default function MapPage() {
           <h2 className="mb-3 mt-5 text-sm font-bold text-slate-900">Shipment Aktif ({ships.length})</h2>
           <div className="space-y-3">
             {ships.map((s) => (
-              <div key={s.id} className="rounded-lg border border-slate-100 p-3">
+              <button
+                key={s.id}
+                onClick={() => focusShip(s)}
+                className={`w-full rounded-lg border p-3 text-left transition ${
+                  selectedShipId === s.id ? 'border-brand-500 bg-brand-50 shadow-sm' : 'border-slate-100 hover:border-brand-200 hover:bg-slate-50'
+                }`}
+              >
                 <div className="font-mono text-xs font-semibold text-brand-600">{s.trackingNumber}</div>
                 <div className="mt-1"><StatusBadge status={s.status} /></div>
                 <div className="mt-1 text-xs text-slate-500">{s.origin} → {s.destination}</div>
@@ -407,7 +443,7 @@ export default function MapPage() {
                     Rute tersedia
                   </div>
                 )}
-              </div>
+              </button>
             ))}
             {ships.length === 0 && <p className="text-sm text-slate-400">Tidak ada shipment aktif</p>}
           </div>
