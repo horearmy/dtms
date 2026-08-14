@@ -160,12 +160,19 @@ export default function DriversPage() {
       <Modal open={open} title={edit ? 'Edit Driver' : 'Tambah Driver'} onClose={() => setOpen(false)}>
         <form onSubmit={save} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Employee ID" required>
-              <input required value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className={inputCls} placeholder="DRV-XXX" />
-            </Field>
-            <Field label="Nama" required>
-              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
-            </Field>
+            <div className="col-span-2 grid grid-cols-2 gap-3">
+              <div className="flex flex-col">
+                <Field label="Employee ID" required>
+                  <input required value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className={inputCls} placeholder="DRV-XXX" />
+                </Field>
+                <Field label="Nama" required>
+                  <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
+                </Field>
+              </div>
+              <div>
+                <PhotoField label="Foto Driver" value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
+              </div>
+            </div>
             <Field label="Telepon" required>
               <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
             </Field>
@@ -175,9 +182,6 @@ export default function DriversPage() {
                 <option value="INACTIVE">Nonaktif</option>
               </select>
             </Field>
-            <div className="col-span-2">
-              <PhotoField label="Foto Driver" value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
-            </div>
             <div className="col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
               <p className="mb-2 text-[11px] font-bold uppercase text-slate-500">Akun Login Driver</p>
               <div className="grid grid-cols-2 gap-3">
