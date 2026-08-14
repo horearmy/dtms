@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import { ROLE_LABELS } from '@/lib/constants';
 import GpsSender from '@/components/GpsSender';
+import GpsStatus from '@/components/GpsStatus';
 import LogoutButton from '@/components/LogoutButton';
 
 export default async function DriverLayout({ children }: { children: React.ReactNode }) {
@@ -29,6 +30,7 @@ export default async function DriverLayout({ children }: { children: React.React
             <Link href="/account/password" className="rounded-lg border border-white/30 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10">
               Ganti Password
             </Link>
+            <GpsStatus />
             <GpsSender />
             <LogoutButton />
           </div>
