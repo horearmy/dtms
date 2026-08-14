@@ -3,7 +3,7 @@ import { prisma } from './prisma';
 const STALE_GPS_MIN = 30;
 
 export async function scanAlerts() {
-  const alerts: { count: number; created: boolean }[] = [];
+  let created = 0;
 
   const shipments = await prisma.shipment.findMany({
     where: { slaDeadline: { not: null } },
@@ -27,7 +27,7 @@ export async function scanAlerts() {
         userId: null,
       },
     });
-    alerts.push({ count: 1, created: true });
+    created++;
   }
 
   const staleDrivers = await prisma.driver.findMany({
@@ -46,6 +46,7 @@ export async function scanAlerts() {
 
     const existing = await prisma.notification.findFirst({
       where: { message: { startsWith: `GPS Driver Terputus: ${d.name}` } },
+      orderBy: { createdAt: 'desc' },
     });
     if (existing && existing.createdAt > new Date(Date.now() - 6 * 3600000)) continue;
 
@@ -55,8 +56,8 @@ export async function scanAlerts() {
         userId: null,
       },
     });
-    alerts.push({ count: 1, created: true });
+    created++;
   }
 
-  return alerts;
+  return created;
 }
