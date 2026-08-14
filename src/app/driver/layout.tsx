@@ -20,6 +20,12 @@ export default async function DriverLayout({ children }: { children: React.React
             <div className="text-[11px] text-brand-100">{session.name} · {ROLE_LABELS[session.role]}</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <Link href="/driver" className="rounded-lg border border-white/30 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10">
+              Tugas
+            </Link>
+            <Link href="/driver/laporan" className="rounded-lg border border-white/30 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10">
+              📋 Laporan
+            </Link>
             <Link href="/account/password" className="rounded-lg border border-white/30 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10">
               Ganti Password
             </Link>

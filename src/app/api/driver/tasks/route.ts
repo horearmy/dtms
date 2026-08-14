@@ -17,6 +17,7 @@ export async function GET() {
         include: {
           sender: true,
           receiver: true,
+          pods: true,
           events: { orderBy: { createdAt: 'desc' }, take: 1 },
         },
       },
