@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
+import DriverStatusCard from '@/components/DriverStatusCard';
 import { formatDateTime, formatDate, STATUS_LABELS } from '@/lib/constants';
 import { inputCls, btnPrimary } from '@/components/ui';
 
@@ -106,6 +107,9 @@ export default function DriverHomePage() {
         <h1 className="text-xl font-bold text-slate-900">Tugas Hari Ini</h1>
         <p className="text-sm text-slate-500">{tasks.length} penugasan</p>
       </div>
+
+      {/* Keterangan driver & kendaraan aktif + peta live */}
+      <DriverStatusCard />
 
       <div className="space-y-3">
         {tasks.map((t) => {
