@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
       return {
         driverId: g.driverId,
         name: g.driver.name,
+        photo: g.driver.photo,
         vehicleNumber: g.vehicle?.vehicleNumber || null,
         latitude: g.latitude,
         longitude: g.longitude,

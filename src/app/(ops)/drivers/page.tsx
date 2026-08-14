@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
+import PhotoField from '@/components/PhotoField';
 import { formatDate } from '@/lib/constants';
 
 type Driver = {
@@ -9,6 +10,7 @@ type Driver = {
   employeeId: string;
   name: string;
   phone: string;
+  photo?: string | null;
   status: string;
   user: { username: string } | null;
   _count?: { assignments: number };
@@ -22,7 +24,7 @@ export default function DriversPage() {
   const [items, setItems] = useState<Driver[]>([]);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Driver | null>(null);
-  const [form, setForm] = useState({ employeeId: '', name: '', phone: '', status: 'ACTIVE' });
+  const [form, setForm] = useState({ employeeId: '', name: '', phone: '', photo: null as string | null, status: 'ACTIVE' });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -34,13 +36,13 @@ export default function DriversPage() {
 
   function openNew() {
     setEdit(null);
-    setForm({ employeeId: '', name: '', phone: '', status: 'ACTIVE' });
+    setForm({ employeeId: '', name: '', phone: '', photo: null, status: 'ACTIVE' });
     setMsg('');
     setOpen(true);
   }
   function openEdit(d: Driver) {
     setEdit(d);
-    setForm({ employeeId: d.employeeId, name: d.name, phone: d.phone, status: d.status });
+    setForm({ employeeId: d.employeeId, name: d.name, phone: d.phone, photo: d.photo || null, status: d.status });
     setMsg('');
     setOpen(true);
   }
@@ -92,7 +94,18 @@ export default function DriversPage() {
               {items.map((d) => (
                 <tr key={d.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                   <td className="px-4 py-3 font-mono text-xs text-slate-500">{d.employeeId}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800">{d.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {d.photo ? (
+                        <img src={d.photo} alt={d.name} className="h-9 w-9 rounded-full border border-slate-200 object-cover" />
+                      ) : (
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                          {d.name.slice(0, 1).toUpperCase()}
+                        </span>
+                      )}
+                      <span className="font-medium text-slate-800">{d.name}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{d.phone}</td>
                   <td className="px-4 py-3 text-slate-500">{d.user?.username || '-'}</td>
                   <td className="px-4 py-3 text-slate-600">{d._count?.assignments || 0}</td>
@@ -141,6 +154,9 @@ export default function DriversPage() {
                 <option value="INACTIVE">Nonaktif</option>
               </select>
             </Field>
+            <div className="col-span-2">
+              <PhotoField label="Foto Driver" value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
+            </div>
           </div>
           {msg && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{msg}</div>}
           <div className="flex justify-end gap-2 pt-2">

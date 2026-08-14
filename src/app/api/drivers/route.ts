@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   }
   try {
     const driver = await prisma.driver.create({
-      data: { employeeId: body.employeeId, name: body.name, phone: body.phone, status: body.status || 'ACTIVE' },
+      data: { employeeId: body.employeeId, name: body.name, phone: body.phone, photo: body.photo || null, status: body.status || 'ACTIVE' },
     });
     await logAudit(session, 'CREATE_DRIVER', 'DRIVER', driver.name);
     return NextResponse.json(driver, { status: 201 });

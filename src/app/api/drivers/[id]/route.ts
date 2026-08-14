@@ -13,6 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data: {
         name: body.name,
         phone: body.phone,
+        photo: body.photo,
         status: body.status,
       },
     });

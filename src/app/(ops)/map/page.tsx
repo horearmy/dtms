@@ -6,7 +6,7 @@ import StatusBadge from '@/components/StatusBadge';
 import { addGoogleStyleTiles } from '@/lib/mapTiles';
 
 type DriverPos = {
-  driverId: string; name: string; vehicleNumber: string | null;
+  driverId: string; name: string; photo: string | null; vehicleNumber: string | null;
   latitude: number; longitude: number; speed: number | null; battery: number | null; updatedAt: string;
   returning: boolean; returnedAt: string | null;
   warehouseName: string | null; warehouseLat: number | null; warehouseLng: number | null;
@@ -222,8 +222,16 @@ export default function MapPage() {
 
       drivers.forEach((d) => {
         const m = L.marker([d.latitude, d.longitude], { icon: d.returning ? driverReturnIcon : driverIcon }).addTo(driverLayer.current!);
+        m.bindTooltip(
+          `<div style="display:flex;align-items:center;gap:8px;font-size:12px;min-width:150px;">
+             ${d.photo ? `<img src="${d.photo}" alt="${d.name}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid #facc15;"/><div><b>${d.name}</b>` : `<div><b>${d.name}</b>`}
+             <br/><span style="color:#64748b;">${d.vehicleNumber || '-'}${d.returning ? ' · 🚚 kembali' : ''}</span></div>
+           </div>`,
+          { sticky: true, direction: 'top', opacity: 0.95 }
+        );
         m.bindPopup(
-          `<div style="font-size:12px;min-width:170px;">
+          `<div style="font-size:12px;min-width:180px;">
+             ${d.photo ? `<div style="text-align:center;margin-bottom:6px;"><img src="${d.photo}" alt="${d.name}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;"/></div>` : ''}
              <b style="font-size:13px;">${d.name}</b><br/>
              ${d.returning ? '<span style="display:inline-block;background:#fef3c7;color:#92400e;padding:0 6px;border-radius:9999px;font-weight:700;">🚚 Kembali ke Gudang</span><br/>' : ''}
              Kendaraan: ${d.vehicleNumber || '-'}<br/>
@@ -368,6 +376,11 @@ export default function MapPage() {
               <div key={d.driverId} className="rounded-lg border border-slate-100 p-3">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    {d.photo ? (
+                      <img src={d.photo} alt={d.name} className="h-6 w-6 rounded-full border border-slate-200 object-cover" />
+                    ) : (
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-700">{d.name.slice(0, 1).toUpperCase()}</span>
+                    )}
                     {d.name}
                     {d.returning && (
                       <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-bold text-yellow-700">Kembali ke Gudang</span>

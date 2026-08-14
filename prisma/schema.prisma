@@ -162,6 +162,7 @@ model Driver {
   employeeId     String        @unique
   name           String
   phone          String
+  photo          String?
   userId         String?       @unique
   user           User?         @relation(fields: [userId], references: [id])
   status         DriverStatus  @default(ACTIVE)
