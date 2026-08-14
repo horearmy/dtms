@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
 import PhotoField from '@/components/PhotoField';
+import DriverDetailModal from '@/components/DriverDetailModal';
 import { formatDate } from '@/lib/constants';
 
 type Driver = {
@@ -27,6 +28,7 @@ export default function DriversPage() {
   const [form, setForm] = useState({ employeeId: '', name: '', phone: '', photo: null as string | null, status: 'ACTIVE', username: '', password: '' });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch('/api/drivers');
@@ -111,7 +113,9 @@ export default function DriversPage() {
                           {d.name.slice(0, 1).toUpperCase()}
                         </span>
                       )}
-                      <span className="font-medium text-slate-800">{d.name}</span>
+                      <button onClick={() => setDetailId(d.id)} className="font-medium text-slate-800 hover:text-brand-600 hover:underline">
+                        {d.name}
+                      </button>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{d.phone}</td>
@@ -139,7 +143,10 @@ export default function DriversPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => openEdit(d)} className="text-xs font-semibold text-brand-600 hover:underline">Edit</button>
+                    <button onClick={() => setDetailId(d.id)} className="text-xs font-semibold text-slate-600 hover:text-brand-600 hover:underline">
+                      🗺️ Detail
+                    </button>
+                    <button onClick={() => openEdit(d)} className="ml-3 text-xs font-semibold text-brand-600 hover:underline">Edit</button>
                     <button onClick={() => remove(d)} className="ml-3 text-xs font-semibold text-red-500 hover:underline">Hapus</button>
                   </td>
                 </tr>
@@ -210,6 +217,8 @@ export default function DriversPage() {
           </div>
         </form>
       </Modal>
+
+      <DriverDetailModal driverId={detailId} onClose={() => setDetailId(null)} />
     </div>
   );
 }
