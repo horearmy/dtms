@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { ShipmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
@@ -33,13 +34,58 @@ export async function POST(req: NextRequest) {
   if (!body.employeeId || !body.name || !body.phone) {
     return NextResponse.json({ error: 'Employee ID, nama, dan telepon wajib diisi' }, { status: 400 });
   }
+
+  const username = body.username?.toString().trim().toLowerCase() || '';
+  const password = body.password?.toString() || '';
+  if (username && !password) {
+    return NextResponse.json({ error: 'Password wajib diisi untuk membuat akun login' }, { status: 400 });
+  }
+  if (password && !username) {
+    return NextResponse.json({ error: 'Username wajib diisi untuk membuat akun login' }, { status: 400 });
+  }
+
   try {
+    let userId: string | undefined;
+    if (username) {
+      const existing = await prisma.user.findUnique({ where: { username } });
+      if (existing) {
+        return NextResponse.json(
+          { error: `Username "${username}" sudah terdaftar. Pilih username lain.` },
+          { status: 400 }
+        );
+      }
+      const user = await prisma.user.create({
+        data: {
+          name: body.name,
+          username,
+          passwordHash: bcrypt.hashSync(password, 10),
+          role: 'DRIVER',
+          status: 'ACTIVE',
+          phone: body.phone,
+          pwdVersion: 1,
+          mustChangePassword: false,
+        },
+      });
+      userId = user.id;
+    }
     const driver = await prisma.driver.create({
-      data: { employeeId: body.employeeId, name: body.name, phone: body.phone, photo: body.photo || null, status: body.status || 'ACTIVE' },
+      data: {
+        employeeId: body.employeeId,
+        name: body.name,
+        phone: body.phone,
+        photo: body.photo || null,
+        status: body.status || 'ACTIVE',
+        ...(userId ? { userId } : {}),
+      },
     });
-    await logAudit(session, 'CREATE_DRIVER', 'DRIVER', driver.name);
+    await logAudit(
+      session,
+      'CREATE_DRIVER',
+      'DRIVER',
+      `${driver.name}${username ? ` + akun ${username}` : ' (tanpa akun)'}`
+    );
     return NextResponse.json(driver, { status: 201 });
-  } catch {
+  } catch (e) {
     return NextResponse.json({ error: 'Employee ID sudah terdaftar' }, { status: 400 });
   }
 }

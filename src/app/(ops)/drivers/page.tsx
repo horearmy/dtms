@@ -24,7 +24,7 @@ export default function DriversPage() {
   const [items, setItems] = useState<Driver[]>([]);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Driver | null>(null);
-  const [form, setForm] = useState({ employeeId: '', name: '', phone: '', photo: null as string | null, status: 'ACTIVE' });
+  const [form, setForm] = useState({ employeeId: '', name: '', phone: '', photo: null as string | null, status: 'ACTIVE', username: '', password: '' });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -36,13 +36,21 @@ export default function DriversPage() {
 
   function openNew() {
     setEdit(null);
-    setForm({ employeeId: '', name: '', phone: '', photo: null, status: 'ACTIVE' });
+    setForm({ employeeId: '', name: '', phone: '', photo: null, status: 'ACTIVE', username: '', password: '' });
     setMsg('');
     setOpen(true);
   }
   function openEdit(d: Driver) {
     setEdit(d);
-    setForm({ employeeId: d.employeeId, name: d.name, phone: d.phone, photo: d.photo || null, status: d.status });
+    setForm({
+      employeeId: d.employeeId,
+      name: d.name,
+      phone: d.phone,
+      photo: d.photo || null,
+      status: d.status,
+      username: d.user?.username || '',
+      password: '',
+    });
     setMsg('');
     setOpen(true);
   }
@@ -107,7 +115,13 @@ export default function DriversPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{d.phone}</td>
-                  <td className="px-4 py-3 text-slate-500">{d.user?.username || '-'}</td>
+                  <td className="px-4 py-3">
+  {d.user ? (
+    <span className="font-mono text-xs text-slate-600">{d.user.username}</span>
+  ) : (
+    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">Belum ada akun</span>
+  )}
+</td>
                   <td className="px-4 py-3 text-slate-600">{d._count?.assignments || 0}</td>
                   <td className="px-4 py-3">
                     {d.returning ? (
@@ -156,6 +170,37 @@ export default function DriversPage() {
             </Field>
             <div className="col-span-2">
               <PhotoField label="Foto Driver" value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
+            </div>
+            <div className="col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <p className="mb-2 text-[11px] font-bold uppercase text-slate-500">Akun Login Driver</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={edit && edit.user ? 'Username (login)' : 'Username Akun'}>
+                  {edit && edit.user ? (
+                    <input value={form.username} readOnly className={inputCls + ' bg-slate-100 text-slate-500'} />
+                  ) : (
+                    <input
+                      value={form.username}
+                      onChange={(e) => setForm({ ...form, username: e.target.value })}
+                      className={inputCls}
+                      placeholder={edit ? 'ketik utk buat akun' : 'mis. driver3'}
+                    />
+                  )}
+                </Field>
+                <Field label={edit && edit.user ? 'Password Baru' : edit ? 'Password (buat akun)' : 'Password Akun'}>
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className={inputCls}
+                    placeholder={edit && edit.user ? 'kosongkan jika tidak diganti' : 'min. 8 karakter'}
+                  />
+                </Field>
+              </div>
+              <p className="mt-2 text-[11px] text-slate-400">
+                {edit && edit.user
+                  ? 'Isi Password Baru untuk mereset password login driver.'
+                  : 'Isi Username & Password untuk membuat akun login role Driver. Kosongkan bila akun dibuat nanti.'}
+              </p>
             </div>
           </div>
           {msg && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{msg}</div>}
