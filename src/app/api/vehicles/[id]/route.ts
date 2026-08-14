@@ -2,6 +2,39 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
 
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR', 'WAREHOUSE', 'CUSTOMER_SERVICE');
+  if (error) return error;
+  const vehicle = await prisma.vehicle.findUnique({
+    where: { id },
+    include: {
+      maintenanceRecords: { orderBy: { performedAt: 'desc' } },
+      assignments: {
+        orderBy: { assignedAt: 'desc' },
+        include: {
+          driver: { select: { id: true, name: true, employeeId: true } },
+          shipment: {
+            select: {
+              trackingNumber: true,
+              origin: true,
+              destination: true,
+              originLat: true,
+              originLng: true,
+              destLat: true,
+              destLng: true,
+              status: true,
+              createdAt: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!vehicle) return NextResponse.json({ error: 'Kendaraan tidak ditemukan' }, { status: 404 });
+  return NextResponse.json(vehicle);
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER');

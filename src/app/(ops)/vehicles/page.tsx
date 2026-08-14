@@ -134,7 +134,9 @@ export default function VehiclesPage() {
             <tbody>
               {items.map((v) => (
                 <tr key={v.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-3 font-mono text-xs font-medium text-slate-800">{v.vehicleNumber}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-medium text-slate-800">
+                    <button onClick={() => (window.location.href = `/vehicles/${v.id}`)} className="hover:text-brand-600 hover:underline">{v.vehicleNumber}</button>
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{v.type}</td>
                   <td className="px-4 py-3 text-slate-600">{formatNumber(v.capacity)}</td>
                   <td className="px-4 py-3">
@@ -193,7 +195,8 @@ export default function VehiclesPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => openEdit(v)} className="text-xs font-semibold text-brand-600 hover:underline">Edit</button>
+                    <button onClick={() => (window.location.href = `/vehicles/${v.id}`)} className="text-xs font-semibold text-brand-600 hover:underline">Detail</button>
+                    <button onClick={() => openEdit(v)} className="ml-3 text-xs font-semibold text-brand-600 hover:underline">Edit</button>
                     <button onClick={() => remove(v)} className="ml-3 text-xs font-semibold text-red-500 hover:underline">Hapus</button>
                   </td>
                 </tr>
