@@ -82,6 +82,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     data: { shipmentId: id, driverId, vehicleId: vehicleId || null },
   });
 
-  await logAudit(session, 'ASSIGN_DRIVER', 'SHIPMENT', `${shipment.trackingNumber} -> ${driverId}`);
+  await logAudit(session, 'ASSIGN_DRIVER', 'SHIPMENT', { newData: { trackingNumber: shipment.trackingNumber, driverId, vehicleId: vehicleId || null } }, req);
   return NextResponse.json({ assignment }, { status: 201 });
 }

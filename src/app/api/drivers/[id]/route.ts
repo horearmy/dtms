@@ -155,22 +155,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         ...(newUserId ? { userId: newUserId } : {}),
       },
     });
-    await logAudit(session, 'UPDATE_DRIVER', 'DRIVER', driver.name);
+    await logAudit(session, 'UPDATE_DRIVER', 'DRIVER', { oldData: driver, newData: updated }, req);
     return NextResponse.json(updated);
   } catch {
     return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
   if (error) return error;
   try {
+    const before = await prisma.driver.findUnique({ where: { id } });
     await prisma.driver.delete({ where: { id } });
+    await logAudit(session, 'DELETE_DRIVER', 'DRIVER', { oldData: before }, req);
   } catch {
     return NextResponse.json({ error: 'Tidak dapat menghapus driver' }, { status: 400 });
   }
-  await logAudit(session, 'DELETE_DRIVER', 'DRIVER', id);
   return NextResponse.json({ ok: true });
 }

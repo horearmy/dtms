@@ -32,6 +32,6 @@ export async function POST(req: NextRequest) {
       active: body.active !== false,
     },
   });
-  await logAudit(session, 'CREATE_GEOFENCE', 'GEOFENCE', `${gf.name}`);
+  await logAudit(session, 'CREATE_GEOFENCE', 'GEOFENCE', { newData: gf }, req);
   return NextResponse.json(gf, { status: 201 });
 }

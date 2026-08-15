@@ -6,8 +6,54 @@ const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET || 'dtms-dev-secret-change-me'
 );
 
+const RATE_WINDOW_MS = 60_000;
+const RATE_API_LIMIT = 300;
+const RATE_LOGIN_LIMIT = 10;
+const buckets = new Map<string, { count: number; resetAt: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, b] of buckets) {
+    if (b.resetAt <= now) buckets.delete(key);
+  }
+}, RATE_WINDOW_MS).unref?.();
+
+function clientIp(req: NextRequest) {
+  const fwd = req.headers.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0].trim();
+  return req.headers.get('x-real-ip') || req.headers.get('x-forwarded-host') || 'local';
+}
+
+function rateLimit(key: string, limit: number): { allowed: boolean; remaining: number; retryAfterSec: number } {
+  const now = Date.now();
+  const b = buckets.get(key);
+  if (!b || b.resetAt <= now) {
+    buckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return { allowed: true, remaining: limit - 1, retryAfterSec: 0 };
+  }
+  b.count += 1;
+  const retryAfterSec = Math.max(1, Math.ceil((b.resetAt - now) / 1000));
+  return { allowed: b.count <= limit, remaining: Math.max(0, limit - b.count), retryAfterSec };
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const ip = clientIp(req);
+
+  if (pathname.startsWith('/api/')) {
+    const isLogin = pathname === '/api/auth/login' || pathname.startsWith('/api/auth/two-factor');
+    const limit = isLogin ? RATE_LOGIN_LIMIT : RATE_API_LIMIT;
+    const key = `${isLogin ? 'login' : 'api'}:${ip}`;
+    const rl = rateLimit(key, limit);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak permintaan. Silakan coba lagi nanti.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } }
+      );
+    }
+    return NextResponse.next();
+  }
+
   const token = req.cookies.get(COOKIE_NAME)?.value;
 
   const loginUrl = req.nextUrl.clone();
@@ -45,6 +91,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/api/:path*',
     '/dashboard/:path*',
     '/shipments/:path*',
     '/drivers/:path*',

@@ -45,10 +45,10 @@ async function main() {
   const hash = (pw) => bcrypt.hashSync(pw, 10);
 
   const superAdmin = await prisma.user.create({
-    data: { name: 'Super Admin', username: 'superadmin', passwordHash: hash('admin123'), role: Role.SUPER_ADMIN },
+    data: { name: 'Super Admin', username: 'superadmin', passwordHash: hash('admin123'), role: Role.SUPER_ADMIN, email: 'superadmin@dtms.local' },
   });
   await prisma.user.create({
-    data: { name: 'Admin Operasional', username: 'admin', passwordHash: hash('admin123'), role: Role.ADMIN_OPERASIONAL },
+    data: { name: 'Admin Operasional', username: 'admin', passwordHash: hash('admin123'), role: Role.ADMIN_OPERASIONAL, email: 'admin@dtms.local' },
   });
   await prisma.user.create({
     data: { name: 'Dispatcher', username: 'dispatcher', passwordHash: hash('admin123'), role: Role.DISPATCHER },
@@ -67,7 +67,7 @@ async function main() {
   });
 
   const driverUser1 = await prisma.user.create({
-    data: { name: 'Budi Santoso', username: 'driver1', passwordHash: hash('driver123'), role: Role.DRIVER, phone: '081234567801' },
+    data: { name: 'Budi Santoso', username: 'driver1', passwordHash: hash('driver123'), role: Role.DRIVER, phone: '081234567801', email: 'driver1@dtms.local' },
   });
   const driverUser2 = await prisma.user.create({
     data: { name: 'Agus Wijaya', username: 'driver2', passwordHash: hash('driver123'), role: Role.DRIVER, phone: '081234567802' },

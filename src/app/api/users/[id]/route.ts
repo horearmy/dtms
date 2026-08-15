@@ -78,7 +78,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       session,
       'UPDATE_USER',
       'USER',
-      `${updated.username}${password ? ' + reset password' : ''}`
+      {
+        oldData: target,
+        newData: { username: updated.username, name: updated.name, role: updated.role, status: updated.status, resetPassword: !!password },
+      },
+      req
     );
     return NextResponse.json(updated);
   } catch {
@@ -86,7 +90,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { session, error } = await guard(...MANAGE);
   if (error) return error;
@@ -106,6 +110,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   } catch {
     return NextResponse.json({ error: 'Tidak dapat menghapus user' }, { status: 400 });
   }
-  await logAudit(session, 'DELETE_USER', 'USER', target.username);
+  await logAudit(session, 'DELETE_USER', 'USER', { oldData: target }, req);
   return NextResponse.json({ ok: true });
 }

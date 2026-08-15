@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSession, type SessionUser } from './auth';
 
 export async function guard(
@@ -14,11 +14,40 @@ export async function guard(
   return { session, error: null };
 }
 
-export async function logAudit(session: SessionUser | null, action: string, module: string, newData?: string) {
+type AuditData = string | { oldData?: unknown; newData?: unknown };
+
+function json(v: unknown): string | undefined {
+  if (v === undefined || v === null) return undefined;
+  try {
+    return typeof v === 'string' ? v : JSON.stringify(v);
+  } catch {
+    return undefined;
+  }
+}
+
+export async function logAudit(
+  session: SessionUser | null,
+  action: string,
+  module: string,
+  data?: AuditData,
+  req?: NextRequest
+) {
   try {
     const { prisma } = await import('./prisma');
+    const oldData = typeof data === 'object' ? json(data.oldData) : undefined;
+    const newData = typeof data === 'object' ? json(data.newData) : typeof data === 'string' ? data : undefined;
     await prisma.auditLog.create({
-      data: { userId: session?.id, action, module, newData },
+      data: {
+        userId: session?.id,
+        action,
+        module,
+        oldData,
+        newData,
+        ip: req?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req?.headers.get('x-real-ip') ?? null,
+        method: req?.method ?? null,
+        path: req?.nextUrl?.pathname ?? null,
+        userAgent: req?.headers.get('user-agent') ?? null,
+      },
     });
   } catch {
     // jangan menggagalkan request utama

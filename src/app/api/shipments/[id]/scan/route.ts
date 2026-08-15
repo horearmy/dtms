@@ -96,7 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   });
 
-  await logAudit(session, 'WAREHOUSE_SCAN', 'SHIPMENT', `${shipment.trackingNumber} -> ${action}`);
+  await logAudit(session, 'WAREHOUSE_SCAN', 'SHIPMENT', { newData: { trackingNumber: shipment.trackingNumber, action } }, req);
 
   return NextResponse.json({ scan, shipment: updated }, { status: 201 });
 }

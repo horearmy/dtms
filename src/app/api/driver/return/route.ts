@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         data: { returning: true, returnedAt: null },
       });
     }
-    await logAudit(session, 'DRIVER_RETURN_START', 'DRIVER', driver.name);
+    await logAudit(session, 'DRIVER_RETURN_START', 'DRIVER', { newData: { returning: true, at: new Date().toISOString() } }, req);
     return NextResponse.json({ driver: updated });
   }
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         data: { returning: false, returnedAt: now },
       });
     }
-    await logAudit(session, 'DRIVER_RETURN_COMPLETE', 'DRIVER', driver.name);
+    await logAudit(session, 'DRIVER_RETURN_COMPLETE', 'DRIVER', { newData: { returning: false, returnedAt: now.toISOString() } }, req);
     return NextResponse.json({ driver: updated });
   }
 

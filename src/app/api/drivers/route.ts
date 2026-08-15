@@ -82,7 +82,8 @@ export async function POST(req: NextRequest) {
       session,
       'CREATE_DRIVER',
       'DRIVER',
-      `${driver.name}${username ? ` + akun ${username}` : ' (tanpa akun)'}`
+      { newData: { employeeId: driver.employeeId, name: driver.name, phone: driver.phone, akun: username || null } },
+      req
     );
     return NextResponse.json(driver, { status: 201 });
   } catch (e) {

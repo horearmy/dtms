@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         driver: { select: { id: true, employeeId: true, name: true } },
       },
     });
-    await logAudit(session, 'CREATE_USER', 'USER', `${user.username} (${role})`);
+    await logAudit(session, 'CREATE_USER', 'USER', { newData: { username: user.username, name: user.name, role: user.role } }, req);
     return NextResponse.json(user, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Username sudah terdaftar. Pilih username lain.' }, { status: 400 });

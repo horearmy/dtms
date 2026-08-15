@@ -72,6 +72,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
   });
 
-  await logAudit(session, 'POD_COMPLETE', 'SHIPMENT', shipment.trackingNumber);
+  await logAudit(session, 'POD_COMPLETE', 'SHIPMENT', { newData: { trackingNumber: shipment.trackingNumber, receiver: receiverName || shipment.receiver.name } }, req);
   return NextResponse.json({ ok: true });
 }

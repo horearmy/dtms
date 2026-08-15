@@ -134,6 +134,6 @@ export async function POST(req: NextRequest) {
     return shipment;
   });
 
-  await logAudit(session, 'CREATE_SHIPMENT', 'SHIPMENT', `${trackingNumber}`);
+  await logAudit(session, 'CREATE_SHIPMENT', 'SHIPMENT', { newData: { trackingNumber, origin: created.origin, destination: created.destination, serviceType: created.serviceType } }, req);
   return NextResponse.json(created, { status: 201 });
 }

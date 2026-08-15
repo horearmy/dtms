@@ -69,12 +69,17 @@ model User {
   name               String
   username           String         @unique
   passwordHash       String
+  email              String?        @unique
+  provider           String         @default("LOCAL")
   role               Role
   status             UserStatus     @default(ACTIVE)
   phone              String?
   pwdVersion         Int            @default(1)
   mustChangePassword Boolean        @default(false)
   lastPasswordChange DateTime?
+  totpSecret         String?
+  totpEnabled        Boolean        @default(false)
+  backupCodes        String?
   createdAt          DateTime       @default(now())
   driver             Driver?
   notifications      Notification[]
@@ -295,6 +300,10 @@ model AuditLog {
   module    String
   oldData   String?
   newData   String?
+  ip        String?
+  method    String?
+  path      String?
+  userAgent String?
   createdAt DateTime @default(now())
 }
 

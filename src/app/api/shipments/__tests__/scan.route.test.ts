@@ -136,6 +136,12 @@ describe('POST /api/shipments/[id]/scan', () => {
     );
     expect(mockTrackingEvent.create).toHaveBeenCalled();
     expect(mockNotification.create).toHaveBeenCalled();
-    expect(mockLogAudit).toHaveBeenCalledWith(SESSION, 'WAREHOUSE_SCAN', 'SHIPMENT', expect.stringContaining('DISPATCHED'));
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      SESSION,
+      'WAREHOUSE_SCAN',
+      'SHIPMENT',
+      expect.objectContaining({ newData: expect.objectContaining({ action: 'DISPATCHED' }) }),
+      expect.anything()
+    );
   });
 });

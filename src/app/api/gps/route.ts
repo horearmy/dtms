@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
           message: `Kendaraan ${vehicle.vehicleNumber} mencapai ${Math.round(vehicle.totalDistanceKm)} km dan wajib perawatan (status otomatis MAINTENANCE).`,
         },
       });
-      await logAudit(session, 'VEHICLE_MAINTENANCE', 'VEHICLE', `${vehicle.vehicleNumber} -> MAINTENANCE (${Math.round(vehicle.totalDistanceKm)} km)`);
+      await logAudit(session, 'VEHICLE_MAINTENANCE', 'VEHICLE', { newData: { vehicleNumber: vehicle.vehicleNumber, status: 'MAINTENANCE', totalDistanceKm: Math.round(vehicle.totalDistanceKm) } }, req);
     }
   }
 

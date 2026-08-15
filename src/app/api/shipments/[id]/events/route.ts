@@ -94,7 +94,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   });
 
-  await logAudit(session, 'UPDATE_STATUS', 'SHIPMENT', `${shipment.trackingNumber}: ${shipment.status} -> ${status}`);
+  await logAudit(
+    session,
+    'UPDATE_STATUS',
+    'SHIPMENT',
+    { oldData: { status: shipment.status }, newData: { status, notes: notes || null } },
+    req
+  );
 
   return NextResponse.json({ event, shipment: updated });
 }

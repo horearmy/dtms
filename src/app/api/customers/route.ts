@@ -41,6 +41,6 @@ export async function POST(req: NextRequest) {
       longitude: toNum(body.longitude),
     },
   });
-  await logAudit(session, 'CREATE_CUSTOMER', 'CUSTOMER', customer.name);
+  await logAudit(session, 'CREATE_CUSTOMER', 'CUSTOMER', { newData: customer }, req);
   return NextResponse.json(customer, { status: 201 });
 }

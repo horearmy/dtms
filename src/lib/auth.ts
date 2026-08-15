@@ -73,6 +73,24 @@ export async function clearSession() {
   store.delete(COOKIE_NAME);
 }
 
+export async function signTwoFactorToken(userId: string) {
+  return new SignJWT({ sub: userId, purpose: '2fa' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('5m')
+    .sign(secret);
+}
+
+export async function verifyTwoFactorToken(token: string): Promise<string | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret);
+    if (payload.purpose !== '2fa' || typeof payload.sub !== 'string') return null;
+    return payload.sub;
+  } catch {
+    return null;
+  }
+}
+
 export function can(role: string, ...roles: string[]) {
   return roles.includes(role);
 }

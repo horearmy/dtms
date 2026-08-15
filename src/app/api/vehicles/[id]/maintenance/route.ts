@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         performedAt: body.performedAt ? new Date(body.performedAt) : new Date(),
       },
     });
-    await logAudit(session, 'CREATE_VEHICLE_MAINTENANCE', 'VEHICLE', `${vehicle.vehicleNumber} · ${body.type}`);
+    await logAudit(session, 'CREATE_VEHICLE_MAINTENANCE', 'VEHICLE', { newData: record }, req);
     return NextResponse.json(record, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Gagal menyimpan riwayat perawatan' }, { status: 400 });

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
-import { setSession } from '@/lib/auth';
+import { setSession, signTwoFactorToken } from '@/lib/auth';
+import { logAudit } from '@/lib/api-guard';
 import { getClientIp, isLoginBlocked, recordLoginAttempt, cleanupLoginAttempts } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
@@ -45,7 +46,17 @@ export async function POST(req: NextRequest) {
     }
 
     await recordLoginAttempt(key, ip, true);
+
+    if (user.totpEnabled) {
+      const twoFactorToken = await signTwoFactorToken(user.id);
+      return NextResponse.json({
+        twoFactorRequired: true,
+        twoFactorToken,
+      });
+    }
+
     await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, pwdVersion: user.pwdVersion });
+    await logAudit(null, 'LOGIN_SUCCESS', 'AUTH', { newData: { username: user.username } }, req);
     return NextResponse.json({
       id: user.id,
       name: user.name,

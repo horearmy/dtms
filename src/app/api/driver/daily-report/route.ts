@@ -48,6 +48,6 @@ export async function POST(req: NextRequest) {
     create: { driverId: driver.id, reportDate, ...data },
   });
 
-  await logAudit(session, 'SAVE_DAILY_REPORT', 'REPORT', `${driver.name} @ ${reportDate.toISOString().slice(0, 10)}`);
+  await logAudit(session, 'SAVE_DAILY_REPORT', 'REPORT', { newData: { driverName: driver.name, reportDate: reportDate.toISOString().slice(0, 10), delivered: data.deliveredCount, failed: data.failedCount } }, req);
   return NextResponse.json({ report }, { status: 201 });
 }

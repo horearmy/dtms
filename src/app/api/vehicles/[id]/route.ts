@@ -41,6 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (error) return error;
   const body = await req.json();
   try {
+    const before = await prisma.vehicle.findUnique({ where: { id } });
     const vehicle = await prisma.vehicle.update({
       where: { id },
       data: {
@@ -55,22 +56,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         photoLeft: body.photoLeft || null,
       },
     });
-    await logAudit(session, 'UPDATE_VEHICLE', 'VEHICLE', vehicle.vehicleNumber);
+    await logAudit(
+      session,
+      'UPDATE_VEHICLE',
+      'VEHICLE',
+      { oldData: before, newData: vehicle },
+      req
+    );
     return NextResponse.json(vehicle);
   } catch {
     return NextResponse.json({ error: 'Kendaraan tidak ditemukan' }, { status: 404 });
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
   if (error) return error;
   try {
+    const before = await prisma.vehicle.findUnique({ where: { id } });
     await prisma.vehicle.delete({ where: { id } });
+    await logAudit(session, 'DELETE_VEHICLE', 'VEHICLE', { oldData: before }, req);
   } catch {
     return NextResponse.json({ error: 'Tidak dapat menghapus kendaraan' }, { status: 400 });
   }
-  await logAudit(session, 'DELETE_VEHICLE', 'VEHICLE', id);
   return NextResponse.json({ ok: true });
 }

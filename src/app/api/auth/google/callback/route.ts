@@ -1,0 +1,86 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { prisma } from '@/lib/prisma';
+import { setSession, signTwoFactorToken } from '@/lib/auth';
+import { logAudit } from '@/lib/api-guard';
+import { getClientIp, recordLoginAttempt } from '@/lib/security';
+
+const googleJWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+
+function redirectLogin(origin: string, error: string) {
+  return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error)}`);
+}
+
+export async function GET(req: NextRequest) {
+  const origin = process.env.APP_URL || req.nextUrl.origin;
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const ip = getClientIp(req);
+
+  const code = req.nextUrl.searchParams.get('code');
+  if (!code) {
+    return redirectLogin(origin, 'Login Google dibatalkan');
+  }
+
+  try {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId || '',
+        client_secret: clientSecret || '',
+        redirect_uri: `${origin}/api/auth/google/callback`,
+        grant_type: 'authorization_code',
+      }),
+    });
+    const tokens = await tokenRes.json();
+    if (!tokenRes.ok || !tokens.id_token) {
+      return redirectLogin(origin, 'Gagal menukar kode otorisasi Google');
+    }
+
+    let payload: { email?: string; email_verified?: boolean; name?: string; picture?: string };
+    try {
+      const result = await jwtVerify(tokens.id_token, googleJWKS, {
+        issuer: ['https://accounts.google.com', 'accounts.google.com'],
+        audience: clientId,
+      });
+      payload = result.payload as typeof payload;
+    } catch {
+      return redirectLogin(origin, 'Token Google tidak valid');
+    }
+
+    if (!payload.email || !payload.email_verified) {
+      return redirectLogin(origin, 'Email Google belum diverifikasi');
+    }
+
+    const email = payload.email.toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      await logAudit(null, 'SSO_GOOGLE_UNLINKED', 'AUTH', { newData: { email } }, req);
+      return redirectLogin(origin, `Tidak ada akun DTMS dengan email ${email}. Hubungi admin untuk menghubungkan akun Anda.`);
+    }
+    if (user.status !== 'ACTIVE') {
+      return redirectLogin(origin, 'Akun Anda tidak aktif');
+    }
+
+    await recordLoginAttempt(email, ip, true);
+
+    if (user.totpEnabled) {
+      const twoFactorToken = await signTwoFactorToken(user.id);
+      return NextResponse.redirect(`${origin}/login?twoFactorToken=${encodeURIComponent(twoFactorToken)}`);
+    }
+
+    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, pwdVersion: user.pwdVersion });
+    await logAudit(null, 'SSO_GOOGLE_LOGIN', 'AUTH', { newData: { email, username: user.username } }, req);
+    const target = user.mustChangePassword
+      ? '/account/password?first=1'
+      : user.role === 'DRIVER'
+        ? '/driver'
+        : '/dashboard';
+    return NextResponse.redirect(`${origin}${target}`);
+  } catch (e) {
+    console.error('google callback error', e);
+    return redirectLogin(origin, 'Terjadi kesalahan saat login Google');
+  }
+}

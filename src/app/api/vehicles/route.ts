@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         photoLeft: body.photoLeft || null,
       },
     });
-    await logAudit(session, 'CREATE_VEHICLE', 'VEHICLE', vehicle.vehicleNumber);
+    await logAudit(session, 'CREATE_VEHICLE', 'VEHICLE', { newData: vehicle }, req);
     return NextResponse.json(vehicle, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'Nomor kendaraan sudah terdaftar' }, { status: 400 });
