@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  await setSession({ id: updated.id, name: updated.name, username: updated.username, role: updated.role, pwdVersion: updated.pwdVersion });
+  await setSession({ id: updated.id, name: updated.name, username: updated.username, role: updated.role, tenantId: updated.tenantId, pwdVersion: updated.pwdVersion });
   await logAudit(session, 'CHANGE_PASSWORD', 'AUTH', { newData: { pwdVersion: updated.pwdVersion, changedAt: new Date().toISOString() } }, req);
   return NextResponse.json({ ok: true, message: 'Password berhasil diubah' });
 }

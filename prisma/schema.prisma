@@ -7,6 +7,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Tenant {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  logoUrl         String?
+  faviconUrl      String?
+  primaryColor    String   @default("#2563eb")
+  secondaryColor  String   @default("#1e40af")
+  accentColor     String   @default("#3b82f6")
+  domain          String?  @unique
+  plan            String   @default("FREE")
+  contactName     String?
+  contactEmail    String?
+  contactPhone    String?
+  maxUsers        Int      @default(5)
+  maxDrivers      Int      @default(10)
+  maxShipments    Int      @default(100)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  users           User[]
+  customers       Customer[]
+  shipments       Shipment[]
+  drivers         Driver[]
+  vehicles        Vehicle[]
+  geofences       Geofence[]
+
+  @@index([slug])
+  @@index([domain])
+}
+
 enum Role {
   SUPER_ADMIN
   ADMIN_OPERASIONAL
@@ -66,6 +97,8 @@ enum GeofenceEventType {
 
 model User {
   id                 String         @id @default(cuid())
+  tenantId           String?
+  tenant             Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name               String
   username           String         @unique
   passwordHash       String
@@ -84,10 +117,14 @@ model User {
   driver             Driver?
   notifications      Notification[]
   auditLogs          AuditLog[]
+
+  @@index([tenantId])
 }
 
 model Customer {
   id         String  @id @default(cuid())
+  tenantId   String?
+  tenant     Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name       String
   phone      String
   email      String?
@@ -100,10 +137,14 @@ model Customer {
   sentBy     Shipment[] @relation("sender")
   receivedBy Shipment[] @relation("receiver")
   stopsShipped ShipmentStop[] @relation("customerStop")
+
+  @@index([tenantId])
 }
 
 model Shipment {
   id             String        @id @default(cuid())
+  tenantId       String?
+  tenant         Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   trackingNumber String        @unique
   senderId       String
   receiverId     String
@@ -135,6 +176,8 @@ model Shipment {
   notifications  Notification[]
   stops          ShipmentStop[]
   scans          WarehouseScan[]
+
+  @@index([tenantId])
 }
 
 model ShipmentStop {
@@ -164,6 +207,8 @@ model ShipmentItem {
 
 model Driver {
   id             String        @id @default(cuid())
+  tenantId       String?
+  tenant         Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employeeId     String        @unique
   name           String
   phone          String
@@ -178,10 +223,14 @@ model Driver {
   gpsLogs        GpsLog[]
   geofenceEvents GeofenceEvent[]
   dailyReports   DailyReport[]
+
+  @@index([tenantId])
 }
 
 model Vehicle {
   id            String   @id @default(cuid())
+  tenantId      String?
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   vehicleNumber String   @unique
   type          String
   capacity      Float    @default(0)
@@ -196,6 +245,8 @@ model Vehicle {
   assignments   DeliveryAssignment[]
   gpsLogs       GpsLog[]
   maintenanceRecords   VehicleMaintenance[]
+
+  @@index([tenantId])
 }
 
 model VehicleMaintenance {
@@ -323,6 +374,8 @@ model WarehouseScan {
 
 model Geofence {
   id           String          @id @default(cuid())
+  tenantId     String?
+  tenant       Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name         String
   latitude     Float
   longitude    Float
@@ -332,6 +385,8 @@ model Geofence {
   active       Boolean         @default(true)
   createdAt    DateTime        @default(now())
   events       GeofenceEvent[]
+
+  @@index([tenantId])
 }
 
 model GeofenceEvent {
@@ -358,4 +413,18 @@ model LoginAttempt {
 
   @@index([username, createdAt])
   @@index([ip, createdAt])
+}
+
+model DemoRequest {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  company   String
+  message   String?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
 }

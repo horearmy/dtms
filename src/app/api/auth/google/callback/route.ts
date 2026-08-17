@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${origin}/login?twoFactorToken=${encodeURIComponent(twoFactorToken)}`);
     }
 
-    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, pwdVersion: user.pwdVersion });
+    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, pwdVersion: user.pwdVersion });
     await logAudit(null, 'SSO_GOOGLE_LOGIN', 'AUTH', { newData: { email, username: user.username } }, req);
     const target = user.mustChangePassword
       ? '/account/password?first=1'

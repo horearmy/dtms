@@ -26,6 +26,7 @@ export default function Sidebar({ role, open, onClose }: { role: string; open?: 
     { href: '/users', label: 'Users', icon: 'M5 13a4 4 0 100-8 4 4 0 000 8zM3 21v-1a5 5 0 0110 0v1M11 7a3 3 0 100-6 3 3 0 000 6zM17 12h5M19.5 9.5l-5 5M19.5 14.5l-5-5' },
     { href: '/audit', label: 'Audit Log', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { href: '/settings/whatsapp', label: 'WhatsApp', icon: 'M12 2A10 10 0 002 12a9.9 9.9 0 002.3 6.4L3 22l3.8-1.2A9.9 9.9 0 0012 22h.1A10 10 0 0012 2zm5.6 14.2c-.2.6-1.2 1.2-1.7 1.2-.4.1-.9.1-1.5-.1-2.2-.8-4.1-2.5-5.4-4.9-.4-.7-.7-1.5-.7-1.9 0-.5.2-.9.5-1.3.2-.3.4-.5.6-.7.2-.1.3-.1.4-.1h.4c.1 0 .3-.1.5.4l.7 1.6c.1.2.1.4 0 .6l-.4.6c-.1.2-.2.4 0 .6.4.6 1 1.2 1.5 1.6.2.2.4.3.6.1.1-.2.4-.4.6-.7.2-.2.4-.2.6-.1l1.6.8c.2.1.4.3.5.4.1.2.1.3 0 .6z' },
+    { href: '/tenants', label: 'Tenants', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
   ];
 
   const showOps = opsRoles.includes(role);
@@ -71,6 +72,7 @@ export default function Sidebar({ role, open, onClose }: { role: string; open?: 
             {render(ops, (i) => {
               if (i.href === '/users') return showUsers;
               if (i.href === '/settings/whatsapp') return showUsers;
+              if (i.href === '/tenants') return role === 'SUPER_ADMIN';
               return true;
             })}
           </>

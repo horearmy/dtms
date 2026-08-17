@@ -27,6 +27,7 @@ const slaDeadlineFor = (service, createdAt) =>
 async function main() {
   console.log('Seeding database DTMS...');
 
+  await prisma.demoRequest.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.proofOfDelivery.deleteMany();
@@ -36,74 +37,106 @@ async function main() {
   await prisma.trackingEvent.deleteMany();
   await prisma.deliveryAssignment.deleteMany();
   await prisma.shipmentItem.deleteMany();
+  await prisma.warehouseScan.deleteMany();
   await prisma.shipment.deleteMany();
   await prisma.driver.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.tenant.deleteMany();
+
+  const tenant = await prisma.tenant.create({
+    data: {
+      name: 'DTMS Demo',
+      slug: 'default',
+      primaryColor: '#2563eb',
+      secondaryColor: '#1e40af',
+      accentColor: '#3b82f6',
+      plan: 'ENTERPRISE',
+      maxUsers: 100,
+      maxDrivers: 100,
+      maxShipments: 10000,
+      contactName: 'Admin DTMS',
+      contactEmail: 'admin@dtms.local',
+    },
+  });
+
+  await prisma.tenant.create({
+    data: {
+      name: 'PT Logistik Nusantara',
+      slug: 'logistik-nusantara',
+      primaryColor: '#059669',
+      secondaryColor: '#047857',
+      accentColor: '#10b981',
+      plan: 'BUSINESS',
+      maxUsers: 25,
+      maxDrivers: 50,
+      maxShipments: 1000,
+    },
+  });
 
   const hash = (pw) => bcrypt.hashSync(pw, 10);
 
   const superAdmin = await prisma.user.create({
-    data: { name: 'Super Admin', username: 'superadmin', passwordHash: hash('admin123'), role: Role.SUPER_ADMIN, email: 'superadmin@dtms.local' },
+    data: { name: 'Super Admin', username: 'superadmin', passwordHash: hash('admin123'), role: Role.SUPER_ADMIN, email: 'superadmin@dtms.local', tenantId: tenant.id },
   });
   await prisma.user.create({
-    data: { name: 'Admin Operasional', username: 'admin', passwordHash: hash('admin123'), role: Role.ADMIN_OPERASIONAL, email: 'admin@dtms.local' },
+    data: { name: 'Admin Operasional', username: 'admin', passwordHash: hash('admin123'), role: Role.ADMIN_OPERASIONAL, email: 'admin@dtms.local', tenantId: tenant.id },
   });
   await prisma.user.create({
-    data: { name: 'Dispatcher', username: 'dispatcher', passwordHash: hash('admin123'), role: Role.DISPATCHER },
+    data: { name: 'Dispatcher', username: 'dispatcher', passwordHash: hash('admin123'), role: Role.DISPATCHER, tenantId: tenant.id },
   });
   await prisma.user.create({
-    data: { name: 'Staff Gudang', username: 'warehouse', passwordHash: hash('admin123'), role: Role.WAREHOUSE },
+    data: { name: 'Staff Gudang', username: 'warehouse', passwordHash: hash('admin123'), role: Role.WAREHOUSE, tenantId: tenant.id },
   });
   await prisma.user.create({
-    data: { name: 'Customer Service', username: 'cs', passwordHash: hash('admin123'), role: Role.CUSTOMER_SERVICE },
+    data: { name: 'Customer Service', username: 'cs', passwordHash: hash('admin123'), role: Role.CUSTOMER_SERVICE, tenantId: tenant.id },
   });
   await prisma.user.create({
-    data: { name: 'Supervisor', username: 'supervisor', passwordHash: hash('admin123'), role: Role.SUPERVISOR },
+    data: { name: 'Supervisor', username: 'supervisor', passwordHash: hash('admin123'), role: Role.SUPERVISOR, tenantId: tenant.id },
   });
   await prisma.user.create({
-    data: { name: 'Manajemen', username: 'management', passwordHash: hash('admin123'), role: Role.MANAGEMENT },
+    data: { name: 'Manajemen', username: 'management', passwordHash: hash('admin123'), role: Role.MANAGEMENT, tenantId: tenant.id },
   });
 
   const driverUser1 = await prisma.user.create({
-    data: { name: 'Budi Santoso', username: 'driver1', passwordHash: hash('driver123'), role: Role.DRIVER, phone: '081234567801', email: 'driver1@dtms.local' },
+    data: { name: 'Budi Santoso', username: 'driver1', passwordHash: hash('driver123'), role: Role.DRIVER, phone: '081234567801', email: 'driver1@dtms.local', tenantId: tenant.id },
   });
   const driverUser2 = await prisma.user.create({
-    data: { name: 'Agus Wijaya', username: 'driver2', passwordHash: hash('driver123'), role: Role.DRIVER, phone: '081234567802' },
+    data: { name: 'Agus Wijaya', username: 'driver2', passwordHash: hash('driver123'), role: Role.DRIVER, phone: '081234567802', tenantId: tenant.id },
   });
 
   const customers = await Promise.all([
-    prisma.customer.create({ data: { name: 'PT Maju Jaya Abadi', phone: '021-5550101', email: 'ops@majujaya.co.id', address: 'Jl. Sudirman Kav 52', city: 'Jakarta Selatan', postalCode: '12190' } }),
-    prisma.customer.create({ data: { name: 'CV Sinar Logistik', phone: '021-5550102', email: 'halo@sinarlogistik.com', address: 'Jl. Gatot Subroto No. 21', city: 'Jakarta Selatan', postalCode: '12930' } }),
-    prisma.customer.create({ data: { name: 'Toko Elektronik Sentral', phone: '022-5550103', email: 'sentralelektronik@gmail.com', address: 'Jl. Braga No. 12', city: 'Bandung', postalCode: '40111' } }),
-    prisma.customer.create({ data: { name: 'Rumah Sakit Sehat', phone: '031-5550104', email: 'logistik@rssehat.co.id', address: 'Jl. Ahmad Yani No. 88', city: 'Surabaya', postalCode: '60231' } }),
-    prisma.customer.create({ data: { name: 'CV Berkah Fashion', phone: '022-5550105', email: 'berkahfashion@gmail.com', address: 'Jl. Dago No. 45', city: 'Bandung', postalCode: '40135' } }),
-    prisma.customer.create({ data: { name: 'PT Digital Nusantara', phone: '021-5550106', email: 'cs@digitalnusantara.id', address: 'Tbk. Kawasan BSD Sektor 11', city: 'Tangerang Selatan', postalCode: '15311' } }),
-    prisma.customer.create({ data: { name: 'Ibu Siti Rahayu', phone: '085211223344', address: 'Jl. Melati No. 7, Pondok Indah', city: 'Jakarta Selatan', postalCode: '12310' } }),
-    prisma.customer.create({ data: { name: 'Bapak Andi Pratama', phone: '081388771122', address: 'Jl. Merdeka No. 101', city: 'Bandung', postalCode: '40112' } }),
+    prisma.customer.create({ data: { name: 'PT Maju Jaya Abadi', phone: '021-5550101', email: 'ops@majujaya.co.id', address: 'Jl. Sudirman Kav 52', city: 'Jakarta Selatan', postalCode: '12190', tenantId: tenant.id } }),
+    prisma.customer.create({ data: { name: 'CV Sinar Logistik', phone: '021-5550102', email: 'halo@sinarlogistik.com', address: 'Jl. Gatot Subroto No. 21', city: 'Jakarta Selatan', postalCode: '12930', tenantId: tenant.id } }),
+    prisma.customer.create({ data: { name: 'Toko Elektronik Sentral', phone: '022-5550103', email: 'sentralelektronik@gmail.com', address: 'Jl. Braga No. 12', city: 'Bandung', postalCode: '40111', tenantId: tenant.id } }),
+    prisma.customer.create({ data: { name: 'Rumah Sakit Sehat', phone: '031-5550104', email: 'logistik@rssehat.co.id', address: 'Jl. Ahmad Yani No. 88', city: 'Surabaya', postalCode: '60231', tenantId: tenant.id } }),
+    prisma.customer.create({ data: { name: 'CV Berkah Fashion', phone: '022-5550105', email: 'berkahfashion@gmail.com', address: 'Jl. Dago No. 45', city: 'Bandung', postalCode: '40135', tenantId: tenant.id } }),
+    prisma.customer.create({ data: { name: 'PT Digital Nusantara', phone: '021-5550106', email: 'cs@digitalnusantara.id', address: 'Tbk. Kawasan BSD Sektor 11', city: 'Tangerang Selatan', postalCode: '15311', tenantId: tenant.id } }),
+    prisma.customer.create({ data: { name: 'Ibu Siti Rahayu', phone: '085211223344', address: 'Jl. Melati No. 7, Pondok Indah', city: 'Jakarta Selatan', postalCode: '12310', tenantId: tenant.id } }),
+    prisma.customer.create({ data: { name: 'Bapak Andi Pratama', phone: '081388771122', address: 'Jl. Merdeka No. 101', city: 'Bandung', postalCode: '40112', tenantId: tenant.id } }),
   ]);
 
   const driver1 = await prisma.driver.create({
-    data: { employeeId: 'DRV-001', name: 'Budi Santoso', phone: '081234567801', userId: driverUser1.id },
+    data: { employeeId: 'DRV-001', name: 'Budi Santoso', phone: '081234567801', userId: driverUser1.id, tenantId: tenant.id },
   });
   const driver2 = await prisma.driver.create({
-    data: { employeeId: 'DRV-002', name: 'Agus Wijaya', phone: '081234567802', userId: driverUser2.id },
+    data: { employeeId: 'DRV-002', name: 'Agus Wijaya', phone: '081234567802', userId: driverUser2.id, tenantId: tenant.id },
   });
 
-  const v1 = await prisma.vehicle.create({ data: { vehicleNumber: 'B 1234 CD', type: 'Pickup', capacity: 1000, status: 'IN_USE' } });
-  const v2 = await prisma.vehicle.create({ data: { vehicleNumber: 'B 5678 EF', type: 'Truck Box', capacity: 5000, status: 'IN_USE' } });
-  await prisma.vehicle.create({ data: { vehicleNumber: 'B 9012 GH', type: 'Van', capacity: 800, status: 'AVAILABLE' } });
-  await prisma.vehicle.create({ data: { vehicleNumber: 'B 3456 IJ', type: 'Motor', capacity: 150, status: 'MAINTENANCE' } });
+  const v1 = await prisma.vehicle.create({ data: { vehicleNumber: 'B 1234 CD', type: 'Pickup', capacity: 1000, status: 'IN_USE', tenantId: tenant.id } });
+  const v2 = await prisma.vehicle.create({ data: { vehicleNumber: 'B 5678 EF', type: 'Truck Box', capacity: 5000, status: 'IN_USE', tenantId: tenant.id } });
+  await prisma.vehicle.create({ data: { vehicleNumber: 'B 9012 GH', type: 'Van', capacity: 800, status: 'AVAILABLE', tenantId: tenant.id } });
+  await prisma.vehicle.create({ data: { vehicleNumber: 'B 3456 IJ', type: 'Motor', capacity: 150, status: 'MAINTENANCE', tenantId: tenant.id } });
 
   await prisma.geofence.create({
-    data: { name: 'Gudang Pusat Jakarta', latitude: -6.213, longitude: 106.845, radiusMeters: 800, type: GeofenceType.WAREHOUSE, description: 'Perimeter gudang induk, memicu alert saat driver masuk/keluar' },
+    data: { name: 'Gudang Pusat Jakarta', latitude: -6.213, longitude: 106.845, radiusMeters: 800, type: GeofenceType.WAREHOUSE, description: 'Perimeter gudang induk, memicu alert saat driver masuk/keluar', tenantId: tenant.id },
   });
   await prisma.geofence.create({
-    data: { name: 'Hub Bandung', latitude: -6.917, longitude: 107.619, radiusMeters: 800, type: GeofenceType.HUB, description: 'Perimeter hub Bandung' },
+    data: { name: 'Hub Bandung', latitude: -6.917, longitude: 107.619, radiusMeters: 800, type: GeofenceType.HUB, description: 'Perimeter hub Bandung', tenantId: tenant.id },
   });
   await prisma.geofence.create({
-    data: { name: 'Cakupan Jakarta', latitude: -6.2088, longitude: 106.8456, radiusMeters: 15000, type: GeofenceType.OPERATIONAL_AREA, description: 'Wilayah operasional utama' },
+    data: { name: 'Cakupan Jakarta', latitude: -6.2088, longitude: 106.8456, radiusMeters: 15000, type: GeofenceType.OPERATIONAL_AREA, description: 'Wilayah operasional utama', tenantId: tenant.id },
   });
 
   const daysAgo = (n, h = 9, m = 0) => {
@@ -119,7 +152,6 @@ async function main() {
     return `DTMS-${ymd}-${String(100000 + Math.floor(Math.random() * 899999))}`;
   };
 
-  // Helper membuat shipment beserta timeline event & assignment
   async function makeShipment({ sender, receiver, weight, service, status, fragile, from, to }) {
     const origin = coordForCity(sender.city) || { lat: -6.213, lng: 106.845 };
     const dest = coordForCity(receiver.city) || to || { lat: -6.2088, lng: 106.8456 };
@@ -145,6 +177,7 @@ async function main() {
         itemValue: 500000,
         createdAt: from,
         updatedAt: from,
+        tenantId: tenant.id,
         items: {
           create: { itemName: 'Paket Campuran', quantity: 1, weight },
         },
@@ -220,7 +253,6 @@ async function main() {
   const now = new Date();
   const today = daysAgo(0, 8, 30);
 
-  // Shipment hari ini (beragam status)
   await makeShipment({ sender: customers[0], receiver: customers[6], weight: 12.5, service: ServiceType.SAME_DAY, status: ShipmentStatus.OUT_FOR_DELIVERY, from: today, to: { lat: -6.262, lng: 106.783 } });
   await makeShipment({ sender: customers[1], receiver: customers[7], weight: 8.0, service: ServiceType.SAME_DAY, status: ShipmentStatus.IN_TRANSIT, from: today, to: { lat: -6.255, lng: 106.822 } });
   await makeShipment({ sender: customers[2], receiver: customers[4], weight: 45.0, service: ServiceType.REGULAR, status: ShipmentStatus.ARRIVED_AT_HUB, from: daysAgo(1, 10, 15), to: { lat: -6.91, lng: 107.63 } });
@@ -235,7 +267,6 @@ async function main() {
   await makeShipment({ sender: customers[5], receiver: customers[3], weight: 30.0, service: ServiceType.REGULAR, status: ShipmentStatus.RETURNED, from: daysAgo(3, 9, 0), to: { lat: -6.21, lng: 106.86 } });
   await makeShipment({ sender: customers[6], receiver: customers[2], weight: 2.0, service: ServiceType.REGULAR, status: ShipmentStatus.DISPATCHED, from: today, to: { lat: -6.91, lng: 107.60 } });
 
-  // GPS logs untuk driver
   const gpsPoints = [
     [-6.2, 106.816, 40, 90],
     [-6.21, 106.83, 32, 120],
@@ -275,13 +306,12 @@ async function main() {
     });
   }
 
-  // Audit log contoh
   await prisma.auditLog.create({
     data: { userId: superAdmin.id, action: 'SEED_DATA', module: 'SYSTEM', newData: 'Database DTMS diisi data contoh', createdAt: now },
   });
 
   await prisma.$disconnect();
-  console.log('Seed selesai. Akun login: superadmin/admin123, admin/admin123, driver1/driver123');
+  console.log('Seed selesai. Tenant: default. Akun: superadmin/admin123, admin/admin123, driver1/driver123');
 }
 
 main().catch((e) => {

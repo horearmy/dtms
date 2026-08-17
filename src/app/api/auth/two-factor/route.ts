@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     await recordLoginAttempt(user.username, ip, true);
-    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, pwdVersion: user.pwdVersion });
+    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, pwdVersion: user.pwdVersion });
     await logAudit(null, 'TWO_FACTOR_LOGIN_SUCCESS', 'AUTH', { newData: { username: user.username } }, req);
 
     return NextResponse.json({

@@ -40,7 +40,14 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const ip = clientIp(req);
 
+  const PUBLIC_PATHS = ['/', '/login', '/tracking', '/features', '/pricing', '/demo-request'];
+  const isPublicPage = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
+  const isTrackingApi = pathname.startsWith('/api/tracking/');
+  const isDemoRequestApi = pathname === '/api/demo-request';
+  const isPublic = isPublicPage || isTrackingApi || isDemoRequestApi;
+
   if (pathname.startsWith('/api/')) {
+    if (isPublic) return NextResponse.next();
     const isLogin = pathname === '/api/auth/login' || pathname.startsWith('/api/auth/two-factor');
     const limit = isLogin ? RATE_LOGIN_LIMIT : RATE_API_LIMIT;
     const key = `${isLogin ? 'login' : 'api'}:${ip}`;
@@ -53,6 +60,8 @@ export async function middleware(req: NextRequest) {
     }
     return NextResponse.next();
   }
+
+  if (isPublicPage) return NextResponse.next();
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
 
@@ -104,5 +113,7 @@ export const config = {
     '/geofences/:path*',
     '/account/:path*',
     '/driver/:path*',
+    '/settings/:path*',
+    '/tenants/:path*',
   ],
 };

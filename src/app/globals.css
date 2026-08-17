@@ -17,3 +17,9 @@ html, body {
 .leaflet-container {
   z-index: 0;
 }
+
+:root {
+  --dt-primary: #2563eb;
+  --dt-secondary: #1e40af;
+  --dt-accent: #3b82f6;
+}
