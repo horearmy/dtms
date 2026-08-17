@@ -88,17 +88,17 @@ export default function DriversPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Drivers</h1>
-          <p className="text-sm text-slate-500">Manajemen kurir & aset kendaraan</p>
+          <h1 className="text-xl font-bold text-[#101828]">Drivers</h1>
+          <p className="text-sm text-[#667085]">Manajemen kurir & aset kendaraan</p>
         </div>
         <button onClick={openNew} className={btnPrimary}>+ Tambah Driver</button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+              <tr className="border-b bg-[#F7F9FC] text-left text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
                 <th className="px-4 py-3">Employee ID</th>
                 <th className="px-4 py-3">Nama</th>
                 <th className="px-4 py-3">Telepon</th>
@@ -110,52 +110,52 @@ export default function DriversPage() {
             </thead>
             <tbody>
               {items.map((d) => (
-                <tr key={d.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-3 font-mono text-xs text-slate-500">{d.employeeId}</td>
+                <tr key={d.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
+                  <td className="px-4 py-3 font-mono text-xs text-[#667085]">{d.employeeId}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {d.photo ? (
-                        <img src={d.photo} alt={d.name} className="h-9 w-9 rounded-full border border-slate-200 object-cover" />
+                        <img src={d.photo} alt={d.name} className="h-9 w-9 rounded-full border border-[#E4E7EC] object-cover" />
                       ) : (
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E7F0FF] text-xs font-bold text-[#0D6EFD]">
                           {d.name.slice(0, 1).toUpperCase()}
                         </span>
                       )}
-                      <button onClick={() => setDetailId(d.id)} className="font-medium text-slate-800 hover:text-brand-600 hover:underline">
+                      <button onClick={() => setDetailId(d.id)} className="font-medium text-[#101828] hover:text-[#0D6EFD] hover:underline">
                         {d.name}
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{d.phone}</td>
+                  <td className="px-4 py-3 text-[#667085]">{d.phone}</td>
                   <td className="px-4 py-3">
   {d.user ? (
-    <span className="font-mono text-xs text-slate-600">{d.user.username}</span>
+    <span className="font-mono text-xs text-[#667085]">{d.user.username}</span>
   ) : (
-    <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">Belum ada akun</span>
+    <span className="rounded-full bg-[#FEF0F0] px-2 py-0.5 text-[11px] font-semibold text-[#F5222D]">Belum ada akun</span>
   )}
 </td>
-                  <td className="px-4 py-3 text-slate-600">{d._count?.assignments || 0}</td>
+                  <td className="px-4 py-3 text-[#667085]">{d._count?.assignments || 0}</td>
                   <td className="px-4 py-3">
                     {d.returning ? (
-                      <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700">
+                      <span className="rounded-full bg-[#FFF7E6] px-2 py-0.5 text-xs font-semibold text-[#FF8A00]">
                         Kembali ke Gudang
                       </span>
                     ) : d.busy ? (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                      <span className="rounded-full bg-[#FFF2E0] px-2 py-0.5 text-xs font-semibold text-[#FF8A00]">
                         Perjalanan{d.activeTracking ? ` · ${d.activeTracking}` : ''}
                       </span>
                     ) : (
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${d.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${d.status === 'ACTIVE' ? 'bg-[#E6F9EF] text-[#16B364]' : 'bg-[#F7F9FC] text-[#667085]'}`}>
                         {d.status}
                       </span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => setDetailId(d.id)} className="text-xs font-semibold text-slate-600 hover:text-brand-600 hover:underline">
+                    <button onClick={() => setDetailId(d.id)} className="text-xs font-semibold text-[#667085] hover:text-[#0D6EFD] hover:underline">
                       🗺️ Detail
                     </button>
-                    <button onClick={() => openEdit(d)} className="ml-3 text-xs font-semibold text-brand-600 hover:underline">Edit</button>
-                    <button onClick={() => remove(d)} className="ml-3 text-xs font-semibold text-red-500 hover:underline">Hapus</button>
+                    <button onClick={() => openEdit(d)} className="ml-3 text-xs font-semibold text-[#0D6EFD] hover:underline">Edit</button>
+                    <button onClick={() => remove(d)} className="ml-3 text-xs font-semibold text-[#F5222D] hover:underline">Hapus</button>
                   </td>
                 </tr>
               ))}
@@ -191,12 +191,12 @@ export default function DriversPage() {
                 <option value="INACTIVE">Nonaktif</option>
               </select>
             </Field>
-            <div className="col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <p className="mb-2 text-[11px] font-bold uppercase text-slate-500">Akun Login Driver</p>
+            <div className="col-span-2 rounded-lg border border-[#E4E7EC] bg-[#F7F9FC] p-3">
+              <p className="mb-2 text-[11px] font-bold uppercase text-[#667085]">Akun Login Driver</p>
               <div className="grid grid-cols-2 gap-3">
                 <Field label={edit && edit.user ? 'Username (login)' : 'Username Akun'}>
                   {edit && edit.user ? (
-                    <input value={form.username} readOnly className={inputCls + ' bg-slate-100 text-slate-500'} />
+                    <input value={form.username} readOnly className={inputCls + ' bg-[#F7F9FC] text-[#667085]'} />
                   ) : (
                     <input
                       value={form.username}
@@ -216,14 +216,14 @@ export default function DriversPage() {
                   />
                 </Field>
               </div>
-              <p className="mt-2 text-[11px] text-slate-400">
+              <p className="mt-2 text-[11px] text-[#667085]">
                 {edit && edit.user
                   ? 'Isi Password Baru untuk mereset password login driver.'
                   : 'Isi Username & Password untuk membuat akun login role Driver. Kosongkan bila akun dibuat nanti.'}
               </p>
             </div>
           </div>
-          {msg && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{msg}</div>}
+          {msg && <div className="rounded-lg bg-[#FEF0F0] px-3 py-2 text-sm text-[#F5222D]">{msg}</div>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setOpen(false)} className={btnGhost}>Batal</button>
             <button type="submit" disabled={loading} className={btnPrimary}>{loading ? 'Menyimpan...' : 'Simpan'}</button>

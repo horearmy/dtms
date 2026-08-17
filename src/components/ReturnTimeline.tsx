@@ -80,22 +80,22 @@ export default function ReturnTimeline({ driverId, driverName }: { driverId?: st
   const points = data?.points || [];
 
   return (
-    <div className={`rounded-xl border bg-white p-5 shadow-sm ${hasReturn ? 'border-amber-200' : 'border-slate-200'}`}>
+    <div className={`rounded-xl border bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${hasReturn ? 'border-amber-200' : 'border-[#E4E7EC]'}`}>
       <div className="mb-1 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-bold text-slate-900">🚚 Timeline Perjalanan Kembali</h2>
+        <h2 className="text-sm font-bold text-[#101828]">🚚 Timeline Perjalanan Kembali</h2>
         {hasReturn && (
-          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Update {lastUpdate}</span>
+          <span className="text-[10px] font-bold uppercase tracking-wide text-[#667085]">Update {lastUpdate}</span>
         )}
       </div>
 
       {!hasReturn && !loading && (
-        <p className="py-3 text-center text-sm text-slate-400">
+        <p className="py-3 text-center text-sm text-[#667085]">
           Belum ada perjalanan kembali{driverName ? ` — tunggu ${driverName} melapor kembali ke gudang` : ''}.
         </p>
       )}
 
-      {loading && !data && <p className="py-3 text-center text-sm text-slate-400">Memuat…</p>}
-      {err && <p className="py-2 text-center text-sm text-red-600">{err}</p>}
+      {loading && !data && <p className="py-3 text-center text-sm text-[#667085]">Memuat…</p>}
+      {err && <p className="py-2 text-center text-sm text-[#F5222D]">{err}</p>}
 
       {hasReturn && (
         <>
@@ -109,22 +109,22 @@ export default function ReturnTimeline({ driverId, driverName }: { driverId?: st
                 Sedang kembali ke gudang
               </span>
             ) : (
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700">
+              <span className="rounded-full bg-[#E6F9EF] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#16B364]">
                 ✓ Selesai kembali — {formatDateTime(data!.driver.returnedAt!)}
               </span>
             )}
-            <span className="text-[11px] text-slate-500">
+            <span className="text-[11px] text-[#667085]">
               Mulai {data!.driver.returnStartedAt ? formatDateTime(data!.driver.returnStartedAt) : '-'}
             </span>
           </div>
 
-          <div className="mb-2 space-y-1 text-xs text-slate-600">
+          <div className="mb-2 space-y-1 text-xs text-[#667085]">
             {traveledKm > 0 && <div><b>Jarak ditempuh:</b> {traveledKm.toFixed(1)} km</div>}
             {remainingKm != null && (
               <div><b>Sisa ke gudang {data!.warehouse.name || ''}:</b> {remainingKm.toFixed(1)} km</div>
             )}
             {points.length > 0 && (
-              <div className="font-mono text-slate-400">
+              <div className="font-mono text-[#667085]">
                 Lokasi terakhir: {points[points.length - 1].latitude.toFixed(5)}, {points[points.length - 1].longitude.toFixed(5)}
               </div>
             )}
@@ -140,12 +140,12 @@ export default function ReturnTimeline({ driverId, driverName }: { driverId?: st
                   </span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={`text-sm ${i === points.length - 1 ? 'font-bold text-amber-700' : 'font-semibold text-slate-700'}`}>
+                      <span className={`text-sm ${i === points.length - 1 ? 'font-bold text-amber-700' : 'font-semibold text-[#101828]'}`}>
                         {i === 0 ? 'Mulai kembali' : i === points.length - 1 ? 'Posisi terakhir' : `Titik ${i}`}
                       </span>
-                      <span className="text-[11px] text-slate-400">{formatDateTime(p.createdAt)}</span>
+                      <span className="text-[11px] text-[#667085]">{formatDateTime(p.createdAt)}</span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-[#667085]">
                       <span className="font-mono">{p.latitude.toFixed(5)}, {p.longitude.toFixed(5)}</span>
                       {p.speed != null && <span>{p.speed} km/h</span>}
                       {p.battery != null && <span>🔋 {p.battery}%</span>}

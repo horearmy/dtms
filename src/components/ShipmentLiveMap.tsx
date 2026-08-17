@@ -111,7 +111,7 @@ export default function ShipmentLiveMap({ trackingNumber, origin, destination, o
         const m = L.marker([originLat, originLng], {
           icon: L.divIcon({
             className: '',
-            html: `<div style="width:26px;height:26px;background:#059669;border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:13px;">🏭</span></div>`,
+            html: `<div style="width:26px;height:26px;background:#16B364;border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:13px;">🏭</span></div>`,
             iconSize: [26, 26],
             iconAnchor: [13, 24],
           }),
@@ -124,7 +124,7 @@ export default function ShipmentLiveMap({ trackingNumber, origin, destination, o
         const m = L.marker([destLat, destLng], {
           icon: L.divIcon({
             className: '',
-            html: `<div style="width:26px;height:26px;background:#dc2626;border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:13px;">📍</span></div>`,
+            html: `<div style="width:26px;height:26px;background:#F5222D;border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:13px;">📍</span></div>`,
             iconSize: [26, 26],
             iconAnchor: [13, 24],
           }),
@@ -137,7 +137,7 @@ export default function ShipmentLiveMap({ trackingNumber, origin, destination, o
         const m = L.marker([driverPos.lat, driverPos.lng], {
           icon: L.divIcon({
             className: '',
-            html: `<div style="width:34px;height:34px;background:#2563eb;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:14px;">🚚</span></div>`,
+            html: `<div style="width:34px;height:34px;background:#0D6EFD;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:14px;">🚚</span></div>`,
             iconSize: [34, 34],
             iconAnchor: [17, 30],
           }),
@@ -156,7 +156,7 @@ export default function ShipmentLiveMap({ trackingNumber, origin, destination, o
 
       if (route && route.length > 1) {
         const line = L.polyline(route, {
-          color: status === 'DELIVERED' || status === 'RETURNED' ? '#059669' : '#2563eb',
+          color: status === 'DELIVERED' || status === 'RETURNED' ? '#16B364' : '#0D6EFD',
           weight: 3,
           opacity: 0.6,
           dashArray: routeFallback ? '4 6' : undefined,
@@ -165,7 +165,7 @@ export default function ShipmentLiveMap({ trackingNumber, origin, destination, o
           `<div style="font-size:12px;min-width:150px;">
              <b style="font-family:monospace;">${trackingNumber}</b><br/>
              Rute pengiriman · ${route.length} titik
-             ${routeFallback ? '<br/><i style="color:#94a3b8;">Rute lurus (OSRM tidak merespons)</i>' : ''}
+             ${routeFallback ? '<br/><i style="color:#667085;">Rute lurus (OSRM tidak merespons)</i>' : ''}
            </div>`
         );
         if (hasOrDest && bounds.length < 2) {
@@ -186,24 +186,24 @@ export default function ShipmentLiveMap({ trackingNumber, origin, destination, o
   }, [route, driverPos, originLat, originLng, destLat, destLng]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
-        <h2 className="text-sm font-bold text-slate-900">Lokasi Paket Saat Ini</h2>
-        <div className="flex items-center gap-3 text-[11px] text-slate-500">
+    <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <div className="flex items-center justify-between border-b border-[#F7F9FC] px-4 py-2.5">
+        <h2 className="text-sm font-bold text-[#101828]">Lokasi Paket Saat Ini</h2>
+        <div className="flex items-center gap-3 text-[11px] text-[#667085]">
           {driverPos ? (
             <>
-              <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-blue-600" /> Driver</span>
+              <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-[#0D6EFD]" /> Driver</span>
               <span className="font-mono">{driverPos.lat.toFixed(5)}, {driverPos.lng.toFixed(5)}</span>
             </>
           ) : (
             <span>Belum ada sinyal GPS driver</span>
           )}
-          {loadingRoute && <span className="text-slate-400">menghitung rute…</span>}
+          {loadingRoute && <span className="text-[#667085]">menghitung rute…</span>}
         </div>
       </div>
       <div className="h-80 md:h-96" ref={mapRef} />
       {(!originLat || !destLat) && (
-        <div className="border-t border-slate-100 bg-amber-50 px-4 py-2 text-xs text-amber-700">
+        <div className="border-t border-[#F7F9FC] bg-amber-50 px-4 py-2 text-xs text-amber-700">
           Asal/tujuan tanpa koordinat — peta hanya menampilkan posisi driver saat ini.
         </div>
       )}

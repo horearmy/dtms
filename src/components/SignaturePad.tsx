@@ -60,7 +60,7 @@ export default function SignaturePad({ onChange }: { onChange: (dataUrl: string)
 
   return (
     <div>
-      <div className="rounded-lg border-2 border-dashed border-slate-300 bg-white" style={{ touchAction: 'none' }}>
+      <div className="rounded-lg border-2 border-dashed border-[#E4E7EC] bg-white" style={{ touchAction: 'none' }}>
         <canvas
           ref={canvasRef}
           aria-label="Area tanda tangan — gambar di sini"
@@ -73,8 +73,8 @@ export default function SignaturePad({ onChange }: { onChange: (dataUrl: string)
         />
       </div>
       <div className="mt-1 flex items-center justify-between">
-        <span className="text-[11px] text-slate-400">{hasSig ? '✓ Tanda tangan diisi' : 'Tanda tangan di atas'}</span>
-        {hasSig && <button onClick={clear} className="text-[11px] font-semibold text-red-500 hover:underline">Ulangi</button>}
+        <span className="text-[11px] text-[#667085]">{hasSig ? '✓ Tanda tangan diisi' : 'Tanda tangan di atas'}</span>
+        {hasSig && <button onClick={clear} className="text-[11px] font-semibold text-[#F5222D] hover:underline">Ulangi</button>}
       </div>
     </div>
   );

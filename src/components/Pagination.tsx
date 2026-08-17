@@ -26,25 +26,25 @@ export default function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 text-sm text-slate-600">
+    <div className="flex items-center justify-between px-4 py-3 text-sm text-[#667085]">
       <span>Menampilkan {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} dari {total}</span>
       <div className="flex items-center gap-1">
         <button disabled={page <= 1} onClick={() => onChange(page - 1)}
-          className="rounded px-2 py-1 text-xs font-semibold hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300">
+          className="rounded px-2 py-1 text-xs font-semibold hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300">
           &laquo;
         </button>
         {pages.map((p, i) =>
           p === '...' ? (
-            <span key={`e${i}`} className="px-1 text-slate-400">...</span>
+            <span key={`e${i}`} className="px-1 text-[#667085]">...</span>
           ) : (
             <button key={p} onClick={() => onChange(p)}
-              className={`min-w-[28px] rounded px-2 py-1 text-xs font-semibold ${p === page ? 'bg-brand-600 text-white' : 'hover:bg-slate-100'}`}>
+              className={`min-w-[28px] rounded px-2 py-1 text-xs font-semibold ${p === page ? 'bg-[#0D6EFD] text-white' : 'hover:bg-gray-100'}`}>
               {p}
             </button>
           )
         )}
         <button disabled={page >= totalPages} onClick={() => onChange(page + 1)}
-          className="rounded px-2 py-1 text-xs font-semibold hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300">
+          className="rounded px-2 py-1 text-xs font-semibold hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300">
           &raquo;
         </button>
       </div>

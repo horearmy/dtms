@@ -38,7 +38,7 @@ type ScanItem = {
 
 export default function ScanPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center text-slate-400">Memuat...</div>}>
+    <Suspense fallback={<div className="py-20 text-center text-[#667085]">Memuat...</div>}>
       <ScanInner />
     </Suspense>
   );
@@ -158,17 +158,17 @@ function ScanInner() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Warehouse Scan</h1>
-        <p className="text-sm text-slate-500">Scan barcode/QR untuk proses verifikasi gudang – dispatch</p>
+        <h1 className="text-xl font-bold text-[#101828]">Warehouse Scan</h1>
+        <p className="text-sm text-[#667085]">Scan barcode/QR untuk proses verifikasi gudang – dispatch</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <form
             onSubmit={(e) => { e.preventDefault(); search(); }}
             className="space-y-3"
           >
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Nomor Resi / Tracking</label>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Nomor Resi / Tracking</label>
             <div className="flex gap-2">
               <input
                 value={code}
@@ -184,10 +184,10 @@ function ScanInner() {
             </button>
           </form>
 
-          <div className="mt-3 overflow-hidden rounded-lg bg-slate-900">
+          <div className="mt-3 overflow-hidden rounded-lg bg-[#061B41]">
             <video ref={videoRef} playsInline muted className="h-56 w-full object-cover" style={{ display: camOn ? 'block' : 'none' }} />
             {!camOn && (
-              <div className="flex h-56 items-center justify-center text-center text-xs text-slate-400">
+              <div className="flex h-56 items-center justify-center text-center text-xs text-[#667085]">
                 {camErr || 'Kamera mati — aktifkan untuk memindai QR/barcode di label'}
               </div>
             )}
@@ -196,12 +196,12 @@ function ScanInner() {
           {notFound && <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{notFound}</div>}
 
           {hit && (
-            <div className="mt-4 rounded-xl border border-slate-200 p-4">
+            <div className="mt-4 rounded-xl border border-[#E4E7EC] p-4">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-sm font-bold text-brand-700">{hit.trackingNumber}</span>
+                <span className="font-mono text-sm font-bold text-[#0D6EFD]">{hit.trackingNumber}</span>
                 <StatusBadge status={hit.status} />
               </div>
-              <div className="mt-2 grid gap-1 text-xs text-slate-600 sm:grid-cols-3">
+              <div className="mt-2 grid gap-1 text-xs text-[#667085] sm:grid-cols-3">
                 <div><b>Pengirim:</b> {hit.sender.name}</div>
                 <div><b>Penerima:</b> {hit.receiver.name}</div>
                 <div><b>Tujuan:</b> {hit.destination}</div>
@@ -212,7 +212,7 @@ function ScanInner() {
                     Scan → {STATUS_LABELS[nextAction]} ({ACTION_HINT[nextAction]})
                   </button>
                 ) : (
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[#667085]">
                     Status {hit.status} di luar alur gudang (ORDER_CREATED → WAREHOUSE_RECEIVED → DISPATCHED).
                   </p>
                 )}
@@ -221,21 +221,21 @@ function ScanInner() {
           )}
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 text-sm font-bold text-slate-900">Riwayat Scan Terakhir</h2>
-          <ul className="divide-y divide-slate-100">
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="mb-3 text-sm font-bold text-[#101828]">Riwayat Scan Terakhir</h2>
+          <ul className="divide-y divide-[#E4E7EC]">
             {scans.map((s) => (
               <li key={s.id} className="flex items-center justify-between gap-2 py-2.5">
                 <div className="min-w-0">
-                  <p className="truncate font-mono text-xs font-semibold text-slate-700">{s.trackingNumber}</p>
-                  <p className="text-[11px] text-slate-400">{s.destination} · {formatDateTime(s.createdAt)}</p>
+                  <p className="truncate font-mono text-xs font-semibold text-[#101828]">{s.trackingNumber}</p>
+                  <p className="text-[11px] text-[#667085]">{s.destination} · {formatDateTime(s.createdAt)}</p>
                 </div>
-                <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-700">
+                <span className="shrink-0 rounded-full bg-[#0D6EFD]/10 px-2 py-0.5 text-[10px] font-bold uppercase text-[#0D6EFD]">
                   {STATUS_LABELS[s.action] || s.action}
                 </span>
               </li>
             ))}
-            {scans.length === 0 && <li className="py-8 text-center text-sm text-slate-400">Belum ada scan</li>}
+            {scans.length === 0 && <li className="py-8 text-center text-sm text-[#667085]">Belum ada scan</li>}
           </ul>
         </div>
       </div>

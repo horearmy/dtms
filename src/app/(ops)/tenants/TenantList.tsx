@@ -117,8 +117,8 @@ export default function TenantList() {
 
   const planBadge = (plan: string) => {
     const colors: Record<string, string> = {
-      FREE: 'bg-gray-100 text-gray-700',
-      STARTER: 'bg-blue-100 text-blue-700',
+      FREE: 'bg-[#F7F9FC] text-[#667085]',
+      STARTER: 'bg-[#0D6EFD]/10 text-[#0D6EFD]',
       BUSINESS: 'bg-purple-100 text-purple-700',
       ENTERPRISE: 'bg-amber-100 text-amber-700',
     };
@@ -128,57 +128,57 @@ export default function TenantList() {
   return (
     <div>
       <div className="mb-4 flex justify-end">
-        <button onClick={openCreate} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+        <button onClick={openCreate} className="rounded-lg bg-[#0D6EFD] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0B5FD5]">
           + Tenant Baru
         </button>
       </div>
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-lg font-bold text-gray-900">{editTenant ? 'Edit Tenant' : 'Tenant Baru'}</h2>
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+            <h2 className="mb-4 text-lg font-bold text-[#101828]">{editTenant ? 'Edit Tenant' : 'Tenant Baru'}</h2>
             <form onSubmit={save} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Nama Perusahaan *</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Nama Perusahaan *</label>
                   <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Slug *</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Slug *</label>
                   <input type="text" required pattern="[a-z0-9-]+" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })}
                     disabled={!!editTenant}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none disabled:bg-gray-50" />
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none disabled:bg-[#F7F9FC]" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Warna Primer</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Warna Primer</label>
                   <input type="color" value={form.primaryColor} onChange={(e) => setForm({ ...form, primaryColor: e.target.value })}
-                    className="h-10 w-full cursor-pointer rounded-lg border border-gray-300" />
+                    className="h-10 w-full cursor-pointer rounded-lg border border-[#E4E7EC]" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Warna Sekunder</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Warna Sekunder</label>
                   <input type="color" value={form.secondaryColor} onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })}
-                    className="h-10 w-full cursor-pointer rounded-lg border border-gray-300" />
+                    className="h-10 w-full cursor-pointer rounded-lg border border-[#E4E7EC]" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Warna Aksen</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Warna Aksen</label>
                   <input type="color" value={form.accentColor} onChange={(e) => setForm({ ...form, accentColor: e.target.value })}
-                    className="h-10 w-full cursor-pointer rounded-lg border border-gray-300" />
+                    className="h-10 w-full cursor-pointer rounded-lg border border-[#E4E7EC]" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Domain</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Domain</label>
                   <input type="text" value={form.domain} onChange={(e) => setForm({ ...form, domain: e.target.value })}
                     placeholder="logistik.example.com"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Plan</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Plan</label>
                   <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none">
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
                     <option value="FREE">Free</option>
                     <option value="STARTER">Starter</option>
                     <option value="BUSINESS">Business</option>
@@ -188,27 +188,27 @@ export default function TenantList() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Max Users</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Max Users</label>
                   <input type="number" min={1} value={form.maxUsers} onChange={(e) => setForm({ ...form, maxUsers: +e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Max Drivers</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Max Drivers</label>
                   <input type="number" min={1} value={form.maxDrivers} onChange={(e) => setForm({ ...form, maxDrivers: +e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Max Shipments/bln</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Max Shipments/bln</label>
                   <input type="number" min={1} value={form.maxShipments} onChange={(e) => setForm({ ...form, maxShipments: +e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
                 </div>
               </div>
               {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setShowForm(false)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+                <button type="button" onClick={() => setShowForm(false)} className="rounded-lg border border-[#E4E7EC] px-4 py-2 text-sm font-medium text-[#667085] hover:bg-[#F7F9FC]">
                   Batal
                 </button>
-                <button type="submit" disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60">
+                <button type="submit" disabled={saving} className="rounded-lg bg-[#0D6EFD] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0B5FD5] disabled:opacity-60">
                   {saving ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>
@@ -217,29 +217,29 @@ export default function TenantList() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-gray-100 bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 font-medium text-gray-600">Tenant</th>
-              <th className="px-4 py-3 font-medium text-gray-600">Plan</th>
-              <th className="px-4 py-3 font-medium text-gray-600">Branding</th>
-              <th className="px-4 py-3 font-medium text-gray-600">Usage</th>
-              <th className="px-4 py-3 font-medium text-gray-600">Status</th>
-              <th className="px-4 py-3 font-medium text-gray-600">Aksi</th>
+          <thead>
+            <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+              <th className="px-4 py-3">Tenant</th>
+              <th className="px-4 py-3">Plan</th>
+              <th className="px-4 py-3">Branding</th>
+              <th className="px-4 py-3">Usage</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Aksi</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Memuat...</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-[#667085]">Memuat...</td></tr>
             ) : tenants.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Belum ada tenant</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-[#667085]">Belum ada tenant</td></tr>
             ) : tenants.map((t) => (
-              <tr key={t.id} className="hover:bg-gray-50">
+              <tr key={t.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
                 <td className="px-4 py-3">
                   <Link href={`/tenants/${t.id}`} className="block hover:opacity-80">
-                    <div className="font-semibold text-brand-600 hover:underline">{t.name}</div>
-                    <div className="text-xs text-gray-400">{t.slug}{t.domain ? ` · ${t.domain}` : ''}</div>
+                    <div className="font-semibold text-[#0D6EFD] hover:underline">{t.name}</div>
+                    <div className="text-xs text-[#667085]">{t.slug}{t.domain ? ` · ${t.domain}` : ''}</div>
                   </Link>
                 </td>
                 <td className="px-4 py-3">
@@ -252,18 +252,18 @@ export default function TenantList() {
                     <span className="h-4 w-4 rounded" style={{ backgroundColor: t.accentColor }} />
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs text-gray-500">
+                <td className="px-4 py-3 text-xs text-[#667085]">
                   {t._count.users}/{t.maxUsers} user · {t._count.shipments}/{t.maxShipments} kiriman
                 </td>
                 <td className="px-4 py-3">
                   <button onClick={() => toggleActive(t.id, t.active)}
-                    className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${t.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${t.active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                     {t.active ? 'Aktif' : 'Nonaktif'}
                   </button>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => openEdit(t)} className="text-xs font-medium text-brand-600 hover:underline">Edit</button>
+                    <button onClick={() => openEdit(t)} className="text-xs font-medium text-[#0D6EFD] hover:underline">Edit</button>
                     <button onClick={() => remove(t.id)} className="text-xs font-medium text-red-600 hover:underline">Hapus</button>
                   </div>
                 </td>

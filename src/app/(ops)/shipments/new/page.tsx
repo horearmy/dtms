@@ -104,13 +104,13 @@ export default function NewShipmentPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Buat Shipment Baru</h1>
-        <p className="text-sm text-slate-500">Nomor resi dibuat otomatis · satu shipment bisa punya beberapa tujuan (multi-stop)</p>
+        <h1 className="text-xl font-bold text-[#101828]">Buat Shipment Baru</h1>
+        <p className="text-sm text-[#667085]">Nomor resi dibuat otomatis · satu shipment bisa punya beberapa tujuan (multi-stop)</p>
       </div>
 
-      <form onSubmit={submit} className="space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <form onSubmit={submit} className="space-y-5 rounded-xl border border-[#E4E7EC] bg-white p-6 shadow-sm">
         <div>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Pengirim & Daftar Tujuan</h2>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#667085]">Pengirim & Daftar Tujuan</h2>
 
           <Field label="Pengirim" required>
             <select required value={form.senderId} onChange={(e) => setForm({ ...form, senderId: e.target.value })} className={inputCls}>
@@ -121,7 +121,7 @@ export default function NewShipmentPage() {
 
           <div className="mt-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Daftar Perjalanan (Tujuan)</span>
+              <span className="text-xs font-bold uppercase tracking-wide text-[#667085]">Daftar Perjalanan (Tujuan)</span>
             </div>
             {destinations.map((id, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -134,7 +134,7 @@ export default function NewShipmentPage() {
                   type="button"
                   onClick={() => removeDest(i)}
                   title="Hapus tujuan"
-                  className="shrink-0 rounded-lg border border-slate-200 px-2.5 py-2 text-xs text-slate-400 hover:bg-red-50 hover:text-red-500"
+                  className="shrink-0 rounded-lg border border-[#E4E7EC] px-2.5 py-2 text-xs text-[#667085] hover:bg-[#FEF0F0] hover:text-[#F5222D]"
                 >
                   ✕
                 </button>
@@ -147,11 +147,11 @@ export default function NewShipmentPage() {
             <RoutePreviewMap stops={previewStops} />
           </div>
 
-          <div className="mt-3 grid gap-2 text-xs text-slate-500 md:grid-cols-2">
-            <div className="rounded-lg bg-slate-50 p-3">
+          <div className="mt-3 grid gap-2 text-xs text-[#667085] md:grid-cols-2">
+            <div className="rounded-lg bg-[#F7F9FC] p-3">
               <b>Asal:</b> {sender ? `${sender.address || '-'}, ${sender.city || '-'}` : '-'}
             </div>
-            <div className="rounded-lg bg-slate-50 p-3">
+            <div className="rounded-lg bg-[#F7F9FC] p-3">
               <b>Tujuan:</b>{' '}
               {destCustomers.filter(Boolean).map((c) => `${c?.city || c?.name || '-'}`).join(' → ') || '-'}
             </div>
@@ -159,7 +159,7 @@ export default function NewShipmentPage() {
         </div>
 
         <div>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Detail Barang</h2>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#667085]">Detail Barang</h2>
           <div className="grid gap-4 md:grid-cols-3">
             <Field label="Nama Barang">
               <input value={form.itemName} onChange={(e) => setForm({ ...form, itemName: e.target.value })} className={inputCls} placeholder="Mis: Dokumen, Elektronik" />
@@ -183,7 +183,7 @@ export default function NewShipmentPage() {
         </div>
 
         <div>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Pengiriman</h2>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#667085]">Pengiriman</h2>
           <div className="grid gap-4 md:grid-cols-3">
             <Field label="Service Type">
               <select value={form.serviceType} onChange={(e) => setForm({ ...form, serviceType: e.target.value })} className={inputCls}>
@@ -194,7 +194,7 @@ export default function NewShipmentPage() {
               <input type="datetime-local" value={form.deliveryTarget} onChange={(e) => setForm({ ...form, deliveryTarget: e.target.value })} className={inputCls} />
             </Field>
             <Field label="Fragile">
-              <label className="flex items-center gap-2 pt-2 text-sm text-slate-600">
+              <label className="flex items-center gap-2 pt-2 text-sm text-[#667085]">
                 <input type="checkbox" checked={form.fragile} onChange={(e) => setForm({ ...form, fragile: e.target.checked })} className="h-4 w-4" />
                 Barang mudah pecah
               </label>

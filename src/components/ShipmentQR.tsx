@@ -11,6 +11,6 @@ export default function ShipmentQR({ value, size = 140 }: { value: string; size?
       .catch(() => setSrc(''));
   }, [value, size]);
 
-  if (!src) return <div style={{ width: size, height: size }} className="animate-pulse rounded-lg border border-slate-200 bg-slate-100" />;
-  return <img src={src} width={size} height={size} alt="QR Resi" className="rounded-lg border border-slate-200" />;
+  if (!src) return <div style={{ width: size, height: size }} className="animate-pulse rounded-lg border border-[#E4E7EC] bg-[#F7F9FC]" />;
+  return <img src={src} width={size} height={size} alt="QR Resi" className="rounded-lg border border-[#E4E7EC]" />;
 }

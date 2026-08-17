@@ -178,24 +178,24 @@ export default function LocationPicker({ value, onChange, mapHeight = 'h-72' }: 
               placeholder="Cari kota / tempat untuk memilih di peta..."
               className={inputCls}
             />
-            {busy && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">...</span>}
+            {busy && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#667085]">...</span>}
           </div>
           <button
             type="button"
             onClick={useMyLocation}
-            className="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="shrink-0 rounded-lg border border-[#E4E7EC] bg-white px-3 py-2 text-xs font-medium text-[#667085] hover:bg-[#F7F9FC]"
           >
             📍 Lokasi Saya
           </button>
         </div>
         {suggestions.length > 0 && (
-          <div className="absolute z-[1000] mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+          <div className="absolute z-[1000] mt-1 w-full overflow-hidden rounded-lg border border-[#E4E7EC] bg-white shadow-lg">
             {suggestions.map((s, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => pickSuggestion(s)}
-                className="block w-full truncate px-3 py-2 text-left text-xs text-slate-700 hover:bg-brand-50"
+                className="block w-full truncate px-3 py-2 text-left text-xs text-[#101828] hover:bg-[#E8F0FE]"
               >
                 {s.displayName}
               </button>
@@ -203,10 +203,10 @@ export default function LocationPicker({ value, onChange, mapHeight = 'h-72' }: 
           </div>
         )}
       </div>
-      <div ref={mapRef} className={`${mapHeight} w-full rounded-lg border border-slate-200`} />
-      <p className="text-[11px] text-slate-500">
+      <div ref={mapRef} className={`${mapHeight} w-full rounded-lg border border-[#E4E7EC]`} />
+      <p className="text-[11px] text-[#667085]">
         Klik pada peta untuk menandai lokasi secara akurat. Koordinat & alamat terisi otomatis.{' '}
-        <span className="font-semibold text-slate-600">{coords}</span>
+        <span className="font-semibold text-[#667085]">{coords}</span>
       </p>
     </div>
   );

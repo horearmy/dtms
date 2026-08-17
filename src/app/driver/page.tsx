@@ -98,14 +98,14 @@ export default function DriverHomePage() {
     setSavingReport(false);
   }
 
-  if (loading) return <div className="py-20 text-center text-slate-400">Memuat tugas...</div>;
-  if (err) return <div className="py-20 text-center text-slate-500">{err}</div>;
+  if (loading) return <div className="py-20 text-center text-[#667085]">Memuat tugas...</div>;
+  if (err) return <div className="py-20 text-center text-[#667085]">{err}</div>;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Tugas Hari Ini</h1>
-        <p className="text-sm text-slate-500">{tasks.length} penugasan</p>
+        <h1 className="text-xl font-bold text-[#101828]">Tugas Hari Ini</h1>
+        <p className="text-sm text-[#667085]">{tasks.length} penugasan</p>
       </div>
 
       {/* Keterangan driver & kendaraan aktif + peta live */}
@@ -119,30 +119,30 @@ export default function DriverHomePage() {
           const deliverable = shipment.status === 'OUT_FOR_DELIVERY';
           const done = shipment.status === 'DELIVERED' || shipment.status === 'RETURNED';
           return (
-            <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div key={t.id} className="rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <Link href={`/driver/tasks/${t.id}`} className="font-mono text-sm font-bold text-brand-600 hover:underline">
+                  <Link href={`/driver/tasks/${t.id}`} className="font-mono text-sm font-bold text-[#0D6EFD] hover:underline">
                     {shipment.trackingNumber}
                   </Link>
                   <div className="mt-1"><StatusBadge status={shipment.status} /></div>
                 </div>
-                {t.vehicle && <div className="text-xs text-slate-500">{t.vehicle.vehicleNumber}</div>}
+                {t.vehicle && <div className="text-xs text-[#667085]">{t.vehicle.vehicleNumber}</div>}
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <div className="text-[11px] uppercase text-slate-400">Penerima</div>
-                  <div className="font-semibold text-slate-800">{shipment.receiver.name}</div>
-                  <div className="text-xs text-slate-500">{shipment.receiver.address}, {shipment.receiver.city}</div>
-                  <div className="text-xs text-slate-500">{shipment.receiver.phone}</div>
+                  <div className="text-[11px] uppercase text-[#667085]">Penerima</div>
+                  <div className="font-semibold text-[#101828]">{shipment.receiver.name}</div>
+                  <div className="text-xs text-[#667085]">{shipment.receiver.address}, {shipment.receiver.city}</div>
+                  <div className="text-xs text-[#667085]">{shipment.receiver.phone}</div>
                 </div>
                 <div>
-                  <div className="text-[11px] uppercase text-slate-400">Pengiriman</div>
-                  <div className="text-xs text-slate-600"><b>Asal:</b> {shipment.origin}</div>
-                  <div className="text-xs text-slate-600"><b>Tujuan:</b> {shipment.destination}</div>
-                  <div className="text-xs text-slate-600"><b>Berat:</b> {shipment.weight} kg</div>
-                  <div className="text-xs text-slate-500">Status: {lastEvent ? STATUS_LABELS[lastEvent.status] : '-'}</div>
+                  <div className="text-[11px] uppercase text-[#667085]">Pengiriman</div>
+                  <div className="text-xs text-[#667085]"><b>Asal:</b> {shipment.origin}</div>
+                  <div className="text-xs text-[#667085]"><b>Tujuan:</b> {shipment.destination}</div>
+                  <div className="text-xs text-[#667085]"><b>Berat:</b> {shipment.weight} kg</div>
+                  <div className="text-xs text-[#667085]">Status: {lastEvent ? STATUS_LABELS[lastEvent.status] : '-'}</div>
                 </div>
               </div>
 
@@ -150,46 +150,46 @@ export default function DriverHomePage() {
                 <Link href={`/driver/tasks/${t.id}`} className={btnPrimary}>
                   {isDispatched ? 'Mulai Pengiriman' : deliverable ? 'Proses Delivery & POD' : done ? 'Lihat Laporan' : 'Lihat Detail'}
                 </Link>
-                <span className="text-xs text-slate-400">Ditugaskan {formatDateTime(t.assignedAt)}</span>
+                <span className="text-xs text-[#667085]">Ditugaskan {formatDateTime(t.assignedAt)}</span>
               </div>
             </div>
           );
         })}
         {tasks.length === 0 && (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400">
+          <div className="rounded-xl border border-dashed border-[#E4E7EC] bg-white p-10 text-center text-sm text-[#667085]">
             Tidak ada penugasan saat ini
           </div>
         )}
       </div>
 
       {/* Laporan Harian */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-900">Laporan Harian</h2>
-        <p className="text-xs text-slate-500">Rekap pengiriman hari ini sebagai laporan kepada admin.</p>
+      <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <h2 className="text-sm font-bold text-[#101828]">Laporan Harian</h2>
+        <p className="text-xs text-[#667085]">Rekap pengiriman hari ini sebagai laporan kepada admin.</p>
 
         <form onSubmit={submitReport} className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Tanggal</label>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Tanggal</label>
             <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Paket Terkirim</label>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Paket Terkirim</label>
             <input type="number" min="0" value={deliveredCount} onChange={(e) => setDeliveredCount(e.target.value)} className={inputCls} placeholder="0" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Paket Gagal</label>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Paket Gagal</label>
             <input type="number" min="0" value={failedCount} onChange={(e) => setFailedCount(e.target.value)} className={inputCls} placeholder="0" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Dijadwalkan Ulang</label>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Dijadwalkan Ulang</label>
             <input type="number" min="0" value={rescheduledCount} onChange={(e) => setRescheduledCount(e.target.value)} className={inputCls} placeholder="0" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">BBM (liter)</label>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">BBM (liter)</label>
             <input type="number" min="0" step="0.1" value={fuelLiter} onChange={(e) => setFuelLiter(e.target.value)} className={inputCls} placeholder="mis. 5.5" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-600">Catatan / Kendala</label>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Catatan / Kendala</label>
             <input value={reportNotes} onChange={(e) => setReportNotes(e.target.value)} className={inputCls} placeholder="Kendala di lapangan, dsb" />
           </div>
           <div className="flex items-end sm:col-span-2 lg:col-span-3">
@@ -197,7 +197,7 @@ export default function DriverHomePage() {
               {savingReport ? 'Menyimpan...' : 'Simpan Laporan Harian'}
             </button>
             {reportMsg && (
-              <span className={`ml-3 text-sm ${reportMsg.startsWith('Laporan') ? 'text-emerald-600' : 'text-red-600'}`}>{reportMsg}</span>
+              <span className={`ml-3 text-sm ${reportMsg.startsWith('Laporan') ? 'text-[#16B364]' : 'text-[#F5222D]'}`}>{reportMsg}</span>
             )}
           </div>
         </form>
@@ -206,7 +206,7 @@ export default function DriverHomePage() {
           <div className="mt-5 overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-[11px] uppercase text-slate-400">
+                <tr className="border-b border-[#E4E7EC] text-[11px] uppercase text-[#667085]">
                   <th className="py-2 pr-4">Tanggal</th>
                   <th className="py-2 pr-4">Terkirim</th>
                   <th className="py-2 pr-4">Gagal</th>
@@ -217,13 +217,13 @@ export default function DriverHomePage() {
               </thead>
               <tbody>
                 {reports.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-100">
-                    <td className="py-2 pr-4 font-semibold text-slate-800">{formatDate(r.reportDate)}</td>
-                    <td className="py-2 pr-4 text-emerald-600">{r.deliveredCount}</td>
-                    <td className="py-2 pr-4 text-red-600">{r.failedCount}</td>
-                    <td className="py-2 pr-4 text-slate-700">{r.rescheduledCount}</td>
-                    <td className="py-2 pr-4 text-slate-700">{r.fuelLiter != null ? `${r.fuelLiter} L` : '-'}</td>
-                    <td className="py-2 text-slate-600">{r.notes || '-'}</td>
+                  <tr key={r.id} className="border-b border-[#F7F9FC]">
+                    <td className="py-2 pr-4 font-semibold text-[#101828]">{formatDate(r.reportDate)}</td>
+                    <td className="py-2 pr-4 text-[#16B364]">{r.deliveredCount}</td>
+                    <td className="py-2 pr-4 text-[#F5222D]">{r.failedCount}</td>
+                    <td className="py-2 pr-4 text-[#101828]">{r.rescheduledCount}</td>
+                    <td className="py-2 pr-4 text-[#101828]">{r.fuelLiter != null ? `${r.fuelLiter} L` : '-'}</td>
+                    <td className="py-2 text-[#667085]">{r.notes || '-'}</td>
                   </tr>
                 ))}
               </tbody>

@@ -102,7 +102,7 @@ export default function RoutePreviewMap({ stops }: { stops: Array<RoutePoint | n
       resolved.forEach((c, i) => {
         if (!c || !stops[i]) return;
         const isSender = i === 0;
-        const icon = green(isSender ? '🏭' : String(i), isSender ? '' : 'font-weight:700;color:#fff;', isSender ? '#059669' : '#dc2626');
+        const icon = green(isSender ? '🏭' : String(i), isSender ? '' : 'font-weight:700;color:#fff;', isSender ? '#16B364' : '#F5222D');
         L.marker([c.lat, c.lng], { icon }).addTo(markerLayer.current!).bindPopup(
           `<div style="font-size:12px;"><b>${isSender ? 'Pengirim' : `Tujuan ${i}`}</b><br/>${stops[i]!.label}</div>`
         );
@@ -111,7 +111,7 @@ export default function RoutePreviewMap({ stops }: { stops: Array<RoutePoint | n
       try {
         const route = await fetchRoute(points);
         if (cancelled) return;
-        const line = L.polyline(route.points, { color: '#2563eb', weight: 3, opacity: 0.65 }).addTo(routeLayer.current!);
+        const line = L.polyline(route.points, { color: '#0D6EFD', weight: 3, opacity: 0.65 }).addTo(routeLayer.current!);
         line.bindPopup(`<div style="font-size:12px;">Rute pengiriman (${points.length} titik) · ${route.distanceKm} km · ±${route.durationMin} mnt</div>`);
         const firstLabel = stops[0]!.label.split(',')[0];
         let lastIdx = -1;
@@ -124,7 +124,7 @@ export default function RoutePreviewMap({ stops }: { stops: Array<RoutePoint | n
         map.fitBounds(L.latLngBounds(points).pad(0.2));
       } catch {
         if (cancelled) return;
-        L.polyline(points, { color: '#2563eb', weight: 3, opacity: 0.6, dashArray: '4 6' }).addTo(routeLayer.current!);
+        L.polyline(points, { color: '#0D6EFD', weight: 3, opacity: 0.6, dashArray: '4 6' }).addTo(routeLayer.current!);
         setStatus('Rute lurus (layanan routing tidak merespons).');
         map.fitBounds(L.latLngBounds(points).pad(0.2));
       }
@@ -134,32 +134,32 @@ export default function RoutePreviewMap({ stops }: { stops: Array<RoutePoint | n
   }, [stops]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5">
+    <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white">
+      <div className="flex items-center justify-between gap-3 border-b border-[#F7F9FC] px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <svg className="h-4 w-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.5-2.5V5L9 7.5 15 5l5.5 2.5V18L15 15.5 9 18zM9 7.5V18M15 5v12.5" /></svg>
-          <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Peta Rute Pengiriman</span>
+          <svg className="h-4 w-4 text-[#0D6EFD]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.5-2.5V5L9 7.5 15 5l5.5 2.5V18L15 15.5 9 18zM9 7.5V18M15 5v12.5" /></svg>
+          <span className="text-xs font-bold uppercase tracking-wide text-[#667085]">Peta Rute Pengiriman</span>
         </div>
         {info ? (
-          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold text-brand-700">{info}</span>
+          <span className="rounded-full bg-[#E7F0FF] px-2.5 py-0.5 text-[11px] font-bold text-[#0D6EFD]">{info}</span>
         ) : (
-          <span className="text-[11px] text-slate-400">{status}</span>
+          <span className="text-[11px] text-[#667085]">{status}</span>
         )}
       </div>
       <div ref={mapRef} className="h-96 w-full" />
-      <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 px-4 py-2 text-[11px] text-slate-500">
+      <div className="flex flex-wrap items-center gap-4 border-t border-[#F7F9FC] px-4 py-2 text-[11px] text-[#667085]">
         <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-emerald-500" /> Pengirim
+          <span className="h-3 w-3 rounded-full bg-[#16B364]" /> Pengirim
         </span>
         {stops.slice(1).map((_, i) => (
           <span key={i} className="flex items-center gap-1.5">
-            <span className="flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">{i + 1}</span> Tujuan {i + 1}
+            <span className="flex h-3 w-3 items-center justify-center rounded-full bg-[#F5222D] text-[8px] font-bold text-white">{i + 1}</span> Tujuan {i + 1}
           </span>
         ))}
         <span className="flex items-center gap-1.5">
-          <span className="h-1 w-5 rounded bg-blue-500" /> Rute
+          <span className="h-1 w-5 rounded bg-[#0D6EFD]" /> Rute
         </span>
-        {status && info && <span className="ml-auto text-[11px] text-slate-400">{status}</span>}
+        {status && info && <span className="ml-auto text-[11px] text-[#667085]">{status}</span>}
       </div>
     </div>
   );

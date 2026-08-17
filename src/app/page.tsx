@@ -14,7 +14,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-lg">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0D6EFD] text-lg font-bold text-white">
               DT
             </div>
             <span className="text-xl font-bold text-gray-900">DTMS</span>
@@ -25,7 +25,7 @@ export default function LandingPage() {
             <a href="#demo" className="text-sm font-medium text-gray-600 hover:text-gray-900">Demo</a>
             <Link
               href="/login"
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
+              className="rounded-lg bg-[#0D6EFD] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0B5FD5]"
             >
               Masuk
             </Link>
@@ -60,7 +60,7 @@ export default function LandingPage() {
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <a
               href="#demo"
-              className="rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-brand-700 shadow-lg transition hover:bg-blue-50 hover:shadow-xl"
+              className="rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-[#0D6EFD] shadow-lg transition hover:bg-blue-50 hover:shadow-xl"
             >
               Minta Demo Gratis
             </a>
@@ -94,9 +94,9 @@ export default function LandingPage() {
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="group rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:border-brand-200 hover:shadow-md"
+                className="group rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:border-[#E8F0FE] hover:shadow-md"
               >
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-xl transition group-hover:bg-brand-100">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#E8F0FE] text-xl transition group-hover:bg-[#E8F0FE]">
                   {f.icon}
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">{f.title}</h3>
@@ -118,7 +118,7 @@ export default function LandingPage() {
               <ul className="mt-6 space-y-3">
                 {['Real-time GPS setiap 15 detik', 'Geofencing otomatis masuk/keluar area', 'Rute teroptimasi dengan OSRM', 'Pantau kecepatan & baterai driver'].map((item) => (
                   <li key={item} className="flex items-center gap-3 text-sm text-gray-600">
-                    <svg className="h-5 w-5 flex-shrink-0 text-brand-500" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="h-5 w-5 flex-shrink-0 text-[#0D6EFD]" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     {item}
@@ -135,8 +135,8 @@ export default function LandingPage() {
               </div>
               <div className="flex h-64 items-center justify-center bg-gradient-to-br from-blue-50 to-green-50">
                 <div className="text-center">
-                  <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-brand-100">
-                    <svg className="h-8 w-8 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-[#E8F0FE]">
+                    <svg className="h-8 w-8 text-[#0D6EFD]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -164,12 +164,12 @@ export default function LandingPage() {
                 key={plan.name}
                 className={`relative rounded-2xl border-2 p-8 transition ${
                   plan.popular
-                    ? 'border-brand-500 shadow-lg shadow-brand-100'
-                    : 'border-gray-100 hover:border-gray-200'
+                    ? 'border-[#0D6EFD] shadow-lg'
+                    : 'border-[#E4E7EC] hover:border-[#0D6EFD]'
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-brand-600 px-4 py-1 text-xs font-semibold text-white">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-[#0D6EFD] px-4 py-1 text-xs font-semibold text-white">
                     Paling Populer
                   </div>
                 )}
@@ -182,7 +182,7 @@ export default function LandingPage() {
                 <ul className="mt-8 space-y-3">
                   {plan.features.map((feat) => (
                     <li key={feat} className="flex items-center gap-3 text-sm text-gray-600">
-                      <svg className="h-4 w-4 flex-shrink-0 text-brand-500" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="h-4 w-4 flex-shrink-0 text-[#0D6EFD]" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                       {feat}
@@ -193,7 +193,7 @@ export default function LandingPage() {
                   href="#demo"
                   className={`mt-8 block w-full rounded-xl py-3 text-center text-sm font-semibold transition ${
                     plan.popular
-                      ? 'bg-brand-600 text-white hover:bg-brand-700'
+                      ? 'bg-[#0D6EFD] text-white hover:bg-[#0B5FD5]'
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -216,8 +216,8 @@ export default function LandingPage() {
               <div className="mt-8 space-y-4">
                 {['Setup gratis tanpa biaya', 'Konsultasi kebutuhan bisnis', 'Trial 14 hari fitur lengkap', 'Dedicated customer success'].map((item) => (
                   <div key={item} className="flex items-center gap-3 text-sm text-gray-600">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100">
-                      <svg className="h-3.5 w-3.5 text-brand-600" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E8F0FE]">
+                      <svg className="h-3.5 w-3.5 text-[#0D6EFD]" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -236,7 +236,7 @@ export default function LandingPage() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0D6EFD] text-xs font-bold text-white">
                   DT
                 </div>
                 <span className="text-lg font-bold text-gray-900">DTMS</span>

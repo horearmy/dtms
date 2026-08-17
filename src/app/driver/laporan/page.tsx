@@ -101,35 +101,35 @@ function TaskLaporCard({ task, onDone }: { task: Task; onDone: () => void }) {
   const alreadyDone = pod || s.status === 'DELIVERED' || s.status === 'RETURNED';
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Link href={`/driver/tasks/${task.id}`} className="font-mono text-sm font-bold text-brand-600 hover:underline">
+            <Link href={`/driver/tasks/${task.id}`} className="font-mono text-sm font-bold text-[#0D6EFD] hover:underline">
               {s.trackingNumber}
             </Link>
             <StatusBadge status={s.status} />
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-[#667085]">
             Penerima: <b>{s.receiver.name}</b> · {s.receiver.address}, {s.receiver.city}
           </div>
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-[#667085]">
             Tujuan: {s.destination} · Berat: {formatNumber(s.weight)} kg
             {task.vehicle ? ` · ${task.vehicle.vehicleNumber}` : ''}
           </div>
         </div>
-        {pod && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Laporan terkirim ✓</span>}
+        {pod && <span className="rounded-full bg-[#E6F9EF] px-2 py-0.5 text-[11px] font-semibold text-[#16B364]">Laporan terkirim ✓</span>}
       </div>
 
       {msg && (
-        <div className={`mt-3 rounded-lg px-3 py-2 text-sm ${msg.startsWith('Berhasil') || msg.endsWith('✓') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+        <div className={`mt-3 rounded-lg px-3 py-2 text-sm ${msg.startsWith('Berhasil') || msg.endsWith('✓') ? 'bg-[#E6F9EF] text-[#16B364]' : 'bg-red-50 text-[#F5222D]'}`}>
           {msg}
         </div>
       )}
 
       {!alreadyDone && s.status === 'DISPATCHED' && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-50 p-3">
-          <p className="text-sm text-slate-600">Barang sudah berangkat dari gudang. Mulai pengiriman untuk mencatat laporan.</p>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#F7F9FC] p-3">
+          <p className="text-sm text-[#667085]">Barang sudah berangkat dari gudang. Mulai pengiriman untuk mencatat laporan.</p>
           <Link href={`/driver/tasks/${task.id}`} className={btnPrimary}>Mulai Pengiriman</Link>
         </div>
       )}
@@ -156,20 +156,20 @@ function TaskLaporCard({ task, onDone }: { task: Task; onDone: () => void }) {
       )}
 
       {!pod && s.status === 'OUT_FOR_DELIVERY' && (
-        <form onSubmit={submitPOD} className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <p className="text-sm font-semibold text-slate-800">Laporan Delivery (sudah sampai di lokasi penerima)</p>
+        <form onSubmit={submitPOD} className="mt-3 space-y-3 rounded-lg border border-[#E4E7EC] bg-[#F7F9FC] p-3">
+          <p className="text-sm font-semibold text-[#101828]">Laporan Delivery (sudah sampai di lokasi penerima)</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Nama Penerima *</label>
+                <label className="mb-1 block text-xs font-semibold text-[#667085]">Nama Penerima *</label>
                 <input required value={receiverName} onChange={(e) => setReceiverName(e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Catatan Laporan</label>
+                <label className="mb-1 block text-xs font-semibold text-[#667085]">Catatan Laporan</label>
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} rows={2} placeholder="Kondisi barang, dst" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Foto Bukti</label>
+                <label className="mb-1 block text-xs font-semibold text-[#667085]">Foto Bukti</label>
                 <input
                   type="file" accept="image/*" capture="environment"
                   onChange={async (e) => {
@@ -182,7 +182,7 @@ function TaskLaporCard({ task, onDone }: { task: Task; onDone: () => void }) {
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-600">Tanda Tangan Penerima *</label>
+              <label className="mb-1 block text-xs font-semibold text-[#667085]">Tanda Tangan Penerima *</label>
               <SignaturePad onChange={setSignature} />
             </div>
           </div>
@@ -195,8 +195,8 @@ function TaskLaporCard({ task, onDone }: { task: Task; onDone: () => void }) {
       )}
 
       {alreadyDone && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-emerald-50 p-3">
-          <p className="text-sm text-emerald-700">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#E6F9EF] p-3">
+          <p className="text-sm text-[#16B364]">
             {pod
               ? `Selesai: diterima ${pod.receiverName} · ${formatDateTime(pod.deliveredAt)}`
               : 'Pengiriman selesai.'}
@@ -275,23 +275,23 @@ export default function DriverLaporanPage() {
   const active = tasks.filter((t) => ['DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY'].includes(t.shipment.status));
   const delivered = tasks.filter((t) => t.shipment.status === 'DELIVERED');
 
-  if (loading) return <div className="py-20 text-center text-slate-400">Memuat laporan...</div>;
-  if (err) return <div className="py-20 text-center text-slate-500">{err}</div>;
+  if (loading) return <div className="py-20 text-center text-[#667085]">Memuat laporan...</div>;
+  if (err) return <div className="py-20 text-center text-[#667085]">{err}</div>;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Laporan Driver</h1>
-        <p className="text-sm text-slate-500">Laporan kedatangan di lokasi & laporan kembali ke gudang</p>
+        <h1 className="text-xl font-bold text-[#101828]">Laporan Driver</h1>
+        <p className="text-sm text-[#667085]">Laporan kedatangan di lokasi & laporan kembali ke gudang</p>
       </div>
 
       {/* Laporan kedatangan */}
       <div>
-        <h2 className="mb-3 text-sm font-bold text-slate-900">📍 Laporan Kedatangan di Lokasi ({active.length})</h2>
+        <h2 className="mb-3 text-sm font-bold text-[#101828]">📍 Laporan Kedatangan di Lokasi ({active.length})</h2>
         <div className="space-y-3">
           {active.map((t) => <TaskLaporCard key={t.id} task={t} onDone={load} />)}
           {active.length === 0 && (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+            <div className="rounded-xl border border-dashed border-[#E4E7EC] bg-white p-8 text-center text-sm text-[#667085]">
               Tidak ada pengiriman aktif saat ini
             </div>
           )}
@@ -299,14 +299,14 @@ export default function DriverLaporanPage() {
       </div>
 
       {/* Laporan kembali ke gudang */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-900">🚚 Laporan Kembali ke Gudang</h2>
-        <p className="text-xs text-slate-500">
+      <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <h2 className="text-sm font-bold text-[#101828]">🚚 Laporan Kembali ke Gudang</h2>
+        <p className="text-xs text-[#667085]">
           Setelah semua pengiriman selesai, kirim laporan untuk kembali ke gudang asal. Rute kembali akan tampil kuning di peta admin.
         </p>
 
         {retMsg && (
-          <div className={`mt-3 rounded-lg px-3 py-2 text-sm ${retMsg.startsWith('Berhasil') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+          <div className={`mt-3 rounded-lg px-3 py-2 text-sm ${retMsg.startsWith('Berhasil') ? 'bg-[#E6F9EF] text-[#16B364]' : 'bg-red-50 text-[#F5222D]'}`}>
             {retMsg}
           </div>
         )}
@@ -340,7 +340,7 @@ export default function DriverLaporanPage() {
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-[11px] uppercase text-slate-400">
+                <tr className="border-b border-[#E4E7EC] text-[11px] uppercase text-[#667085]">
                   <th className="py-2 pr-4">Resi</th>
                   <th className="py-2 pr-4">Penerima</th>
                   <th className="py-2 pr-4">Waktu Terima</th>
@@ -351,10 +351,10 @@ export default function DriverLaporanPage() {
                 {delivered.map((t) => {
                   const pod = t.shipment.pods[0];
                   return (
-                    <tr key={t.id} className="border-b border-slate-100">
-                      <td className="py-2 pr-4 font-mono text-xs font-semibold text-brand-600">{t.shipment.trackingNumber}</td>
-                      <td className="py-2 pr-4 text-slate-700">{pod?.receiverName || t.shipment.receiver.name}</td>
-                      <td className="py-2 pr-4 text-slate-600">{pod ? formatDateTime(pod.deliveredAt) : '-'}</td>
+                    <tr key={t.id} className="border-b border-[#F7F9FC]">
+                      <td className="py-2 pr-4 font-mono text-xs font-semibold text-[#0D6EFD]">{t.shipment.trackingNumber}</td>
+                      <td className="py-2 pr-4 text-[#101828]">{pod?.receiverName || t.shipment.receiver.name}</td>
+                      <td className="py-2 pr-4 text-[#667085]">{pod ? formatDateTime(pod.deliveredAt) : '-'}</td>
                       <td className="py-2"><StatusBadge status={t.shipment.status} /></td>
                     </tr>
                   );
@@ -365,14 +365,14 @@ export default function DriverLaporanPage() {
         )}
 
         {/* Cek status GPS */}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E4E7EC] bg-[#F7F9FC] p-4">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-800">Status GPS Perangkat</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm font-semibold text-[#101828]">Status GPS Perangkat</p>
+            <p className="text-xs text-[#667085]">
               Periksa kembali status lokasi perangkat agar posisi & rute kembali tetap terkirim ke admin.
             </p>
             {gpsResult && (
-              <div className={`mt-2 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold ${gpsResult.on ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
+              <div className={`mt-2 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold ${gpsResult.on ? 'bg-[#E6F9EF] text-[#16B364]' : 'bg-red-100 text-[#F5222D]'}`}>
                 <span className="h-2 w-2 rounded-full" style={{ background: gpsResult.on ? '#16a34a' : '#dc2626' }} />
                 {gpsResult.on
                   ? `GPS Aktif · ${gpsResult.lat.toFixed(5)}, ${gpsResult.lng.toFixed(5)} · ${gpsResult.ts}`

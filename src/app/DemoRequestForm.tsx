@@ -58,7 +58,7 @@ export default function DemoRequestForm() {
             required
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-sm focus:border-[#0D6EFD] focus:outline-none"
             placeholder="John Doe"
           />
         </div>
@@ -69,7 +69,7 @@ export default function DemoRequestForm() {
             required
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-sm focus:border-[#0D6EFD] focus:outline-none"
             placeholder="john@perusahaan.com"
           />
         </div>
@@ -79,7 +79,7 @@ export default function DemoRequestForm() {
             type="tel"
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-sm focus:border-[#0D6EFD] focus:outline-none"
             placeholder="08123456789"
           />
         </div>
@@ -90,7 +90,7 @@ export default function DemoRequestForm() {
             required
             value={form.company}
             onChange={(e) => setForm({ ...form, company: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-sm focus:border-[#0D6EFD] focus:outline-none"
             placeholder="PT Logistik Jaya"
           />
         </div>
@@ -100,7 +100,7 @@ export default function DemoRequestForm() {
             rows={3}
             value={form.message}
             onChange={(e) => setForm({ ...form, message: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-sm focus:border-[#0D6EFD] focus:outline-none"
             placeholder="Ceritakan kebutuhan logistik Anda..."
           />
         </div>
@@ -108,7 +108,7 @@ export default function DemoRequestForm() {
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="w-full rounded-xl bg-brand-600 py-3 text-sm font-bold text-white transition hover:bg-brand-700 disabled:opacity-60"
+          className="w-full rounded-xl bg-[#0D6EFD] py-3 text-sm font-bold text-white transition hover:bg-[#0B5FD5] disabled:opacity-60"
         >
           {status === 'loading' ? 'Mengirim...' : 'Kirim & Minta Demo'}
         </button>

@@ -62,11 +62,11 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId.current}
         tabIndex={-1}
-        className={`w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto outline-none`}
+        className={`w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} rounded-2xl border border-[#E4E7EC] bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)] max-h-[90vh] overflow-y-auto outline-none`}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 id={titleId.current} className="text-base font-bold text-slate-900">{title}</h3>
-          <button onClick={onClose} aria-label="Tutup" className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">✕</button>
+          <h3 id={titleId.current} className="text-base font-bold text-[#101828]">{title}</h3>
+          <button onClick={onClose} aria-label="Tutup" className="rounded-lg p-1 text-[#667085] hover:bg-[#F7F9FC]">✕</button>
         </div>
         {children}
       </div>
@@ -85,8 +85,8 @@ export function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-600">
-        {label} {required && <span className="text-red-500">*</span>}
+      <label className="mb-1 block text-xs font-semibold text-[#667085]">
+        {label} {required && <span className="text-[#F5222D]">*</span>}
       </label>
       {children}
     </div>
@@ -94,18 +94,18 @@ export function Field({
 }
 
 export const inputCls =
-  'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none';
+  'w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none';
 
 export const btnPrimary =
-  'rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60';
+  'rounded-lg bg-[#0D6EFD] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0B5FD5] disabled:opacity-60';
 
 export const btnGhost =
-  'rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50';
+  'rounded-lg border border-[#E4E7EC] bg-white px-4 py-2 text-sm font-medium text-[#101828] transition hover:bg-[#F7F9FC]';
 
 export function EmptyRow({ colSpan, text }: { colSpan: number; text: string }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="py-10 text-center text-sm text-slate-400">{text}</td>
+      <td colSpan={colSpan} className="py-10 text-center text-sm text-[#667085]">{text}</td>
     </tr>
   );
 }

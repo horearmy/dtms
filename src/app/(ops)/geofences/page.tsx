@@ -88,53 +88,53 @@ export default function GeofencesPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Geofencing</h1>
-          <p className="text-sm text-slate-500">Perimeter area — alert otomatis saat driver masuk/keluar</p>
+          <h1 className="text-xl font-bold text-[#101828]">Geofencing</h1>
+          <p className="text-sm text-[#667085]">Perimeter area — alert otomatis saat driver masuk/keluar</p>
         </div>
         <button onClick={openNew} className={btnPrimary}>+ Tambah Geofence</button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {items.map((g) => (
-          <div key={g.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div key={g.id} className="rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-slate-900">{g.name}</h3>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${typeColor[g.type] || 'bg-slate-100 text-slate-600'}`}>{typeLabel[g.type] || g.type}</span>
+                  <h3 className="font-semibold text-[#101828]">{g.name}</h3>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${typeColor[g.type] || 'bg-[#F7F9FC] text-[#667085]'}`}>{typeLabel[g.type] || g.type}</span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-[#667085]">
                   {g.latitude.toFixed(5)}, {g.longitude.toFixed(5)} · radius {Math.round(g.radiusMeters)} m
                 </p>
-                {g.description && <p className="mt-1 text-xs text-slate-500">{g.description}</p>}
+                {g.description && <p className="mt-1 text-xs text-[#667085]">{g.description}</p>}
               </div>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${g.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>{g.active ? 'Aktif' : 'Nonaktif'}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${g.active ? 'bg-emerald-100 text-emerald-700' : 'bg-[#E4E7EC] text-[#667085]'}`}>{g.active ? 'Aktif' : 'Nonaktif'}</span>
             </div>
 
-            <div className="mt-3 space-y-1 border-t pt-3">
+            <div className="mt-3 space-y-1 border-t border-[#E4E7EC] pt-3">
               {g.events.length === 0 ? (
-                <p className="text-xs text-slate-400">Belum ada event masuk/keluar</p>
+                <p className="text-xs text-[#667085]">Belum ada event masuk/keluar</p>
               ) : (
                 g.events.map((ev) => (
                   <div key={ev.id} className="flex items-center justify-between text-xs">
                     <span className={ev.eventType === 'ENTER' ? 'font-semibold text-emerald-600' : 'font-semibold text-red-500'}>
                       {ev.eventType === 'ENTER' ? 'MASUK' : 'KELUAR'} · {ev.driver.name}
                     </span>
-                    <span className="text-slate-400">{formatDate(ev.createdAt)}</span>
+                    <span className="text-[#667085]">{formatDate(ev.createdAt)}</span>
                   </div>
                 ))
               )}
             </div>
 
             <div className="mt-3 flex gap-3 text-xs">
-              <button onClick={() => toggleActive(g)} className="font-semibold text-slate-600 hover:underline">{g.active ? 'Nonaktifkan' : 'Aktifkan'}</button>
-              <button onClick={() => openEdit(g)} className="font-semibold text-brand-600 hover:underline">Edit</button>
+              <button onClick={() => toggleActive(g)} className="font-semibold text-[#667085] hover:underline">{g.active ? 'Nonaktifkan' : 'Aktifkan'}</button>
+              <button onClick={() => openEdit(g)} className="font-semibold text-[#0D6EFD] hover:underline">Edit</button>
               <button onClick={() => remove(g)} className="font-semibold text-red-500 hover:underline">Hapus</button>
             </div>
           </div>
         ))}
         {items.length === 0 && (
-          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400">
+          <p className="rounded-xl border border-dashed border-[#E4E7EC] bg-white p-10 text-center text-sm text-[#667085]">
             Belum ada geofence
           </p>
         )}

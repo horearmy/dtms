@@ -121,8 +121,8 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
     });
   }
 
-  if (loading) return <div className="py-20 text-center text-slate-400">Memuat tugas...</div>;
-  if (err) return <div className="py-20 text-center text-slate-500">{err}</div>;
+  if (loading) return <div className="py-20 text-center text-[#667085]">Memuat tugas...</div>;
+  if (err) return <div className="py-20 text-center text-[#667085]">{err}</div>;
 
   const s = task!.shipment;
   const vehicle = task!.vehicle;
@@ -159,37 +159,37 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
       <div className="flex items-center justify-between">
         <Link href="/driver" className={btnGhost + ' !py-1.5'}>← Tugas</Link>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-sm font-bold text-brand-700">{s.trackingNumber}</span>
+          <span className="font-mono text-sm font-bold text-[#0D6EFD]">{s.trackingNumber}</span>
           <StatusBadge status={s.status} />
         </div>
       </div>
 
       {msg && (
-        <div className={`rounded-lg px-3 py-2 text-sm ${msg.startsWith('Berhasil') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+        <div className={`rounded-lg px-3 py-2 text-sm ${msg.startsWith('Berhasil') ? 'bg-[#E6F9EF] text-[#16B364]' : 'bg-red-50 text-[#F5222D]'}`}>
           {msg}
         </div>
       )}
 
       {/* Ringkasan */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <div className="text-[11px] uppercase text-slate-400">Pengirim</div>
-            <div className="text-sm font-semibold text-slate-800">{s.sender.name}</div>
-            <div className="text-xs text-slate-500">{s.sender.phone}</div>
-            <div className="mt-2 text-[11px] uppercase text-slate-400">Asal</div>
-            <div className="text-sm text-slate-700">{s.origin}</div>
+            <div className="text-[11px] uppercase text-[#667085]">Pengirim</div>
+            <div className="text-sm font-semibold text-[#101828]">{s.sender.name}</div>
+            <div className="text-xs text-[#667085]">{s.sender.phone}</div>
+            <div className="mt-2 text-[11px] uppercase text-[#667085]">Asal</div>
+            <div className="text-sm text-[#101828]">{s.origin}</div>
           </div>
           <div>
-            <div className="text-[11px] uppercase text-slate-400">Penerima</div>
-            <div className="text-sm font-semibold text-slate-800">{s.receiver.name}</div>
-            <div className="text-xs text-slate-500">{s.receiver.address}, {s.receiver.city}</div>
-            <div className="text-xs text-slate-500">{s.receiver.phone}</div>
-            <div className="mt-2 text-[11px] uppercase text-slate-400">Tujuan</div>
-            <div className="text-sm text-slate-700">{s.destination}</div>
+            <div className="text-[11px] uppercase text-[#667085]">Penerima</div>
+            <div className="text-sm font-semibold text-[#101828]">{s.receiver.name}</div>
+            <div className="text-xs text-[#667085]">{s.receiver.address}, {s.receiver.city}</div>
+            <div className="text-xs text-[#667085]">{s.receiver.phone}</div>
+            <div className="mt-2 text-[11px] uppercase text-[#667085]">Tujuan</div>
+            <div className="text-sm text-[#101828]">{s.destination}</div>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
+        <div className="mt-3 flex flex-wrap gap-4 border-t border-[#F7F9FC] pt-3 text-xs text-[#667085]">
           <span>Berat: <b>{formatNumber(s.weight)} kg</b></span>
           <span>Kendaraan: <b>{vehicle?.vehicleNumber || '-'}</b></span>
           <span>Jenis Layanan: <b>{s.origin} → {s.destination}</b></span>
@@ -198,19 +198,19 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
 
       {/* Aksi */}
       {!pod && ['WAREHOUSE_RECEIVED', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB'].includes(s.status) && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-4">
           {step ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-800">{step.label}</p>
-                <p className="text-xs text-slate-500">{step.hint}</p>
+                <p className="text-sm font-semibold text-[#101828]">{step.label}</p>
+                <p className="text-xs text-[#667085]">{step.hint}</p>
               </div>
               <button onClick={advance} disabled={busy} className={btnPrimary}>
                 {busy ? 'Menyimpan...' : step.label}
               </button>
             </div>
           ) : (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-[#667085]">
               Barang menunggu keberangkatan dari gudang. Gunakan <b>📡 Kirim Lokasi</b> di atas untuk cek-in posisi.
             </p>
           )}
@@ -218,20 +218,20 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
       )}
 
       {!pod && s.status === 'OUT_FOR_DELIVERY' && (
-        <form onSubmit={submitPOD} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-bold text-slate-900">Proof of Delivery</h2>
+        <form onSubmit={submitPOD} className="space-y-4 rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="text-sm font-bold text-[#101828]">Proof of Delivery</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Nama Penerima *</label>
+                <label className="mb-1 block text-xs font-semibold text-[#667085]">Nama Penerima *</label>
                 <input required value={receiverName} onChange={(e) => setReceiverName(e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Catatan Driver</label>
+                <label className="mb-1 block text-xs font-semibold text-[#667085]">Catatan Driver</label>
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} rows={3} placeholder="Kondisi barang, dst" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Foto Barang / Penerima</label>
+                <label className="mb-1 block text-xs font-semibold text-[#667085]">Foto Barang / Penerima</label>
                 <input
                   type="file" accept="image/*" capture="environment"
                   onChange={async (e) => {
@@ -244,7 +244,7 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-600">Tanda Tangan Penerima *</label>
+              <label className="mb-1 block text-xs font-semibold text-[#667085]">Tanda Tangan Penerima *</label>
               <SignaturePad onChange={setSignature} />
             </div>
           </div>
@@ -258,45 +258,45 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
 
       {/* Laporan Pengiriman (setelah POD) */}
       {pod && (
-        <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-bold text-emerald-700">Laporan Pengiriman</h2>
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">✓ Delivery Selesai</span>
+            <span className="rounded-full bg-[#E6F9EF] px-2 py-0.5 text-[11px] font-semibold text-[#16B364]">✓ Delivery Selesai</span>
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-500">Resi</span>
-                <span className="font-mono font-semibold text-slate-800">{s.trackingNumber}</span>
+              <div className="flex justify-between border-b border-[#F7F9FC] pb-1.5">
+                <span className="text-[#667085]">Resi</span>
+                <span className="font-mono font-semibold text-[#101828]">{s.trackingNumber}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-500">Penerima</span>
-                <span className="font-semibold text-slate-800">{pod.receiverName}</span>
+              <div className="flex justify-between border-b border-[#F7F9FC] pb-1.5">
+                <span className="text-[#667085]">Penerima</span>
+                <span className="font-semibold text-[#101828]">{pod.receiverName}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-500">Waktu Terima</span>
-                <span className="font-semibold text-slate-800">{formatDateTime(pod.deliveredAt)}</span>
+              <div className="flex justify-between border-b border-[#F7F9FC] pb-1.5">
+                <span className="text-[#667085]">Waktu Terima</span>
+                <span className="font-semibold text-[#101828]">{formatDateTime(pod.deliveredAt)}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-500">Lokasi Terima</span>
-                <span className="font-semibold text-slate-800">{s.destination}</span>
+              <div className="flex justify-between border-b border-[#F7F9FC] pb-1.5">
+                <span className="text-[#667085]">Lokasi Terima</span>
+                <span className="font-semibold text-[#101828]">{s.destination}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-500">Catatan Driver</span>
-                <span className="max-w-[55%] text-right font-semibold text-slate-800">{pod.notes || '-'}</span>
+              <div className="flex justify-between border-b border-[#F7F9FC] pb-1.5">
+                <span className="text-[#667085]">Catatan Driver</span>
+                <span className="max-w-[55%] text-right font-semibold text-[#101828]">{pod.notes || '-'}</span>
               </div>
             </div>
             <div className="space-y-3">
               {pod.signature && pod.signature.startsWith('data:image') && pod.signature.length > 1000 && (
                 <div>
-                  <div className="mb-1 text-[11px] uppercase text-slate-400">Tanda Tangan Penerima</div>
-                  <img src={pod.signature} alt="tanda tangan" className="h-20 rounded-lg border border-slate-200 bg-white" />
+                  <div className="mb-1 text-[11px] uppercase text-[#667085]">Tanda Tangan Penerima</div>
+                  <img src={pod.signature} alt="tanda tangan" className="h-20 rounded-lg border border-[#E4E7EC] bg-white" />
                 </div>
               )}
               {pod.photo && (
                 <div>
-                  <div className="mb-1 text-[11px] uppercase text-slate-400">Foto Bukti</div>
-                  <img src={pod.photo} alt="bukti" className="h-20 rounded-lg border border-slate-200 bg-white object-cover" />
+                  <div className="mb-1 text-[11px] uppercase text-[#667085]">Foto Bukti</div>
+                  <img src={pod.photo} alt="bukti" className="h-20 rounded-lg border border-[#E4E7EC] bg-white object-cover" />
                 </div>
               )}
             </div>
@@ -339,17 +339,17 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
       )}
 
       {/* Timeline */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-4 text-sm font-bold text-slate-900">Timeline</h2>
+      <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <h2 className="mb-4 text-sm font-bold text-[#101828]">Timeline</h2>
         <div>
           {events.map((ev, i) => (
             <div key={ev.id} className="relative flex gap-3 pb-5">
-              {i !== events.length - 1 && <span className="absolute left-[7px] top-4 h-full w-0.5 bg-slate-200" />}
-              <span className="relative mt-1 h-4 w-4 shrink-0 rounded-full border-4 border-brand-300 bg-brand-500" />
+              {i !== events.length - 1 && <span className="absolute left-[7px] top-4 h-full w-0.5 bg-[#E4E7EC]" />}
+              <span className="relative mt-1 h-4 w-4 shrink-0 rounded-full border-4 border-[#B3D4FF] bg-[#0D6EFD]" />
               <div>
-                <div className="text-sm font-semibold text-slate-800">{STATUS_LABELS[ev.status] || ev.status}</div>
-                <div className="text-[11px] text-slate-400">{formatDateTime(ev.createdAt)}</div>
-                {ev.notes && <div className="text-xs text-slate-500">{ev.notes}</div>}
+                <div className="text-sm font-semibold text-[#101828]">{STATUS_LABELS[ev.status] || ev.status}</div>
+                <div className="text-[11px] text-[#667085]">{formatDateTime(ev.createdAt)}</div>
+                {ev.notes && <div className="text-xs text-[#667085]">{ev.notes}</div>}
               </div>
             </div>
           ))}

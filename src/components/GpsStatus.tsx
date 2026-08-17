@@ -71,8 +71,8 @@ export default function GpsStatus({ compact }: { compact?: boolean }) {
           aria-label={on ? 'GPS aktif' : off ? 'GPS mati' : 'Memeriksa GPS'}
           className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/40 shadow-md transition hover:scale-105"
           style={{
-            background: on ? '#16a34a' : off ? '#dc2626' : '#94a3b8',
-            boxShadow: on ? '0 0 0 4px rgba(22,163,74,.25)' : off ? '0 0 0 4px rgba(220,38,38,.25)' : 'none',
+            background: on ? '#16B364' : off ? '#F5222D' : '#667085',
+            boxShadow: on ? '0 0 0 4px rgba(22,179,100,.25)' : off ? '0 0 0 4px rgba(245,34,45,.25)' : 'none',
           }}
         >
           {on && <span className="absolute inset-0 animate-ping rounded-full bg-green-400 opacity-40" />}
@@ -84,16 +84,16 @@ export default function GpsStatus({ compact }: { compact?: boolean }) {
         )}
 
         {showTip && (
-          <div className="absolute right-0 top-11 z-50 w-56 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700 shadow-lg">
+          <div className="absolute right-0 top-11 z-50 w-56 rounded-xl border border-[#E4E7EC] bg-white p-3 text-xs text-[#101828] shadow-lg">
             <div className="mb-1 flex items-center gap-2">
               <span
                 className="h-3 w-3 rounded-full"
-                style={{ background: on ? '#16a34a' : off ? '#dc2626' : '#94a3b8' }}
+                style={{ background: on ? '#16B364' : off ? '#F5222D' : '#667085' }}
               />
               <b>{on ? 'GPS Aktif' : off ? 'GPS Mati' : 'Memeriksa…'}</b>
             </div>
-            <p className="text-slate-500">{detail}</p>
-            <p className="mt-1 text-[11px] text-slate-400">Status diperiksa otomatis tiap 10 detik.</p>
+            <p className="text-[#667085]">{detail}</p>
+            <p className="mt-1 text-[11px] text-[#667085]">Status diperiksa otomatis tiap 10 detik.</p>
           </div>
         )}
       </div>

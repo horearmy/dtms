@@ -113,7 +113,6 @@ export default function MapPage() {
     return () => { active = false; clearInterval(t); };
   }, []);
 
-  // ambil rute dari OSRM untuk setiap shipment
   useEffect(() => {
     let active = true;
     const routable = ships.filter((s) => s.originLat != null && s.originLng != null && s.destLat != null && s.destLng != null);
@@ -126,7 +125,6 @@ export default function MapPage() {
       const result: RouteLine[] = [];
       await Promise.all(
         routable.map(async (s) => {
-          // jika shipment multi-stop, gunakan seluruh titik perjalanan sebagai waypoint
           const waypoints: Array<[number, number]> =
             s.stops && s.stops.length >= 3
               ? s.stops.map((st) => [st.latitude, st.longitude])
@@ -146,7 +144,6 @@ export default function MapPage() {
     return () => { active = false; };
   }, [ships]);
 
-  // rute kembali (kuning) untuk driver yang sedang kembali ke gudang
   useEffect(() => {
     let active = true;
     const returning = drivers.filter(
@@ -264,7 +261,7 @@ export default function MapPage() {
              Asal: ${s.origin}<br/>
              Tujuan: ${s.destination}<br/>
              Driver: ${s.driver || '-'}<br/>
-             <a href="/shipments/${s.id}" style="color:#1d4ed8;">Lihat detail →</a>
+             <a href="/shipments/${s.id}" style="color:#0D6EFD;">Lihat detail →</a>
            </div>`
         );
       });
@@ -272,7 +269,6 @@ export default function MapPage() {
     return () => { cancelled = true; };
   }, [drivers, ships]);
 
-  // draw route polylines
   useEffect(() => {
     const map = leafletRef.current;
     if (!map) return;
@@ -283,7 +279,6 @@ export default function MapPage() {
       routeLayer.current?.clearLayers();
       if (!showRoutes) return;
 
-      // rute kembali kuning (driver sedang kembali ke gudang)
       returnRoutes.forEach((r) => {
         const line = L.polyline(r.points, {
           color: '#facc15',
@@ -338,13 +333,11 @@ export default function MapPage() {
     setSelectedShipId(s.id);
     const map = leafletRef.current;
     if (!map) return;
-    // lokasi terkini shipment: posisi driver sekarang jika sedang di jalan
     const driverPos = s.driver ? drivers.find((d) => d.name === s.driver) : undefined;
     const target: [number, number] | null =
       driverPos && (s.status === 'IN_TRANSIT' || s.status === 'DISPATCHED' || s.status === 'OUT_FOR_DELIVERY' || s.status === 'ARRIVED_AT_HUB')
         ? [driverPos.latitude, driverPos.longitude]
         : null;
-    // fallback ke marker di peta (tujuan), lalu koordinat tujuan
     const marker = shipMarkers.current.get(s.id);
     const z = Math.max(map.getZoom(), 13);
     if (target) {
@@ -364,31 +357,31 @@ export default function MapPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Live Tracking Map</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl font-bold text-[#101828]">Live Tracking Map</h1>
+          <p className="text-sm text-[#667085]">
             Posisi driver & shipment · Update otomatis tiap 15 detik{lastUpdate && ` · Terakhir: ${lastUpdate}`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-brand-600" /> Driver</span>
+            <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-[#0D6EFD]" /> Driver</span>
             <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-yellow-400" /> Driver Kembali</span>
             <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-amber-600" /> Shipment</span>
             <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-violet-500" /> Geofence</span>
             <span className="flex items-center gap-1"><span className="h-1.5 w-5 rounded bg-emerald-500" /> Rute</span>
             <span className="flex items-center gap-1"><span className="h-1.5 w-5 rounded bg-yellow-300" /> Rute Kembali</span>
           </div>
-          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600">
+          <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-[#667085]">
             <input
               type="checkbox"
               checked={showRoutes}
               onChange={(e) => setShowRoutes(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="h-4 w-4 rounded border-[#E4E7EC] text-[#0D6EFD] focus:ring-[#0D6EFD]"
             />
             Tampilkan Rute
           </label>
           {routeLoaded && (
-            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+            <span className="rounded-full bg-[#E4E7EC] px-2 py-0.5 text-[11px] font-semibold text-[#667085]">
               {routes.length} rute {routes.some(routeFallback) ? '(beberapa fallback garis lurus)' : ''}
             </span>
           )}
@@ -396,66 +389,66 @@ export default function MapPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-4">
-        <div className="h-[70vh] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm lg:col-span-3">
+        <div className="h-[70vh] overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:col-span-3">
           <div ref={mapRef} className="h-full w-full" />
         </div>
-        <div className="max-h-[70vh] overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-bold text-slate-900">Driver Aktif ({drivers.length})</h2>
+        <div className="max-h-[70vh] overflow-y-auto rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="mb-3 text-sm font-bold text-[#101828]">Driver Aktif ({drivers.length})</h2>
           <div className="space-y-3">
             {drivers.map((d) => (
-              <div key={d.driverId} className="rounded-lg border border-slate-100 p-3">
+              <div key={d.driverId} className="rounded-lg border border-[#E4E7EC] p-3">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-[#101828]">
                     {d.photo ? (
-                      <img src={d.photo} alt={d.name} className="h-6 w-6 rounded-full border border-slate-200 object-cover" />
+                      <img src={d.photo} alt={d.name} className="h-6 w-6 rounded-full border border-[#E4E7EC] object-cover" />
                     ) : (
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-700">{d.name.slice(0, 1).toUpperCase()}</span>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0D6EFD]/10 text-[10px] font-bold text-[#0D6EFD]">{d.name.slice(0, 1).toUpperCase()}</span>
                     )}
                     {d.name}
                     {d.returning && (
                       <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-bold text-yellow-700">Kembali ke Gudang</span>
                     )}
                   </span>
-                  <span className="text-xs text-slate-400">{d.speed != null ? `${d.speed} km/h` : '-'}</span>
+                  <span className="text-xs text-[#667085]">{d.speed != null ? `${d.speed} km/h` : '-'}</span>
                 </div>
-                <div className="text-xs text-slate-500">{d.vehicleNumber || '-'} · Update {new Date(d.updatedAt).toLocaleTimeString('id-ID')}</div>
+                <div className="text-xs text-[#667085]">{d.vehicleNumber || '-'} · Update {new Date(d.updatedAt).toLocaleTimeString('id-ID')}</div>
                 {d.returning && d.warehouseName && <div className="mt-1 text-[11px] text-yellow-700">Menuju: {d.warehouseName}</div>}
               </div>
             ))}
-            {drivers.length === 0 && <p className="text-sm text-slate-400">Belum ada data GPS 2 jam terakhir</p>}
+            {drivers.length === 0 && <p className="text-sm text-[#667085]">Belum ada data GPS 2 jam terakhir</p>}
           </div>
-          <h2 className="mb-3 mt-5 text-sm font-bold text-slate-900">Shipment Aktif ({ships.length})</h2>
+          <h2 className="mb-3 mt-5 text-sm font-bold text-[#101828]">Shipment Aktif ({ships.length})</h2>
           <div className="space-y-3">
             {ships.map((s) => (
               <button
                 key={s.id}
                 onClick={() => focusShip(s)}
                 className={`w-full rounded-lg border p-3 text-left transition ${
-                  selectedShipId === s.id ? 'border-brand-500 bg-brand-50 shadow-sm' : 'border-slate-100 hover:border-brand-200 hover:bg-slate-50'
+                  selectedShipId === s.id ? 'border-[#0D6EFD] bg-[#0D6EFD]/5 shadow-sm' : 'border-[#E4E7EC] hover:border-[#0D6EFD]/30 hover:bg-[#F7F9FC]'
                 }`}
               >
-                <div className="font-mono text-xs font-semibold text-brand-600">{s.trackingNumber}</div>
+                <div className="font-mono text-xs font-semibold text-[#0D6EFD]">{s.trackingNumber}</div>
                 <div className="mt-1"><StatusBadge status={s.status} /></div>
-                <div className="mt-1 text-xs text-slate-500">{s.origin} → {s.destination}</div>
+                <div className="mt-1 text-xs text-[#667085]">{s.origin} → {s.destination}</div>
                 {s.originLat != null && s.destLat != null && (
-                  <div className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[#667085]">
                     <span className="h-1.5 w-4 rounded" style={{ background: statusColor(s.status) }} />
                     Rute tersedia
                   </div>
                 )}
               </button>
             ))}
-            {ships.length === 0 && <p className="text-sm text-slate-400">Tidak ada shipment aktif</p>}
+            {ships.length === 0 && <p className="text-sm text-[#667085]">Tidak ada shipment aktif</p>}
           </div>
-          <h2 className="mb-3 mt-5 text-sm font-bold text-slate-900">Geofence Aktif ({geofences.filter((g) => g.active).length})</h2>
+          <h2 className="mb-3 mt-5 text-sm font-bold text-[#101828]">Geofence Aktif ({geofences.filter((g) => g.active).length})</h2>
           <div className="space-y-2">
             {geofences.filter((g) => g.active).map((g) => (
-              <div key={g.id} className="rounded-lg border border-slate-100 p-3">
-                <div className="text-sm font-semibold text-slate-800">{g.name}</div>
-                <div className="text-xs text-slate-500">{g.type} · radius {g.radiusMeters} m</div>
+              <div key={g.id} className="rounded-lg border border-[#E4E7EC] p-3">
+                <div className="text-sm font-semibold text-[#101828]">{g.name}</div>
+                <div className="text-xs text-[#667085]">{g.type} · radius {g.radiusMeters} m</div>
               </div>
             ))}
-            {geofences.length === 0 && <p className="text-sm text-slate-400">Tidak ada geofence</p>}
+            {geofences.length === 0 && <p className="text-sm text-[#667085]">Tidak ada geofence</p>}
           </div>
         </div>
       </div>

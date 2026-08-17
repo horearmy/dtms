@@ -82,8 +82,8 @@ export default async function ReportsPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Reports</h1>
-          <p className="text-sm text-slate-500">Laporan operasional pengiriman</p>
+          <h1 className="text-xl font-bold text-[#101828]">Reports</h1>
+          <p className="text-sm text-[#667085]">Laporan operasional pengiriman</p>
         </div>
         <CsvExport data={csv} filename={`dtms-shipment-report-${new Date().toISOString().slice(0, 10)}.csv`} />
       </div>
@@ -96,23 +96,23 @@ export default async function ReportsPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-bold text-slate-900">Shipment Report</h2>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="mb-4 text-sm font-bold text-[#101828]">Shipment Report</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-xs uppercase text-slate-400">
-                  <th className="py-2 pr-3">Status</th>
-                  <th className="py-2 pr-3">Jumlah</th>
-                  <th className="py-2">Persentase</th>
+                <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+                  <th className="py-2 pr-3 text-left">Status</th>
+                  <th className="py-2 pr-3 text-left">Jumlah</th>
+                  <th className="py-2 text-left">Persentase</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.entries(map).map(([st, cnt]) => (
-                  <tr key={st} className="border-b border-slate-100 last:border-0">
+                  <tr key={st} className="border-b border-[#E4E7EC] last:border-0">
                     <td className="py-2 pr-3"><StatusBadge status={st} /></td>
-                    <td className="py-2 pr-3 text-slate-700">{cnt}</td>
-                    <td className="py-2 text-slate-500">{totalCount ? Math.round((cnt / totalCount) * 100) : 0}%</td>
+                    <td className="py-2 pr-3 text-[#101828]">{cnt}</td>
+                    <td className="py-2 text-[#667085]">{totalCount ? Math.round((cnt / totalCount) * 100) : 0}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -120,16 +120,16 @@ export default async function ReportsPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-bold text-slate-900">Driver Scoring</h2>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="mb-4 text-sm font-bold text-[#101828]">Driver Scoring</h2>
           <div className="space-y-3">
             {scoredDrivers.map((d) => {
               const scoreColor = d.stat.score >= 80 ? 'bg-emerald-100 text-emerald-700' : d.stat.score >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
               return (
-                <div key={d.id} className="flex items-center justify-between rounded-lg border border-slate-100 p-3">
+                <div key={d.id} className="flex items-center justify-between rounded-lg border border-[#E4E7EC] p-3">
                   <div>
-                    <div className="text-sm font-semibold text-slate-800">{d.name}</div>
-                    <div className="text-xs text-slate-500">{d.employeeId} · {d.stat.delivered} terkirim · {d.stat.failed} gagal · {d.stat.onTime} on-time</div>
+                    <div className="text-sm font-semibold text-[#101828]">{d.name}</div>
+                    <div className="text-xs text-[#667085]">{d.employeeId} · {d.stat.delivered} terkirim · {d.stat.failed} gagal · {d.stat.onTime} on-time</div>
                   </div>
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${scoreColor}`}>
                     {d.stat.score}
@@ -137,66 +137,66 @@ export default async function ReportsPage() {
                 </div>
               );
             })}
-            {drivers.length === 0 && <p className="text-sm text-slate-400">Belum ada driver</p>}
+            {drivers.length === 0 && <p className="text-sm text-[#667085]">Belum ada driver</p>}
           </div>
-          <p className="mt-3 text-[11px] text-slate-400">Skor = 50% tingkat penyelesaian + 30% on-time − faktor gagal</p>
+          <p className="mt-3 text-[11px] text-[#667085]">Skor = 50% tingkat penyelesaian + 30% on-time − faktor gagal</p>
         </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-bold text-slate-900">Shipment Trend · 7 Hari</h2>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="mb-4 text-sm font-bold text-[#101828]">Shipment Trend · 7 Hari</h2>
           <div className="flex h-40 items-end gap-2">
             {trend.map((t) => (
               <div key={t.date} className="flex flex-1 flex-col items-center gap-1">
-                <div className="relative w-full rounded-t-md bg-brand-500" style={{ height: `${Math.max(4, (t.count / trendMax) * 100)}%` }} title={`${t.count}`}>
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-600">{t.count}</span>
+                <div className="relative w-full rounded-t-md bg-[#0D6EFD]" style={{ height: `${Math.max(4, (t.count / trendMax) * 100)}%` }} title={`${t.count}`}>
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#667085]">{t.count}</span>
                 </div>
-                <span className="text-[10px] text-slate-400">{t.date}</span>
+                <span className="text-[10px] text-[#667085]">{t.date}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-bold text-slate-900">Top Destinasi · 7 Hari</h2>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="mb-4 text-sm font-bold text-[#101828]">Top Destinasi · 7 Hari</h2>
           <div className="space-y-2">
             {topDestinations.map(([name, count], i) => (
               <div key={name} className="flex items-center justify-between text-sm">
-                <span className="text-slate-700">{i + 1}. {name}</span>
-                <span className="text-xs font-semibold text-slate-500">{count} shipment</span>
+                <span className="text-[#101828]">{i + 1}. {name}</span>
+                <span className="text-xs font-semibold text-[#667085]">{count} shipment</span>
               </div>
             ))}
-            {topDestinations.length === 0 && <p className="text-sm text-slate-400">Belum ada data</p>}
+            {topDestinations.length === 0 && <p className="text-sm text-[#667085]">Belum ada data</p>}
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 p-5 pb-3">
-          <h2 className="text-sm font-bold text-slate-900">Detail Shipment Terbaru</h2>
+      <div className="rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="border-b border-[#E4E7EC] p-5 pb-3">
+          <h2 className="text-sm font-bold text-[#101828]">Detail Shipment Terbaru</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
-                <th className="px-4 py-3">Resi</th>
-                <th className="px-4 py-3">Pengirim</th>
-                <th className="px-4 py-3">Penerima</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Driver</th>
-                <th className="px-4 py-3">Dibuat</th>
+              <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+                <th className="px-4 py-3 text-left">Resi</th>
+                <th className="px-4 py-3 text-left">Pengirim</th>
+                <th className="px-4 py-3 text-left">Penerima</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Driver</th>
+                <th className="px-4 py-3 text-left">Dibuat</th>
               </tr>
             </thead>
             <tbody>
               {lastShipments.map((s) => (
-                <tr key={s.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-2.5 font-mono text-xs text-brand-600">{s.trackingNumber}</td>
-                  <td className="px-4 py-2.5 text-slate-700">{s.sender.name}</td>
-                  <td className="px-4 py-2.5 text-slate-700">{s.receiver.name}</td>
+                <tr key={s.id} className="border-b border-[#E4E7EC] last:border-0">
+                  <td className="px-4 py-2.5 font-mono text-xs text-[#0D6EFD]">{s.trackingNumber}</td>
+                  <td className="px-4 py-2.5 text-[#101828]">{s.sender.name}</td>
+                  <td className="px-4 py-2.5 text-[#101828]">{s.receiver.name}</td>
                   <td className="px-4 py-2.5"><StatusBadge status={s.status} /></td>
-                  <td className="px-4 py-2.5 text-slate-600">{s.assignments[0]?.driver.name || '-'}</td>
-                  <td className="px-4 py-2.5 text-xs text-slate-500">{new Date(s.createdAt).toLocaleString('id-ID')}</td>
+                  <td className="px-4 py-2.5 text-[#667085]">{s.assignments[0]?.driver.name || '-'}</td>
+                  <td className="px-4 py-2.5 text-xs text-[#667085]">{new Date(s.createdAt).toLocaleString('id-ID')}</td>
                 </tr>
               ))}
             </tbody>
@@ -209,10 +209,10 @@ export default async function ReportsPage() {
 
 function Metric({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-2xl font-bold text-slate-900">{value}</div>
-      {sub && <div className="text-xs text-slate-500">{sub}</div>}
+    <div className="rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <div className="text-xs font-semibold uppercase tracking-wide text-[#667085]">{label}</div>
+      <div className="mt-1 text-2xl font-bold text-[#101828]">{value}</div>
+      {sub && <div className="text-xs text-[#667085]">{sub}</div>}
     </div>
   );
 }

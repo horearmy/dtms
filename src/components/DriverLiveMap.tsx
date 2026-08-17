@@ -88,7 +88,7 @@ export default function DriverLiveMap({ driverLat, driverLng, destLat, destLng, 
         const m = L.marker([driverPos.lat, driverPos.lng], {
           icon: L.divIcon({
             className: '',
-            html: `<div style="width:32px;height:32px;background:#2563eb;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:13px;">🚚</span></div>`,
+            html: `<div style="width:32px;height:32px;background:#0D6EFD;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:13px;">🚚</span></div>`,
             iconSize: [32, 32],
             iconAnchor: [16, 28],
           }),
@@ -101,7 +101,7 @@ export default function DriverLiveMap({ driverLat, driverLng, destLat, destLng, 
         const m = L.marker([destLat!, destLng!], {
           icon: L.divIcon({
             className: '',
-            html: `<div style="width:26px;height:26px;background:#dc2626;border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:12px;">📍</span></div>`,
+            html: `<div style="width:26px;height:26px;background:#F5222D;border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.3);"><span style="transform:rotate(45deg);font-size:12px;">📍</span></div>`,
             iconSize: [26, 26],
             iconAnchor: [13, 24],
           }),
@@ -112,13 +112,13 @@ export default function DriverLiveMap({ driverLat, driverLng, destLat, destLng, 
 
       if (route && route.length > 1) {
         const line = L.polyline(route, {
-          color: '#2563eb',
+          color: '#0D6EFD',
           weight: 3,
           opacity: 0.6,
           dashArray: routeFallback ? '4 6' : undefined,
         }).addTo(map);
         line.bindPopup(
-          `<div style="font-size:12px;"><b>Rute pengiriman</b><br/>${route.length} titik${routeFallback ? '<br/><i style="color:#94a3b8;">Rute lurus (OSRM tidak merespons)</i>' : ''}</div>`
+          `<div style="font-size:12px;"><b>Rute pengiriman</b><br/>${route.length} titik${routeFallback ? '<br/><i style="color:#667085;">Rute lurus (OSRM tidak merespons)</i>' : ''}</div>`
         );
       }
 
@@ -135,18 +135,18 @@ export default function DriverLiveMap({ driverLat, driverLng, destLat, destLng, 
   }, [route, driverPos, hasDest]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
-        <h3 className="text-sm font-bold text-slate-900">🗺️ Peta Lokasi Saya</h3>
-        <div className="flex items-center gap-3 text-[11px] text-slate-500">
-          <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-blue-600" /> Saya</span>
-          {hasDest && <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-red-600" /> Tujuan</span>}
+    <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <div className="flex items-center justify-between border-b border-[#F7F9FC] px-4 py-2.5">
+        <h3 className="text-sm font-bold text-[#101828]">🗺️ Peta Lokasi Saya</h3>
+        <div className="flex items-center gap-3 text-[11px] text-[#667085]">
+          <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-[#0D6EFD]" /> Saya</span>
+          {hasDest && <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-[#F5222D]" /> Tujuan</span>}
           {driverPos && <span className="font-mono">{driverPos.lat.toFixed(5)}, {driverPos.lng.toFixed(5)}</span>}
         </div>
       </div>
       <div className="h-64" ref={mapRef} />
       {!driverPos && (
-        <div className="border-t border-slate-100 bg-amber-50 px-4 py-2 text-xs text-amber-700">
+        <div className="border-t border-[#F7F9FC] bg-amber-50 px-4 py-2 text-xs text-amber-700">
           Belum ada sinyal GPS. Aktifkan lokasi &amp; kirim posisi agar peta menampilkan lokasi Anda.
         </div>
       )}

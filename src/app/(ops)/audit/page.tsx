@@ -36,37 +36,37 @@ export default function AuditPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Audit Log</h1>
-        <p className="text-sm text-slate-500">Rekam jejak aktivitas pengguna ({total} catatan)</p>
+        <h1 className="text-xl font-bold text-[#101828]">Audit Log</h1>
+        <p className="text-sm text-[#667085]">Rekam jejak aktivitas pengguna ({total} catatan)</p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
-                <th className="px-4 py-3">Waktu</th>
-                <th className="px-4 py-3">User</th>
-                <th className="px-4 py-3">Aksi</th>
-                <th className="px-4 py-3">Modul</th>
-                <th className="px-4 py-3">Detail</th>
+              <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+                <th className="px-4 py-3 text-left">Waktu</th>
+                <th className="px-4 py-3 text-left">User</th>
+                <th className="px-4 py-3 text-left">Aksi</th>
+                <th className="px-4 py-3 text-left">Modul</th>
+                <th className="px-4 py-3 text-left">Detail</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={5} className="py-8 text-center text-slate-400">Memuat...</td></tr>
+                <tr><td colSpan={5} className="py-8 text-center text-[#667085]">Memuat...</td></tr>
               )}
               {!loading && items.map((l) => (
-                <tr key={l.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-3 text-xs text-slate-500">{formatDateTime(l.createdAt)}</td>
-                  <td className="px-4 py-3 text-slate-700">{l.user?.name || 'Sistem'}</td>
-                  <td className="px-4 py-3"><span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600">{l.action}</span></td>
-                  <td className="px-4 py-3 text-slate-600">{l.module}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{l.newData || '-'}</td>
+                <tr key={l.id} className="border-b border-[#E4E7EC] last:border-0">
+                  <td className="px-4 py-3 text-xs text-[#667085]">{formatDateTime(l.createdAt)}</td>
+                  <td className="px-4 py-3 text-[#101828]">{l.user?.name || 'Sistem'}</td>
+                  <td className="px-4 py-3"><span className="rounded bg-[#F7F9FC] px-2 py-0.5 font-mono text-[11px] text-[#667085]">{l.action}</span></td>
+                  <td className="px-4 py-3 text-[#667085]">{l.module}</td>
+                  <td className="px-4 py-3 text-xs text-[#667085]">{l.newData || '-'}</td>
                 </tr>
               ))}
               {!loading && items.length === 0 && (
-                <tr><td colSpan={5} className="py-10 text-center text-slate-400">Belum ada aktivitas tercatat</td></tr>
+                <tr><td colSpan={5} className="py-10 text-center text-[#667085]">Belum ada aktivitas tercatat</td></tr>
               )}
             </tbody>
           </table>

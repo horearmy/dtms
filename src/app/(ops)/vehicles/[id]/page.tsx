@@ -51,9 +51,9 @@ type VehicleDetail = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  AVAILABLE: 'bg-emerald-100 text-emerald-700',
-  IN_USE: 'bg-amber-100 text-amber-700',
-  MAINTENANCE: 'bg-red-100 text-red-700',
+  AVAILABLE: 'bg-[#E6F9EF] text-[#16B364]',
+  IN_USE: 'bg-[#FFF2E0] text-[#FF8A00]',
+  MAINTENANCE: 'bg-[#FEF0F0] text-[#F5222D]',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -123,8 +123,8 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
     await load();
   }
 
-  if (loading) return <div className="py-20 text-center text-slate-400">Memuat...</div>;
-  if (err || !v) return <div className="py-20 text-center text-sm text-red-500">{err || 'Tidak ditemukan'}</div>;
+  if (loading) return <div className="py-20 text-center text-[#667085]">Memuat...</div>;
+  if (err || !v) return <div className="py-20 text-center text-sm text-[#F5222D]">{err || 'Tidak ditemukan'}</div>;
 
   const photos = [
     { label: 'Depan', src: v.photoFront },
@@ -140,91 +140,91 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/vehicles" className="text-xs font-semibold text-brand-600 hover:underline">← Kembali</Link>
+          <Link href="/vehicles" className="text-xs font-semibold text-[#0D6EFD] hover:underline">← Kembali</Link>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">{v.vehicleNumber}</h1>
-            <p className="text-sm text-slate-500">{v.type} · {formatNumber(v.capacity)} kg</p>
+            <h1 className="text-xl font-bold text-[#101828]">{v.vehicleNumber}</h1>
+            <p className="text-sm text-[#667085]">{v.type} · {formatNumber(v.capacity)} kg</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {v.returning && <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700">Kembali ke Gudang</span>}
-          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[v.status] || 'bg-slate-200 text-slate-500'}`}>
+          {v.returning && <span className="rounded-full bg-[#FFF7E6] px-2 py-0.5 text-xs font-semibold text-[#FF8A00]">Kembali ke Gudang</span>}
+          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[v.status] || 'bg-[#F7F9FC] text-[#667085]'}`}>
             {STATUS_LABEL[v.status] || v.status}
           </span>
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
-          <h2 className="mb-3 text-sm font-bold text-slate-900">Data Kendaraan</h2>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:col-span-2">
+          <h2 className="mb-3 text-sm font-bold text-[#101828]">Data Kendaraan</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-slate-100 p-3">
-              <div className="text-[11px] uppercase tracking-wide text-slate-400">Status Kendaraan</div>
-              <div className="mt-1 text-sm font-bold text-slate-800">{STATUS_LABEL[v.status] || v.status}</div>
+            <div className="rounded-lg border border-[#E4E7EC] p-3">
+              <div className="text-[11px] uppercase tracking-wide text-[#667085]">Status Kendaraan</div>
+              <div className="mt-1 text-sm font-bold text-[#101828]">{STATUS_LABEL[v.status] || v.status}</div>
             </div>
-            <div className="rounded-lg border border-slate-100 p-3">
-              <div className="text-[11px] uppercase tracking-wide text-slate-400">Total Jarak Tempuh</div>
-              <div className="mt-1 text-sm font-bold text-slate-800">{formatNumber(Math.round(v.totalDistanceKm || 0))} km</div>
+            <div className="rounded-lg border border-[#E4E7EC] p-3">
+              <div className="text-[11px] uppercase tracking-wide text-[#667085]">Total Jarak Tempuh</div>
+              <div className="mt-1 text-sm font-bold text-[#101828]">{formatNumber(Math.round(v.totalDistanceKm || 0))} km</div>
             </div>
-            <div className="rounded-lg border border-slate-100 p-3 sm:col-span-2">
+            <div className="rounded-lg border border-[#E4E7EC] p-3 sm:col-span-2">
               <div className="mb-1 flex items-center justify-between text-[11px]">
-                <span className={v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'font-semibold text-red-600' : 'text-slate-500'}>
+                <span className={v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'font-semibold text-[#F5222D]' : 'text-[#667085]'}>
                   Siklus perawatan ({formatNumber(MAINTENANCE_DISTANCE_KM)} km)
                 </span>
-                <span className="text-slate-400">{Math.round(pct)}%</span>
+                <span className="text-[#667085]">{Math.round(pct)}%</span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[#F7F9FC]">
                 <div
-                  className={`h-full rounded-full ${v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'bg-red-500' : v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM * 0.8 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                  className={`h-full rounded-full ${v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'bg-[#F5222D]' : v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM * 0.8 ? 'bg-[#FF8A00]' : 'bg-[#16B364]'}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
               {v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM && (
-                <div className="mt-1 text-[11px] font-bold text-red-600">⚠ Perlu Perawatan</div>
+                <div className="mt-1 text-[11px] font-bold text-[#F5222D]">⚠ Perlu Perawatan</div>
               )}
             </div>
           </div>
 
           <div className="mt-4">
-            <div className="mb-2 text-xs font-semibold text-slate-600">Foto Kendaraan</div>
+            <div className="mb-2 text-xs font-semibold text-[#667085]">Foto Kendaraan</div>
             {photos.length > 0 ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {photos.map((p) => (
                   <div key={p.label} className="group relative">
-                    <img src={p.src!} alt={p.label} className="h-24 w-full rounded-lg border border-slate-200 object-cover" />
+                    <img src={p.src!} alt={p.label} className="h-24 w-full rounded-lg border border-[#E4E7EC] object-cover" />
                     <div className="absolute inset-x-0 bottom-0 rounded-b-lg bg-black/50 px-1 py-0.5 text-center text-[10px] text-white">{p.label}</div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400">Belum ada foto</p>
+              <p className="text-xs text-[#667085]">Belum ada foto</p>
             )}
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 text-sm font-bold text-slate-900">Ringkasan Perawatan</h2>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="mb-3 text-sm font-bold text-[#101828]">Ringkasan Perawatan</h2>
           <div className="space-y-3">
-            <div className="rounded-lg bg-slate-50 p-3">
-              <div className="text-[11px] uppercase tracking-wide text-slate-400">Riwayat Perawatan</div>
-              <div className="mt-1 text-sm font-bold text-slate-800">{v.maintenanceRecords.length} catatan</div>
+            <div className="rounded-lg bg-[#F7F9FC] p-3">
+              <div className="text-[11px] uppercase tracking-wide text-[#667085]">Riwayat Perawatan</div>
+              <div className="mt-1 text-sm font-bold text-[#101828]">{v.maintenanceRecords.length} catatan</div>
             </div>
-            <div className="rounded-lg bg-slate-50 p-3">
-              <div className="text-[11px] uppercase tracking-wide text-slate-400">Perawatan Terakhir</div>
-              <div className="mt-1 text-sm font-bold text-slate-800">{lastMaintenance ? lastMaintenance.type : '-'}</div>
-              <div className="text-[11px] text-slate-500">{lastMaintenance ? formatDate(lastMaintenance.performedAt) : ''}</div>
+            <div className="rounded-lg bg-[#F7F9FC] p-3">
+              <div className="text-[11px] uppercase tracking-wide text-[#667085]">Perawatan Terakhir</div>
+              <div className="mt-1 text-sm font-bold text-[#101828]">{lastMaintenance ? lastMaintenance.type : '-'}</div>
+              <div className="text-[11px] text-[#667085]">{lastMaintenance ? formatDate(lastMaintenance.performedAt) : ''}</div>
             </div>
             <button onClick={() => { setMaintOpen(true); setMsg(''); }} className={btnPrimary + ' w-full'}>+ Catat Perawatan</button>
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-bold text-slate-900">Riwayat Pemeliharaan ({v.maintenanceRecords.length})</h2>
+      <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <h2 className="mb-3 text-sm font-bold text-[#101828]">Riwayat Pemeliharaan ({v.maintenanceRecords.length})</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+              <tr className="border-b bg-[#F7F9FC] text-left text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
                 <th className="px-4 py-3">Tanggal</th>
                 <th className="px-4 py-3">Jenis</th>
                 <th className="px-4 py-3">Keterangan</th>
@@ -234,15 +234,15 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
             </thead>
             <tbody>
               {v.maintenanceRecords.map((m) => (
-                <tr key={m.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-3 text-xs text-slate-600">{formatDateTime(m.performedAt)}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800">{m.type}</td>
-                  <td className="px-4 py-3 text-slate-600">
+                <tr key={m.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
+                  <td className="px-4 py-3 text-xs text-[#667085]">{formatDateTime(m.performedAt)}</td>
+                  <td className="px-4 py-3 font-medium text-[#101828]">{m.type}</td>
+                  <td className="px-4 py-3 text-[#667085]">
                     {m.description || '-'}
-                    {m.notes && <div className="text-[11px] text-slate-400">{m.notes}</div>}
+                    {m.notes && <div className="text-[11px] text-[#667085]">{m.notes}</div>}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{m.odometerKm != null ? `${formatNumber(Math.round(m.odometerKm))} km` : '-'}</td>
-                  <td className="px-4 py-3 text-slate-600">{m.cost != null ? `Rp ${formatNumber(m.cost)}` : '-'}</td>
+                  <td className="px-4 py-3 text-[#667085]">{m.odometerKm != null ? `${formatNumber(Math.round(m.odometerKm))} km` : '-'}</td>
+                  <td className="px-4 py-3 text-[#667085]">{m.cost != null ? `Rp ${formatNumber(m.cost)}` : '-'}</td>
                 </tr>
               ))}
               {v.maintenanceRecords.length === 0 && <EmptyRow colSpan={5} text="Belum ada riwayat pemeliharaan" />}
@@ -251,12 +251,12 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-bold text-slate-900">Riwayat Perjalanan ({v.assignments.length})</h2>
+      <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <h2 className="mb-3 text-sm font-bold text-[#101828]">Riwayat Perjalanan ({v.assignments.length})</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+              <tr className="border-b bg-[#F7F9FC] text-left text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
                 <th className="px-4 py-3">No. Resi</th>
                 <th className="px-4 py-3">Rute</th>
                 <th className="px-4 py-3">Jarak (garis lurus)</th>
@@ -272,16 +272,16 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                     ? haversineKm(a.shipment.originLat, a.shipment.originLng, a.shipment.destLat, a.shipment.destLng)
                     : null;
                 return (
-                  <tr key={a.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <tr key={a.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
                     <td className="px-4 py-3">
-                      <Link href={`/shipments/${a.shipment.trackingNumber}`} className="font-mono text-xs font-semibold text-brand-600 hover:underline">
+                      <Link href={`/shipments/${a.shipment.trackingNumber}`} className="font-mono text-xs font-semibold text-[#0D6EFD] hover:underline">
                         {a.shipment.trackingNumber}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{a.shipment.origin} → {a.shipment.destination}</td>
-                    <td className="px-4 py-3 text-slate-600">{dist != null ? `${dist.toFixed(1)} km` : '-'}</td>
-                    <td className="px-4 py-3 text-slate-600">{a.driver ? a.driver.name : '-'}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{formatDate(a.assignedAt)}</td>
+                    <td className="px-4 py-3 text-[#667085]">{a.shipment.origin} → {a.shipment.destination}</td>
+                    <td className="px-4 py-3 text-[#667085]">{dist != null ? `${dist.toFixed(1)} km` : '-'}</td>
+                    <td className="px-4 py-3 text-[#667085]">{a.driver ? a.driver.name : '-'}</td>
+                    <td className="px-4 py-3 text-xs text-[#667085]">{formatDate(a.assignedAt)}</td>
                     <td className="px-4 py-3"><StatusBadge status={a.shipment.status} /></td>
                   </tr>
                 );
@@ -320,7 +320,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
               </Field>
             </div>
           </div>
-          {msg && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{msg}</div>}
+          {msg && <div className="rounded-lg bg-[#FEF0F0] px-3 py-2 text-sm text-[#F5222D]">{msg}</div>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setMaintOpen(false)} className={btnGhost}>Batal</button>
             <button type="submit" disabled={saving} className={btnPrimary}>{saving ? 'Menyimpan...' : 'Simpan'}</button>

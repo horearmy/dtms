@@ -118,17 +118,17 @@ export default function VehiclesPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Vehicles</h1>
-          <p className="text-sm text-slate-500">Manajemen armada</p>
+          <h1 className="text-xl font-bold text-[#101828]">Vehicles</h1>
+          <p className="text-sm text-[#667085]">Manajemen armada</p>
         </div>
         <button onClick={openNew} className={btnPrimary}>+ Tambah Kendaraan</button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+              <tr className="border-b bg-[#F7F9FC] text-left text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
                 <th className="px-4 py-3">No. Kendaraan</th>
                 <th className="px-4 py-3">Jenis</th>
                 <th className="px-4 py-3">Kapasitas (kg)</th>
@@ -141,28 +141,28 @@ export default function VehiclesPage() {
             </thead>
             <tbody>
               {items.map((v) => (
-                <tr key={v.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-3 font-mono text-xs font-medium text-slate-800">
-                    <button onClick={() => (window.location.href = `/vehicles/${v.id}`)} className="hover:text-brand-600 hover:underline">{v.vehicleNumber}</button>
+                <tr key={v.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
+                  <td className="px-4 py-3 font-mono text-xs font-medium text-[#101828]">
+                    <button onClick={() => (window.location.href = `/vehicles/${v.id}`)} className="hover:text-[#0D6EFD] hover:underline">{v.vehicleNumber}</button>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{v.type}</td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(v.capacity)}</td>
+                  <td className="px-4 py-3 text-[#667085]">{v.type}</td>
+                  <td className="px-4 py-3 text-[#667085]">{formatNumber(v.capacity)}</td>
                   <td className="px-4 py-3">
                     <div className="min-w-[110px]">
                       <div className="mb-1 flex items-center justify-between text-[11px]">
-                        <span className={v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'font-semibold text-red-600' : 'text-slate-500'}>
+                        <span className={v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'font-semibold text-[#F5222D]' : 'text-[#667085]'}>
                           {formatNumber(Math.round(v.totalDistanceKm || 0))} km
                         </span>
-                        <span className="text-slate-400">{formatNumber(MAINTENANCE_DISTANCE_KM)} km</span>
+                        <span className="text-[#667085]">{formatNumber(MAINTENANCE_DISTANCE_KM)} km</span>
                       </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F7F9FC]">
                         <div
-                          className={`h-full rounded-full ${v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'bg-red-500' : v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM * 0.8 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                          className={`h-full rounded-full ${v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM ? 'bg-[#F5222D]' : v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM * 0.8 ? 'bg-[#FF8A00]' : 'bg-[#16B364]'}`}
                           style={{ width: `${Math.min(100, ((v.totalDistanceKm || 0) / MAINTENANCE_DISTANCE_KM) * 100)}%` }}
                         />
                       </div>
                       {v.totalDistanceKm >= MAINTENANCE_DISTANCE_KM && (
-                        <div className="mt-1 text-[10px] font-bold text-red-600">⚠ Perlu Perawatan</div>
+                        <div className="mt-1 text-[10px] font-bold text-[#F5222D]">⚠ Perlu Perawatan</div>
                       )}
                     </div>
                   </td>
@@ -172,40 +172,40 @@ export default function VehiclesPage() {
                         {[v.photoFront, v.photoBack, v.photoRight, v.photoLeft].map((p, i) =>
                           p ? (
                             <img key={i} src={p} alt={`foto ${i + 1}`}
-                              className="h-9 w-12 rounded border border-slate-200 object-cover"
+                              className="h-9 w-12 rounded border border-[#E4E7EC] object-cover"
                               onClick={() => window.open(p, '_blank')}
                             />
                           ) : null
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs text-slate-400">-</span>
+                      <span className="text-xs text-[#667085]">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{v._count?.assignments || 0}</td>
+                  <td className="px-4 py-3 text-[#667085]">{v._count?.assignments || 0}</td>
                   <td className="px-4 py-3">
                     {v.returning ? (
-                      <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700">
+                      <span className="rounded-full bg-[#FFF7E6] px-2 py-0.5 text-xs font-semibold text-[#FF8A00]">
                         Kembali ke Gudang
                       </span>
                     ) : v.busy ? (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                      <span className="rounded-full bg-[#FFF2E0] px-2 py-0.5 text-xs font-semibold text-[#FF8A00]">
                         Perjalanan{v.activeTracking ? ` · ${v.activeTracking}` : ''}
                       </span>
                     ) : (
                       <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        v.status === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-700'
-                        : v.status === 'IN_USE' ? 'bg-amber-100 text-amber-700'
-                        : v.status === 'MAINTENANCE' ? 'bg-red-100 text-red-700'
-                        : 'bg-slate-200 text-slate-500'}`}>
+                        v.status === 'AVAILABLE' ? 'bg-[#E6F9EF] text-[#16B364]'
+                        : v.status === 'IN_USE' ? 'bg-[#FFF2E0] text-[#FF8A00]'
+                        : v.status === 'MAINTENANCE' ? 'bg-[#FEF0F0] text-[#F5222D]'
+                        : 'bg-[#F7F9FC] text-[#667085]'}`}>
                         {v.status}
                       </span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => (window.location.href = `/vehicles/${v.id}`)} className="text-xs font-semibold text-brand-600 hover:underline">Detail</button>
-                    <button onClick={() => openEdit(v)} className="ml-3 text-xs font-semibold text-brand-600 hover:underline">Edit</button>
-                    <button onClick={() => remove(v)} className="ml-3 text-xs font-semibold text-red-500 hover:underline">Hapus</button>
+                    <button onClick={() => (window.location.href = `/vehicles/${v.id}`)} className="text-xs font-semibold text-[#0D6EFD] hover:underline">Detail</button>
+                    <button onClick={() => openEdit(v)} className="ml-3 text-xs font-semibold text-[#0D6EFD] hover:underline">Edit</button>
+                    <button onClick={() => remove(v)} className="ml-3 text-xs font-semibold text-[#F5222D] hover:underline">Hapus</button>
                   </td>
                 </tr>
               ))}
@@ -248,14 +248,14 @@ export default function VehiclesPage() {
             )}
           </div>
           <div>
-            <div className="mb-2 text-xs font-semibold text-slate-600">Foto Kendaraan <span className="text-red-500">*</span></div>
+            <div className="mb-2 text-xs font-semibold text-[#667085]">Foto Kendaraan <span className="text-[#F5222D]">*</span></div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {PHOTO_LABELS.map(({ key, label }) => (
                 <PhotoField key={key} label={label} value={form[key]} onChange={(url) => setForm({ ...form, [key]: url })} />
               ))}
             </div>
           </div>
-          {msg && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{msg}</div>}
+          {msg && <div className="rounded-lg bg-[#FEF0F0] px-3 py-2 text-sm text-[#F5222D]">{msg}</div>}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setOpen(false)} className={btnGhost}>Batal</button>
             <button type="submit" disabled={loading} className={btnPrimary}>{loading ? 'Menyimpan...' : 'Simpan'}</button>

@@ -57,28 +57,28 @@ export default async function TrackingResultPage({ params }: { params: Promise<{
   const waPhone = toE164(shipment.receiver.phone);
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="bg-brand-700 px-4 py-4">
+    <div className="min-h-screen bg-[#F7F9FC]">
+      <header className="bg-gradient-to-r from-[#061B41] to-[#0D6EFD] px-4 py-4">
         <div className="mx-auto max-w-2xl">
           <div className="mb-4 flex items-center justify-between">
             <Link href="/tracking" className="flex items-center gap-2 text-sm font-semibold text-white hover:underline">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 text-base">📦</span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-base">📦</span>
               DTMS Tracking
             </Link>
-            <Link href="/login" className="text-xs text-brand-100 underline">Masuk</Link>
+            <Link href="/login" className="text-xs text-white/70 underline">Masuk</Link>
           </div>
           <TrackingSearch initial={shipment.trackingNumber} />
         </div>
       </header>
 
       <main className="mx-auto max-w-2xl space-y-4 p-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="text-xs uppercase text-slate-400">Nomor Resi</div>
-              <div className="font-mono text-lg font-bold text-brand-700">{shipment.trackingNumber}</div>
+              <div className="text-xs uppercase text-[#667085]">Nomor Resi</div>
+              <div className="font-mono text-lg font-bold text-[#0D6EFD]">{shipment.trackingNumber}</div>
             </div>
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${STATUS_COLORS[shipment.status] || 'bg-slate-100 text-slate-600'}`}>
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${STATUS_COLORS[shipment.status] || 'bg-[#F7F9FC] text-[#667085]'}`}>
               {STATUS_LABELS[shipment.status]}
             </span>
           </div>
@@ -92,30 +92,30 @@ export default async function TrackingResultPage({ params }: { params: Promise<{
             </div>
           )}
 
-          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-sm sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#E4E7EC] pt-4 text-sm sm:grid-cols-4">
             <div>
-              <div className="text-[11px] uppercase text-slate-400">Asal</div>
-              <div className="font-medium text-slate-700">{shipment.origin}</div>
+              <div className="text-[11px] uppercase text-[#667085]">Asal</div>
+              <div className="font-medium text-[#101828]">{shipment.origin}</div>
             </div>
             <div>
-              <div className="text-[11px] uppercase text-slate-400">Tujuan</div>
-              <div className="font-medium text-slate-700">{shipment.destination}</div>
+              <div className="text-[11px] uppercase text-[#667085]">Tujuan</div>
+              <div className="font-medium text-[#101828]">{shipment.destination}</div>
             </div>
             <div>
-              <div className="text-[11px] uppercase text-slate-400">Penerima</div>
-              <div className="font-medium text-slate-700">{shipment.receiver.name}</div>
+              <div className="text-[11px] uppercase text-[#667085]">Penerima</div>
+              <div className="font-medium text-[#101828]">{shipment.receiver.name}</div>
             </div>
             <div>
-              <div className="text-[11px] uppercase text-slate-400">Estimasi Tiba</div>
-              <div className="font-medium text-slate-700">{formatDateTime(eta)}</div>
+              <div className="text-[11px] uppercase text-[#667085]">Estimasi Tiba</div>
+              <div className="font-medium text-[#101828]">{formatDateTime(eta)}</div>
             </div>
           </div>
 
           {assignment && (
-            <div className="mt-3 flex flex-wrap gap-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
-              <span>Kurir: <b className="text-slate-700">{assignment.driver.name}</b></span>
-              <span>Kendaraan: <b className="text-slate-700">{assignment.vehicle?.vehicleNumber || '-'}</b></span>
-              <span>Last update: <b className="text-slate-700">{formatDateTime(shipment.updatedAt)}</b></span>
+            <div className="mt-3 flex flex-wrap gap-4 border-t border-[#E4E7EC] pt-3 text-xs text-[#667085]">
+              <span>Kurir: <b className="text-[#101828]">{assignment.driver.name}</b></span>
+              <span>Kendaraan: <b className="text-[#101828]">{assignment.vehicle?.vehicleNumber || '-'}</b></span>
+              <span>Last update: <b className="text-[#101828]">{formatDateTime(shipment.updatedAt)}</b></span>
             </div>
           )}
 
@@ -132,32 +132,32 @@ export default async function TrackingResultPage({ params }: { params: Promise<{
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500">Riwayat Perjalanan</h2>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-[#667085]">Riwayat Perjalanan</h2>
           <div>
             {shipment.events.map((ev, i) => {
               const isLast = i === shipment.events.length - 1;
               const isCurrent = i === shipment.events.length - 1;
               return (
                 <div key={ev.id} className="relative flex gap-3 pb-6">
-                  {!isLast && <span className="absolute left-[9px] top-6 h-full w-0.5 bg-slate-200" />}
+                  {!isLast && <span className="absolute left-[9px] top-6 h-full w-0.5 bg-[#E4E7EC]" />}
                   <span className={`relative mt-0.5 h-5 w-5 shrink-0 rounded-full border-4 ${
                     isCurrent
                       ? STATUS_COLORS[ev.status]?.includes('bg-emerald')
                         ? 'border-emerald-200 bg-emerald-500'
                         : STATUS_COLORS[ev.status]?.includes('bg-red')
                           ? 'border-red-200 bg-red-500'
-                          : 'border-brand-200 bg-brand-500'
-                      : 'border-slate-200 bg-slate-300'
+                          : 'border-[#0D6EFD]/20 bg-[#0D6EFD]'
+                      : 'border-[#E4E7EC] bg-[#667085]/40'
                   }`} />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-sm font-semibold ${isCurrent ? 'text-slate-900' : 'text-slate-500'}`}>
+                      <span className={`text-sm font-semibold ${isCurrent ? 'text-[#101828]' : 'text-[#667085]'}`}>
                         {STATUS_LABELS[ev.status] || ev.status}
                       </span>
-                      <span className="text-[11px] text-slate-400">{formatDateTime(ev.createdAt)}</span>
+                      <span className="text-[11px] text-[#667085]">{formatDateTime(ev.createdAt)}</span>
                     </div>
-                    {ev.notes && <p className="text-xs text-slate-500">{ev.notes}</p>}
+                    {ev.notes && <p className="text-xs text-[#667085]">{ev.notes}</p>}
                   </div>
                 </div>
               );
@@ -166,7 +166,7 @@ export default async function TrackingResultPage({ params }: { params: Promise<{
         </div>
 
         {pod && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
             <div className="text-sm font-bold text-emerald-800">✓ Bukti Penerimaan</div>
             <p className="mt-1 text-sm text-emerald-700">
               Barang diterima oleh <b>{pod.receiverName}</b> pada {formatDateTime(pod.deliveredAt)}.
@@ -175,7 +175,7 @@ export default async function TrackingResultPage({ params }: { params: Promise<{
         )}
       </main>
 
-      <footer className="py-6 text-center text-xs text-slate-400">
+      <footer className="py-6 text-center text-xs text-[#667085]">
         Delivery Tracking & Management System · Layanan pelanggan: 021-555-0199
       </footer>
     </div>

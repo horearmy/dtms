@@ -10,7 +10,7 @@ import { formatNumber, formatDateTime, STATUS_LABELS } from '@/lib/constants';
 
 export default function ShipmentsPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center text-slate-400">Memuat...</div>}>
+    <Suspense fallback={<div className="py-20 text-center text-[#667085]">Memuat...</div>}>
       <ShipmentsInner />
     </Suspense>
   );
@@ -73,15 +73,15 @@ function ShipmentsInner() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Shipment</h1>
-          <p className="text-sm text-slate-500">Manajemen pengiriman ({total} data)</p>
+          <h1 className="text-xl font-bold text-[#101828]">Shipment</h1>
+          <p className="text-sm text-[#667085]">Manajemen pengiriman ({total} data)</p>
         </div>
         <Link href="/shipments/new" className={btnPrimary}>+ Buat Shipment</Link>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E4E7EC] bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari resi / nama / tujuan..."
-          className="min-w-[220px] flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none" />
+          className="min-w-[220px] flex-1 rounded-lg border border-[#E4E7EC] bg-white px-3 py-2 text-sm focus:border-[#0D6EFD] focus:ring-1 focus:ring-[#0D6EFD] focus:outline-none" />
         <select value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls + ' w-auto'}>
           {STATUS_FILTERS.map((s) => (
             <option key={s} value={s}>{s === 'SEMUA' ? 'Semua Status' : STATUS_LABELS[s] || s}</option>
@@ -89,11 +89,11 @@ function ShipmentsInner() {
         </select>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+              <tr className="border-b border-[#E4E7EC] bg-[#F7F9FC] text-left text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
                 <th className="px-4 py-3">No. Resi</th>
                 <th className="px-4 py-3">Pengirim</th>
                 <th className="px-4 py-3">Penerima</th>
@@ -107,26 +107,26 @@ function ShipmentsInner() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} className="py-8 text-center text-slate-400">Memuat...</td></tr>
+                <tr><td colSpan={9} className="py-8 text-center text-[#667085]">Memuat...</td></tr>
               )}
               {!loading && items.map((s) => (
-                <tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                <tr key={s.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
                   <td className="px-4 py-3">
-                    <Link href={`/shipments/${s.id}`} className="font-mono text-xs font-semibold text-brand-600 hover:underline">{s.trackingNumber}</Link>
+                    <Link href={`/shipments/${s.id}`} className="font-mono text-xs font-semibold text-[#0D6EFD] hover:underline">{s.trackingNumber}</Link>
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{s.sender.name}</td>
-                  <td className="px-4 py-3 text-slate-700">{s.receiver.name}</td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-[#101828]">{s.sender.name}</td>
+                  <td className="px-4 py-3 text-[#101828]">{s.receiver.name}</td>
+                  <td className="px-4 py-3 text-[#667085]">
                     {s.destination}
                     {(s.stops?.length || 0) > 2 && (
                       <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-600">multi-stop · {s.stops?.length} titik</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{formatNumber(s.weight)} kg</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{s.serviceType}</td>
+                  <td className="px-4 py-3 text-[#667085]">{formatNumber(s.weight)} kg</td>
+                  <td className="px-4 py-3 text-xs text-[#667085]">{s.serviceType}</td>
                   <td className="px-4 py-3"><StatusBadge status={s.status} /></td>
-                  <td className="px-4 py-3 text-slate-600">{s.assignments[0]?.driver.name || '-'}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{formatDateTime(s.createdAt)}</td>
+                  <td className="px-4 py-3 text-[#667085]">{s.assignments[0]?.driver.name || '-'}</td>
+                  <td className="px-4 py-3 text-xs text-[#667085]">{formatDateTime(s.createdAt)}</td>
                 </tr>
               ))}
               {!loading && items.length === 0 && <EmptyRow colSpan={9} text="Tidak ada shipment yang cocok" />}

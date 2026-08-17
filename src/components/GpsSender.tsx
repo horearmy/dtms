@@ -56,13 +56,13 @@ export default function GpsSender() {
 
   return (
     <div className="flex items-center gap-2">
-      <label className="flex cursor-pointer select-none items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-2 py-1.5 text-[11px] font-semibold text-white" title="Kirim lokasi otomatis tiap 15 detik untuk live tracking">
-        <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} className="h-3.5 w-3.5 accent-emerald-400" />
+      <label className="flex cursor-pointer select-none items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-[11px] font-semibold text-white" title="Kirim lokasi otomatis tiap 15 detik untuk live tracking">
+        <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} className="h-3.5 w-3.5 accent-[#16B364]" />
         Auto GPS
       </label>
       <button
         onClick={send}
-        className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition ${auto ? 'bg-emerald-400 text-emerald-900' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+        className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition ${auto ? 'bg-[#16B364] text-white' : 'bg-[#16B364] hover:bg-[#129A55]'}`}
       >
         📡 Kirim Lokasi
         {status && <span className="ml-1 text-[10px]">{status}</span>}

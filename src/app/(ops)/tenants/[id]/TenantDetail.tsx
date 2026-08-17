@@ -58,20 +58,20 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const PLAN_COLORS: Record<string, string> = {
-  FREE: 'bg-gray-100 text-gray-700', STARTER: 'bg-blue-100 text-blue-700',
+  FREE: 'bg-[#F7F9FC] text-[#667085]', STARTER: 'bg-[#0D6EFD]/10 text-[#0D6EFD]',
   BUSINESS: 'bg-purple-100 text-purple-700', ENTERPRISE: 'bg-amber-100 text-amber-700',
 };
 
 function UsageBar({ used, max, label }: { used: number; max: number; label: string }) {
   const pct = max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
-  const barColor = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-yellow-500' : 'bg-brand-500';
+  const barColor = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-yellow-500' : 'bg-[#0D6EFD]';
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-gray-600">{label}</span>
-        <span className="font-medium text-gray-900">{used} / {max}</span>
+        <span className="text-[#667085]">{label}</span>
+        <span className="font-medium text-[#101828]">{used} / {max}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-gray-100">
+      <div className="h-2 overflow-hidden rounded-full bg-[#F7F9FC]">
         <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -102,16 +102,16 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/tenants" className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50">
+        <Link href="/tenants" className="rounded-lg border border-[#E4E7EC] p-2 text-[#667085] hover:bg-[#F7F9FC]">
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{tenant.name}</h1>
-          <p className="text-sm text-gray-500">{tenant.slug} {tenant.domain ? `· ${tenant.domain}` : ''}</p>
+          <h1 className="text-2xl font-bold text-[#101828]">{tenant.name}</h1>
+          <p className="text-sm text-[#667085]">{tenant.slug} {tenant.domain ? `· ${tenant.domain}` : ''}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={toggleActive}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${tenant.active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${tenant.active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
             {tenant.active ? 'Aktif' : 'Nonaktif'}
           </button>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PLAN_COLORS[tenant.plan] || PLAN_COLORS.FREE}`}>
@@ -120,67 +120,67 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-4">
+      <div className="flex items-center gap-4 rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Branding:</span>
-          <span className="h-6 w-6 rounded-lg border border-gray-200" style={{ backgroundColor: tenant.primaryColor }} title="Primary" />
-          <span className="h-6 w-6 rounded-lg border border-gray-200" style={{ backgroundColor: tenant.secondaryColor }} title="Secondary" />
-          <span className="h-6 w-6 rounded-lg border border-gray-200" style={{ backgroundColor: tenant.accentColor }} title="Accent" />
+          <span className="text-xs text-[#667085]">Branding:</span>
+          <span className="h-6 w-6 rounded-lg border border-[#E4E7EC]" style={{ backgroundColor: tenant.primaryColor }} title="Primary" />
+          <span className="h-6 w-6 rounded-lg border border-[#E4E7EC]" style={{ backgroundColor: tenant.secondaryColor }} title="Secondary" />
+          <span className="h-6 w-6 rounded-lg border border-[#E4E7EC]" style={{ backgroundColor: tenant.accentColor }} title="Accent" />
         </div>
-        <div className="h-6 w-px bg-gray-200" />
-        <div className="text-xs text-gray-500">
-          Dibuat: <span className="font-medium text-gray-700">{new Date(tenant.createdAt).toLocaleDateString('id-ID')}</span>
+        <div className="h-6 w-px bg-[#E4E7EC]" />
+        <div className="text-xs text-[#667085]">
+          Dibuat: <span className="font-medium text-[#101828]">{new Date(tenant.createdAt).toLocaleDateString('id-ID')}</span>
         </div>
         {tenant.contactName && (
           <>
-            <div className="h-6 w-px bg-gray-200" />
-            <div className="text-xs text-gray-500">
-              Kontak: <span className="font-medium text-gray-700">{tenant.contactName}</span>
-              {tenant.contactEmail && <span className="text-gray-400"> · {tenant.contactEmail}</span>}
+            <div className="h-6 w-px bg-[#E4E7EC]" />
+            <div className="text-xs text-[#667085]">
+              Kontak: <span className="font-medium text-[#101828]">{tenant.contactName}</span>
+              {tenant.contactEmail && <span className="text-[#667085]"> · {tenant.contactEmail}</span>}
             </div>
           </>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-gray-100 bg-white p-5">
-          <div className="text-sm text-gray-500">Total Users</div>
-          <div className="mt-1 text-3xl font-bold text-gray-900">{tenant._count.users}</div>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="text-sm text-[#667085]">Total Users</div>
+          <div className="mt-1 text-3xl font-bold text-[#101828]">{tenant._count.users}</div>
           <div className="mt-3"><UsageBar used={tenant._count.users} max={tenant.maxUsers} label="Kuota" /></div>
         </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-5">
-          <div className="text-sm text-gray-500">Total Drivers</div>
-          <div className="mt-1 text-3xl font-bold text-gray-900">{tenant._count.drivers}</div>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="text-sm text-[#667085]">Total Drivers</div>
+          <div className="mt-1 text-3xl font-bold text-[#101828]">{tenant._count.drivers}</div>
           <div className="mt-3"><UsageBar used={tenant._count.drivers} max={tenant.maxDrivers} label="Kuota" /></div>
         </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-5">
-          <div className="text-sm text-gray-500">Total Shipments</div>
-          <div className="mt-1 text-3xl font-bold text-gray-900">{tenant._count.shipments}</div>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="text-sm text-[#667085]">Total Shipments</div>
+          <div className="mt-1 text-3xl font-bold text-[#101828]">{tenant._count.shipments}</div>
           <div className="mt-3"><UsageBar used={tenant._count.shipments} max={tenant.maxShipments} label="Kuota/bulan" /></div>
         </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-5">
-          <div className="text-sm text-gray-500">Vehicles</div>
-          <div className="mt-1 text-3xl font-bold text-gray-900">{tenant._count.vehicles}</div>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="text-sm text-[#667085]">Vehicles</div>
+          <div className="mt-1 text-3xl font-bold text-[#101828]">{tenant._count.vehicles}</div>
         </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-5">
-          <div className="text-sm text-gray-500">Customers</div>
-          <div className="mt-1 text-3xl font-bold text-gray-900">{tenant._count.customers}</div>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="text-sm text-[#667085]">Customers</div>
+          <div className="mt-1 text-3xl font-bold text-[#101828]">{tenant._count.customers}</div>
         </div>
-        <div className="rounded-xl border border-gray-100 bg-white p-5">
-          <div className="text-sm text-gray-500">Geofences</div>
-          <div className="mt-1 text-3xl font-bold text-gray-900">{tenant._count.geofences}</div>
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="text-sm text-[#667085]">Geofences</div>
+          <div className="mt-1 text-3xl font-bold text-[#101828]">{tenant._count.geofences}</div>
         </div>
       </div>
 
       {tenant.shipmentStats && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-xl border border-gray-100 bg-white p-4 text-center">
-            <div className="text-xs text-gray-500">Total Kiriman</div>
-            <div className="mt-1 text-2xl font-bold text-gray-900">{tenant.shipmentStats.total}</div>
+          <div className="rounded-xl border border-[#E4E7EC] bg-white p-4 text-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <div className="text-xs text-[#667085]">Total Kiriman</div>
+            <div className="mt-1 text-2xl font-bold text-[#101828]">{tenant.shipmentStats.total}</div>
           </div>
-          <div className="rounded-xl border border-green-100 bg-green-50 p-4 text-center">
-            <div className="text-xs text-green-600">Terkirim</div>
-            <div className="mt-1 text-2xl font-bold text-green-700">{tenant.shipmentStats.delivered}</div>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+            <div className="text-xs text-emerald-600">Terkirim</div>
+            <div className="mt-1 text-2xl font-bold text-emerald-700">{tenant.shipmentStats.delivered}</div>
           </div>
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-center">
             <div className="text-xs text-blue-600">Dalam Perjalanan</div>
@@ -189,14 +189,14 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
         </div>
       )}
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-[#E4E7EC]">
         <nav className="flex gap-1">
           {tabs.map((tab) => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`border-b-2 px-4 py-2.5 text-sm font-medium transition ${
                 activeTab === tab.key
-                  ? 'border-brand-600 text-brand-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-[#0D6EFD] text-[#0D6EFD]'
+                  : 'border-transparent text-[#667085] hover:text-[#101828]'
               }`}>
               {tab.label}
             </button>
@@ -205,33 +205,33 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
       </div>
 
       {activeTab === 'users' && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-100 bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 font-medium text-gray-600">Nama</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Username</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Role</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Email</th>
+            <thead>
+              <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+                <th className="px-4 py-3">Nama</th>
+                <th className="px-4 py-3">Username</th>
+                <th className="px-4 py-3">Role</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Email</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {tenant.users.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{u.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{u.username}</td>
-                  <td className="px-4 py-3"><span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{ROLE_LABELS[u.role] || u.role}</span></td>
+                <tr key={u.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
+                  <td className="px-4 py-3 font-medium text-[#101828]">{u.name}</td>
+                  <td className="px-4 py-3 text-[#667085]">{u.username}</td>
+                  <td className="px-4 py-3"><span className="rounded-full bg-[#F7F9FC] px-2 py-0.5 text-xs font-medium text-[#667085]">{ROLE_LABELS[u.role] || u.role}</span></td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${u.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${u.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                       {u.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{u.email || '-'}</td>
+                  <td className="px-4 py-3 text-[#667085]">{u.email || '-'}</td>
                 </tr>
               ))}
               {tenant.users.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Belum ada user</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-[#667085]">Belum ada user</td></tr>
               )}
             </tbody>
           </table>
@@ -239,31 +239,31 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
       )}
 
       {activeTab === 'drivers' && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-100 bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 font-medium text-gray-600">Nama</th>
-                <th className="px-4 py-3 font-medium text-gray-600">ID Karyawan</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Telepon</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Status</th>
+            <thead>
+              <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+                <th className="px-4 py-3">Nama</th>
+                <th className="px-4 py-3">ID Karyawan</th>
+                <th className="px-4 py-3">Telepon</th>
+                <th className="px-4 py-3">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {tenant.drivers.map((d) => (
-                <tr key={d.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{d.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{d.employeeId}</td>
-                  <td className="px-4 py-3 text-gray-500">{d.phone}</td>
+                <tr key={d.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
+                  <td className="px-4 py-3 font-medium text-[#101828]">{d.name}</td>
+                  <td className="px-4 py-3 text-[#667085]">{d.employeeId}</td>
+                  <td className="px-4 py-3 text-[#667085]">{d.phone}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${d.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${d.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                       {d.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif'}
                     </span>
                   </td>
                 </tr>
               ))}
               {tenant.drivers.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Belum ada driver</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-[#667085]">Belum ada driver</td></tr>
               )}
             </tbody>
           </table>
@@ -271,35 +271,35 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
       )}
 
       {activeTab === 'shipments' && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-100 bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 font-medium text-gray-600">No. Resi</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Asal</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Tujuan</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Berat</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Tanggal</th>
+            <thead>
+              <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+                <th className="px-4 py-3">No. Resi</th>
+                <th className="px-4 py-3">Asal</th>
+                <th className="px-4 py-3">Tujuan</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Berat</th>
+                <th className="px-4 py-3">Tanggal</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {tenant.shipments.map((s) => (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-brand-600">{s.trackingNumber}</td>
-                  <td className="px-4 py-3 text-gray-500">{s.origin}</td>
-                  <td className="px-4 py-3 text-gray-500">{s.destination}</td>
+                <tr key={s.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
+                  <td className="px-4 py-3 font-medium text-[#0D6EFD]">{s.trackingNumber}</td>
+                  <td className="px-4 py-3 text-[#667085]">{s.origin}</td>
+                  <td className="px-4 py-3 text-[#667085]">{s.destination}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[s.status] || 'bg-gray-100 text-gray-700'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[s.status] || 'bg-[#F7F9FC] text-[#667085]'}`}>
                       {STATUS_LABELS[s.status] || s.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{s.weight} kg</td>
-                  <td className="px-4 py-3 text-xs text-gray-400">{new Date(s.createdAt).toLocaleDateString('id-ID')}</td>
+                  <td className="px-4 py-3 text-[#667085]">{s.weight} kg</td>
+                  <td className="px-4 py-3 text-xs text-[#667085]">{new Date(s.createdAt).toLocaleDateString('id-ID')}</td>
                 </tr>
               ))}
               {tenant.shipments.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Belum ada shipment</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-[#667085]">Belum ada shipment</td></tr>
               )}
             </tbody>
           </table>
@@ -307,27 +307,27 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
       )}
 
       {activeTab === 'vehicles' && (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-100 bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 font-medium text-gray-600">Nomor Kendaraan</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Tipe</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Kapasitas</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Status</th>
+            <thead>
+              <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+                <th className="px-4 py-3">Nomor Kendaraan</th>
+                <th className="px-4 py-3">Tipe</th>
+                <th className="px-4 py-3">Kapasitas</th>
+                <th className="px-4 py-3">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {tenant.vehicles.map((v) => (
-                <tr key={v.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{v.vehicleNumber}</td>
-                  <td className="px-4 py-3 text-gray-500">{v.type}</td>
-                  <td className="px-4 py-3 text-gray-500">{v.capacity} kg</td>
+                <tr key={v.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
+                  <td className="px-4 py-3 font-medium text-[#101828]">{v.vehicleNumber}</td>
+                  <td className="px-4 py-3 text-[#667085]">{v.type}</td>
+                  <td className="px-4 py-3 text-[#667085]">{v.capacity} kg</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      v.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
+                      v.status === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-700' :
                       v.status === 'IN_USE' ? 'bg-blue-100 text-blue-700' :
-                      'bg-yellow-100 text-yellow-700'
+                      'bg-amber-100 text-amber-700'
                     }`}>
                       {v.status}
                     </span>
@@ -335,7 +335,7 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
                 </tr>
               ))}
               {tenant.vehicles.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">Belum ada kendaraan</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-[#667085]">Belum ada kendaraan</td></tr>
               )}
             </tbody>
           </table>

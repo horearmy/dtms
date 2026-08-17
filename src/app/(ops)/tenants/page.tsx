@@ -13,8 +13,8 @@ export default async function TenantsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tenant Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Kelola perusahaan, branding, dan kuota penggunaan.</p>
+          <h1 className="text-2xl font-bold text-[#101828]">Tenant Management</h1>
+          <p className="mt-1 text-sm text-[#667085]">Kelola perusahaan, branding, dan kuota penggunaan.</p>
         </div>
       </div>
       <TenantList />

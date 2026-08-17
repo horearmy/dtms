@@ -40,15 +40,15 @@ export default function PhotoField({
 
   return (
     <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-600">{label}</label>
+      <label className="mb-1 block text-xs font-semibold text-[#667085]">{label}</label>
       <div
         onClick={() => inputRef.current?.click()}
-        className="group relative flex h-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50 hover:border-brand-400"
+        className="group relative flex h-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-[#E4E7EC] bg-[#F7F9FC] hover:border-[#0D6EFD]"
       >
         {preview || value ? (
           <img src={preview || value!} alt={label} className="h-full w-full object-cover" />
         ) : (
-          <span className="text-center text-[11px] text-slate-400">
+          <span className="text-center text-[11px] text-[#667085]">
             {uploading ? 'Mengunggah...' : '+ Pilih Foto'}
           </span>
         )}
@@ -60,7 +60,7 @@ export default function PhotoField({
               setPreview(null);
               onChange(null);
             }}
-            className="absolute right-1 top-1 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white opacity-0 transition group-hover:opacity-100"
+            className="absolute right-1 top-1 rounded-full bg-[#F5222D] px-1.5 text-[10px] font-bold text-white opacity-0 transition group-hover:opacity-100"
           >
             ✕
           </button>

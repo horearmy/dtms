@@ -31,12 +31,12 @@ const ROLE_OPTIONS: { value: string; label: string }[] = [
 
 const ROLE_BADGE: Record<string, string> = {
   SUPER_ADMIN: 'bg-purple-100 text-purple-700',
-  ADMIN_OPERASIONAL: 'bg-blue-100 text-blue-700',
+  ADMIN_OPERASIONAL: 'bg-[#0D6EFD]/10 text-[#0D6EFD]',
   DISPATCHER: 'bg-cyan-100 text-cyan-700',
   WAREHOUSE: 'bg-indigo-100 text-indigo-700',
   CUSTOMER_SERVICE: 'bg-teal-100 text-teal-700',
   SUPERVISOR: 'bg-orange-100 text-orange-700',
-  MANAGEMENT: 'bg-slate-100 text-slate-700',
+  MANAGEMENT: 'bg-[#F7F9FC] text-[#667085]',
   DRIVER: 'bg-emerald-100 text-emerald-700',
   CUSTOMER: 'bg-rose-100 text-rose-700',
 };
@@ -102,34 +102,34 @@ export default function UsersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Manajemen User</h1>
-          <p className="text-sm text-slate-500">Kelola akun login staff: Warehouse, CS, Supervisor, dan lainnya</p>
+          <h1 className="text-xl font-bold text-[#101828]">Manajemen User</h1>
+          <p className="text-sm text-[#667085]">Kelola akun login staff: Warehouse, CS, Supervisor, dan lainnya</p>
         </div>
         <button onClick={openNew} className={btnPrimary}>+ Tambah User</button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
-                <th className="px-4 py-3">User</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Terhubung</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Password Terakhir</th>
+              <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+                <th className="px-4 py-3 text-left">User</th>
+                <th className="px-4 py-3 text-left">Role</th>
+                <th className="px-4 py-3 text-left">Terhubung</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Password Terakhir</th>
                 <th className="px-4 py-3 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {items.map((u) => (
-                <tr key={u.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                <tr key={u.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-slate-800">{u.name}</div>
-                    <div className="font-mono text-xs text-slate-500">{u.username}{u.phone ? ` · ${u.phone}` : ''}</div>
+                    <div className="font-medium text-[#101828]">{u.name}</div>
+                    <div className="font-mono text-xs text-[#667085]">{u.username}{u.phone ? ` · ${u.phone}` : ''}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${ROLE_BADGE[u.role] || 'bg-slate-100 text-slate-700'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${ROLE_BADGE[u.role] || 'bg-[#F7F9FC] text-[#667085]'}`}>
                       {ROLE_LABELS[u.role] || u.role}
                     </span>
                   </td>
@@ -139,17 +139,17 @@ export default function UsersPage() {
                         Driver · {u.driver.employeeId}
                       </span>
                     ) : (
-                      <span className="text-slate-400">-</span>
+                      <span className="text-[#667085]">-</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${u.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${u.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#E4E7EC] text-[#667085]'}`}>
                       {u.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{formatDateTime(u.lastPasswordChange)}</td>
+                  <td className="px-4 py-3 text-xs text-[#667085]">{formatDateTime(u.lastPasswordChange)}</td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => openEdit(u)} className="text-xs font-semibold text-brand-600 hover:underline">Edit</button>
+                    <button onClick={() => openEdit(u)} className="text-xs font-semibold text-[#0D6EFD] hover:underline">Edit</button>
                     <button onClick={() => remove(u)} className="ml-3 text-xs font-semibold text-red-500 hover:underline">Hapus</button>
                   </td>
                 </tr>

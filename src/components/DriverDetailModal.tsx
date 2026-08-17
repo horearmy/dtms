@@ -69,84 +69,84 @@ export default function DriverDetailModal({ driverId, onClose }: { driverId: str
 
   return (
     <Modal open onClose={onClose} title="Detail Driver" wide>
-      {loading && !d && <div className="py-10 text-center text-sm text-slate-400">Memuat detail driver...</div>}
+      {loading && !d && <div className="py-10 text-center text-sm text-[#667085]">Memuat detail driver...</div>}
 
       {d && (
         <div className="space-y-4">
           {/* Identitas */}
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center gap-3 rounded-xl border border-[#E4E7EC] bg-[#F7F9FC] p-4">
             {d.photo ? (
               <img src={d.photo} alt={d.name} className="h-14 w-14 rounded-full border-2 border-white object-cover shadow" />
             ) : (
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-lg font-bold text-brand-700">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E7F0FF] text-lg font-bold text-[#0D6EFD]">
                 {d.name.slice(0, 1).toUpperCase()}
               </span>
             )}
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-base font-bold text-slate-900">{d.name}</span>
-                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${d.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
+                <span className="text-base font-bold text-[#101828]">{d.name}</span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${d.status === 'ACTIVE' ? 'bg-[#E6F9EF] text-[#16B364]' : 'bg-[#F7F9FC] text-[#667085]'}`}>
                   {d.status}
                 </span>
               </div>
-              <div className="font-mono text-xs text-slate-500">{d.employeeId}{d.username ? ` · @${d.username}` : ''}</div>
-              <div className="text-xs text-slate-500">{d.phone} · {d.assignmentCount} penugasan</div>
+              <div className="font-mono text-xs text-[#667085]">{d.employeeId}{d.username ? ` · @${d.username}` : ''}</div>
+              <div className="text-xs text-[#667085]">{d.phone} · {d.assignmentCount} penugasan</div>
             </div>
           </div>
 
           {/* Status perjalanan */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 p-4">
-              <div className="text-[11px] uppercase text-slate-400">Status Perjalanan</div>
+            <div className="rounded-xl border border-[#E4E7EC] p-4">
+              <div className="text-[11px] uppercase text-[#667085]">Status Perjalanan</div>
               {d.active ? (
                 <div className="mt-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-bold text-brand-600">{d.active.trackingNumber}</span>
+                    <span className="font-mono text-sm font-bold text-[#0D6EFD]">{d.active.trackingNumber}</span>
                     <StatusBadge status={d.active.status} />
                   </div>
-                  <p className="mt-1 text-xs text-slate-600"><b>{d.active.origin}</b> → <b>{d.active.destination}</b></p>
-                  <p className="text-xs text-slate-500">Penerima: {d.active.receiverName} · {d.active.receiverAddress}, {d.active.receiverCity}</p>
+                  <p className="mt-1 text-xs text-[#667085]"><b>{d.active.origin}</b> → <b>{d.active.destination}</b></p>
+                  <p className="text-xs text-[#667085]">Penerima: {d.active.receiverName} · {d.active.receiverAddress}, {d.active.receiverCity}</p>
                 </div>
               ) : (
-                <div className="mt-1 text-sm text-slate-500">
+                <div className="mt-1 text-sm text-[#667085]">
                   {d.returning ? '🚚 Dalam perjalanan kembali ke gudang' : 'Tidak ada pengiriman aktif'}
                   {d.returnedAt ? ` · Kembali terakhir: ${formatDateTime(d.returnedAt)}` : ''}
                 </div>
               )}
             </div>
 
-            <div className="rounded-xl border border-slate-200 p-4">
-              <div className="text-[11px] uppercase text-slate-400">Kendaraan yang Digunakan</div>
+            <div className="rounded-xl border border-[#E4E7EC] p-4">
+              <div className="text-[11px] uppercase text-[#667085]">Kendaraan yang Digunakan</div>
               {d.vehicle ? (
                 <div className="mt-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-800">{d.vehicle.vehicleNumber}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${d.vehicle.returning ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                    <span className="text-sm font-bold text-[#101828]">{d.vehicle.vehicleNumber}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${d.vehicle.returning ? 'bg-[#FFF2E0] text-[#FF8A00]' : 'bg-[#E6F9EF] text-[#16B364]'}`}>
                       {d.vehicle.returning ? 'Kembali' : 'Bertugas'}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-500">{d.vehicle.type} · {d.vehicle.status}</div>
-                  <div className="text-xs text-slate-500">Jarak tempuh: {d.vehicle.totalDistanceKm.toLocaleString('id-ID')} km</div>
+                  <div className="text-xs text-[#667085]">{d.vehicle.type} · {d.vehicle.status}</div>
+                  <div className="text-xs text-[#667085]">Jarak tempuh: {d.vehicle.totalDistanceKm.toLocaleString('id-ID')} km</div>
                 </div>
               ) : (
-                <div className="mt-1 text-sm text-slate-500">Belum ada kendaraan ditugaskan</div>
+                <div className="mt-1 text-sm text-[#667085]">Belum ada kendaraan ditugaskan</div>
               )}
             </div>
           </div>
 
           {/* Posisi GPS */}
-          <div className="rounded-xl border border-slate-200 p-4">
+          <div className="rounded-xl border border-[#E4E7EC] p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-[11px] uppercase text-slate-400">Posisi GPS Terakhir</div>
+              <div className="text-[11px] uppercase text-[#667085]">Posisi GPS Terakhir</div>
               {d.gps && (
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-[#16B364]">
+                  <span className="h-2 w-2 rounded-full bg-[#16B364]" />
                   {d.gps.latitude.toFixed(5)}, {d.gps.longitude.toFixed(5)}
                 </span>
               )}
             </div>
             {d.gps && (
-              <div className="mt-1 text-xs text-slate-500">
+              <div className="mt-1 text-xs text-[#667085]">
                 Update: {formatDateTime(d.gps.createdAt)}
                 {d.gps.speed != null ? ` · Kecepatan: ${d.gps.speed} km/h` : ''}
                 {d.gps.battery != null ? ` · Baterai: ${d.gps.battery}%` : ''}
