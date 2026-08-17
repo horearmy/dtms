@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 type NavItem = { href: string; label: string; icon: string };
 
-export default function Sidebar({ role }: { role: string }) {
+export default function Sidebar({ role, open, onClose }: { role: string; open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const opsRoles = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'CUSTOMER_SERVICE', 'SUPERVISOR', 'MANAGEMENT'];
 
@@ -52,7 +52,9 @@ export default function Sidebar({ role }: { role: string }) {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col bg-brand-900 lg:flex">
+    <>
+      {open && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={onClose} />}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-60 flex-col bg-brand-900 transition-transform duration-200 lg:flex lg:translate-x-0 ${open ? 'flex' : 'hidden -translate-x-full lg:flex'}`}>
       <div className="flex items-center gap-2 px-5 py-5">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 font-bold text-white">DT</div>
         <div>
@@ -76,5 +78,6 @@ export default function Sidebar({ role }: { role: string }) {
       </nav>
       <div className="px-5 py-4 text-[11px] text-brand-300">DTMS v0.1 · MVP</div>
     </aside>
+    </>
   );
 }

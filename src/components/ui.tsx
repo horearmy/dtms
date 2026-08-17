@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect, useRef, useCallback } from 'react';
+
 export function Modal({
   open,
   title,
@@ -11,13 +15,58 @@ export function Modal({
   children: React.ReactNode;
   wide?: boolean;
 }) {
+  const titleId = useRef(`modal-title-${Math.random().toString(36).slice(2, 8)}`);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'Tab') {
+        const modal = document.querySelector('[role="dialog"]');
+        if (!modal) return;
+        const focusable = modal.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    document.addEventListener('keydown', handleKeyDown);
+    const timer = setTimeout(() => {
+      const modal = document.querySelector<HTMLElement>('[role="dialog"]');
+      modal?.focus();
+    }, 50);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+    };
+  }, [open, handleKeyDown]);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className={`w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto`}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId.current}
+        tabIndex={-1}
+        className={`w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto outline-none`}
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-900">{title}</h3>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">✕</button>
+          <h3 id={titleId.current} className="text-base font-bold text-slate-900">{title}</h3>
+          <button onClick={onClose} aria-label="Tutup" className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">✕</button>
         </div>
         {children}
       </div>

@@ -4,10 +4,17 @@ import SearchBox from './SearchBox';
 import NotificationsBell from './NotificationsBell';
 import LogoutButton from './LogoutButton';
 
-export default function Header({ name, role }: { name: string; role: string }) {
+export default function Header({ name, role, onMenuClick }: { name: string; role: string; onMenuClick?: () => void }) {
   return (
-    <header className="sticky top-0 z-40 bg-brand-700 shadow">
+    <header className="sticky top-0 z-30 bg-brand-700 shadow">
       <div className="flex items-center gap-4 px-4 py-3">
+        {onMenuClick && (
+          <button onClick={onMenuClick} aria-label="Buka menu navigasi" className="lg:hidden rounded-lg p-1.5 text-white hover:bg-white/10">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        )}
         <div className="text-sm font-bold text-white lg:hidden">DTMS</div>
         <SearchBox />
         <div className="ml-auto flex items-center gap-3">

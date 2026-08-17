@@ -12,7 +12,7 @@ export default function SearchBox({ placeholder = 'Cari nomor resi...' }: { plac
         e.preventDefault();
         if (q.trim()) router.push(`/shipments?q=${encodeURIComponent(q.trim())}`);
       }}
-      className="hidden flex-1 max-w-md sm:block"
+      className="flex-1 max-w-md"
     >
       <div className="relative">
         <svg className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

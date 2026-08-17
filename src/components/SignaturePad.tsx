@@ -63,6 +63,8 @@ export default function SignaturePad({ onChange }: { onChange: (dataUrl: string)
       <div className="rounded-lg border-2 border-dashed border-slate-300 bg-white" style={{ touchAction: 'none' }}>
         <canvas
           ref={canvasRef}
+          aria-label="Area tanda tangan — gambar di sini"
+          role="img"
           className="h-32 w-full cursor-crosshair"
           onPointerDown={start}
           onPointerMove={move}
