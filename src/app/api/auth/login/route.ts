@@ -5,6 +5,7 @@ import { setSession, signTwoFactorToken } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
 import { getClientIp, isLoginBlocked, recordLoginAttempt, cleanupLoginAttempts } from '@/lib/security';
 import { setTenantCookie } from '@/lib/tenant';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
     await logAudit(null, 'LOGIN_SUCCESS', 'AUTH', { newData: { username: user.username, tenantId: user.tenantId } }, req);
     return response;
   } catch (e) {
-    console.error('login error', e);
+    logger.error('login', 'Login error', { error: String(e) });
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
   }
 }

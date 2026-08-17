@@ -1,6 +1,8 @@
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { logWhatsAppMessage } from '@/lib/whatsapp';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || '';
@@ -17,8 +19,19 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const entries = body?.entry || [];
+    const body = await req.text();
+    const signature = req.headers.get('x-hub-signature-256');
+    const WHATSAPP_SECRET = process.env.WHATSAPP_SECRET;
+
+    if (WHATSAPP_SECRET && signature) {
+      const expected = 'sha256=' + crypto.createHmac('sha256', WHATSAPP_SECRET).update(body).digest('hex');
+      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      }
+    }
+
+    const data = JSON.parse(body);
+    const entries = data?.entry || [];
 
     for (const entry of entries) {
       const changes = entry?.changes || [];
@@ -56,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ status: 'ok' });
   } catch (err) {
-    console.error('[WA Webhook] Error:', err);
+    logger.error('whatsapp', 'Webhook processing error', { error: String(err) });
     return NextResponse.json({ status: 'ok' });
   }
 }

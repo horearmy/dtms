@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import { STATUS_LABELS, formatDateTime } from './constants';
+import { logger } from './logger';
 
 const WA_API = 'https://graph.facebook.com/v21.0';
 
@@ -62,14 +63,14 @@ export async function sendTextMessage(to: string, text: string): Promise<SendRes
     const data = await res.json();
 
     if (!res.ok) {
-      console.error('[WA] Send failed:', data);
+      logger.error('whatsapp', 'Send failed', { data });
       return { success: false, error: data?.error?.message || 'Unknown error' };
     }
 
     const msgId = data?.messages?.[0]?.id;
     return { success: true, messageId: msgId };
   } catch (err) {
-    console.error('[WA] Send error:', err);
+    logger.error('whatsapp', 'Send error', { error: String(err) });
     return { success: false, error: String(err) };
   }
 }
@@ -117,14 +118,14 @@ export async function sendTemplateMessage(
     const data = await res.json();
 
     if (!res.ok) {
-      console.error('[WA] Template send failed:', data);
+      logger.error('whatsapp', 'Template send failed', { data });
       return { success: false, error: data?.error?.message || 'Unknown error' };
     }
 
     const msgId = data?.messages?.[0]?.id;
     return { success: true, messageId: msgId };
   } catch (err) {
-    console.error('[WA] Template send error:', err);
+    logger.error('whatsapp', 'Template send error', { error: String(err) });
     return { success: false, error: String(err) };
   }
 }

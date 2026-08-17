@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api-guard';
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { logger } from '@/lib/logger';
 
 const MIME: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -11,14 +12,14 @@ const MIME: Record<string, string> = {
 };
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
-  const { error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR');
+  const { error, session } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR');
   if (error) return error;
 
   const { path: parts } = await params;
   if (!parts.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const root = path.join(process.cwd(), 'storage', 'uploads');
-  const filePath = path.join(root, ...parts);
+  const filePath = path.join(root, session!.tenantId!, ...parts);
   if (!filePath.startsWith(root + path.sep)) {
     return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
   }
@@ -33,7 +34,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pat
       },
     });
   } catch (e) {
-    console.error('[files] read fail cwd=', process.cwd(), 'file=', filePath, 'err=', e);
+    logger.error('files', 'File read failed', { file: filePath, error: String(e) });
     return NextResponse.json({ error: 'File tidak ditemukan' }, { status: 404 });
   }
 }

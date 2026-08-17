@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { scanAlerts } from '@/lib/alerts';
 import { guard, logAudit } from '@/lib/api-guard';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ async function run(req: Request) {
       elapsedMs,
     });
   } catch (e) {
-    console.error('scanAlerts error', e);
+    logger.error('alerts', 'Alert scan error', { error: String(e) });
     return NextResponse.json({ error: 'Terjadi kesalahan saat memindai alert' }, { status: 500 });
   }
 }

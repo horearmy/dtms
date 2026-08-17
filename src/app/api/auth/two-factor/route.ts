@@ -4,6 +4,7 @@ import { setSession, verifyTwoFactorToken } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
 import { verifyTotp, verifyBackupCode, removeBackupCode } from '@/lib/totp';
 import { getClientIp, recordLoginAttempt } from '@/lib/security';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
       mustChangePassword: user.mustChangePassword,
     });
   } catch (e) {
-    console.error('two-factor error', e);
+    logger.error('two_factor', 'Two-factor auth error', { error: String(e) });
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
   }
 }

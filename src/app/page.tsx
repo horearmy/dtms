@@ -257,18 +257,18 @@ export default function LandingPage() {
             <div>
               <h4 className="text-sm font-semibold text-gray-900">Perusahaan</h4>
               <ul className="mt-3 space-y-2 text-sm text-gray-500">
-                <li><a href="#" className="hover:text-gray-700">Tentang Kami</a></li>
-                <li><a href="#" className="hover:text-gray-700">Blog</a></li>
-                <li><a href="#" className="hover:text-gray-700">Karir</a></li>
-                <li><a href="#" className="hover:text-gray-700">Kontak</a></li>
+                <li><a href="/tentang" className="hover:text-gray-700">Tentang Kami</a></li>
+                <li><a href="/blog" className="hover:text-gray-700">Blog</a></li>
+                <li><a href="/karir" className="hover:text-gray-700">Karir</a></li>
+                <li><a href="mailto:hello@dtms.co.id" className="hover:text-gray-700">Kontak</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-sm font-semibold text-gray-900">Legal</h4>
               <ul className="mt-3 space-y-2 text-sm text-gray-500">
-                <li><a href="#" className="hover:text-gray-700">Kebijakan Privasi</a></li>
-                <li><a href="#" className="hover:text-gray-700">Syarat & Ketentuan</a></li>
-                <li><a href="#" className="hover:text-gray-700">SLA</a></li>
+                <li><a href="/kebijakan-privasi" className="hover:text-gray-700">Kebijakan Privasi</a></li>
+                <li><a href="/syarat-ketentuan" className="hover:text-gray-700">Syarat & Ketentuan</a></li>
+                <li><a href="/sla" className="hover:text-gray-700">SLA</a></li>
               </ul>
             </div>
           </div>

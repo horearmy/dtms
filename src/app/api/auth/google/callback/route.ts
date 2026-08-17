@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
@@ -5,6 +6,13 @@ import { setSession, signTwoFactorToken } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
 import { getClientIp, recordLoginAttempt } from '@/lib/security';
 import { setTenantCookie } from '@/lib/tenant';
+import { logger } from '@/lib/logger';
+
+const AUTH_SECRET = process.env.AUTH_SECRET || '';
+
+function signState(state: string) {
+  return crypto.createHmac('sha256', AUTH_SECRET).update(state).digest('hex');
+}
 
 const googleJWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 
@@ -19,8 +27,24 @@ export async function GET(req: NextRequest) {
   const ip = getClientIp(req);
 
   const code = req.nextUrl.searchParams.get('code');
+  const stateParam = req.nextUrl.searchParams.get('state');
   if (!code) {
     return redirectLogin(origin, 'Login Google dibatalkan');
+  }
+
+  const oauthStateCookie = req.cookies.get('oauth_state')?.value;
+  if (!oauthStateCookie || !stateParam) {
+    return redirectLogin(origin, 'Sesi login tidak valid');
+  }
+  const [cookieRaw, cookieSig] = oauthStateCookie.split('.');
+  const expectedSig = signState(cookieRaw);
+  if (
+    !cookieRaw ||
+    !cookieSig ||
+    !crypto.timingSafeEqual(Buffer.from(cookieSig), Buffer.from(expectedSig)) ||
+    cookieRaw !== stateParam
+  ) {
+    return redirectLogin(origin, 'State tidak valid, coba login lagi');
   }
 
   try {
@@ -69,7 +93,9 @@ export async function GET(req: NextRequest) {
 
     if (user.totpEnabled) {
       const twoFactorToken = await signTwoFactorToken(user.id);
-      return NextResponse.redirect(`${origin}/login?twoFactorToken=${encodeURIComponent(twoFactorToken)}`);
+      const r = NextResponse.redirect(`${origin}/login?twoFactorToken=${encodeURIComponent(twoFactorToken)}`);
+      r.cookies.delete('oauth_state');
+      return r;
     }
 
     await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, pwdVersion: user.pwdVersion });
@@ -80,6 +106,7 @@ export async function GET(req: NextRequest) {
         ? '/driver'
         : '/dashboard';
     const response = NextResponse.redirect(`${origin}${target}`);
+    response.cookies.delete('oauth_state');
     if (user.tenantId) {
       const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { slug: true } });
       if (tenant) {
@@ -97,7 +124,9 @@ export async function GET(req: NextRequest) {
     await logAudit(null, 'SSO_GOOGLE_LOGIN', 'AUTH', { newData: { email, username: user.username } }, req);
     return response;
   } catch (e) {
-    console.error('google callback error', e);
-    return redirectLogin(origin, 'Terjadi kesalahan saat login Google');
+    logger.error('google_callback', 'Google OAuth callback error', { error: String(e) });
+    const r = redirectLogin(origin, 'Terjadi kesalahan saat login Google');
+    r.cookies.delete('oauth_state');
+    return r;
   }
 }

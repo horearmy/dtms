@@ -118,5 +118,6 @@ export const config = {
     '/driver/:path*',
     '/settings/:path*',
     '/tenants/:path*',
+    '/warehouse/:path*',
   ],
 };
