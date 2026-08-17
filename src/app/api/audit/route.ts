@@ -3,9 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { guard, runWithTenant } from '@/lib/api-guard';
 
 export async function GET(req: NextRequest) {
-  const { error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
   if (error) return error;
-  return runWithTenant(null, async () => {
+  return runWithTenant(session?.tenantId ?? null, async () => {
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get('pageSize') || '20', 10)));
 

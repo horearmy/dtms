@@ -38,7 +38,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-900 via-brand-700 to-brand-500 px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#061B41] via-[#0B2A5B] to-[#0D6EFD] px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-white/20" />
           <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-white/10" />

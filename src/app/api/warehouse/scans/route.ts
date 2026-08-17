@@ -5,10 +5,10 @@ import { guard, runWithTenant } from '@/lib/api-guard';
 const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'SUPERVISOR'];
 
 export async function GET() {
-  const { error } = await guard(...MANAGE);
+  const { session, error } = await guard(...MANAGE);
   if (error) return error;
 
-  return runWithTenant(null, async () => {
+  return runWithTenant(session?.tenantId ?? null, async () => {
     const scans = await prisma.warehouseScan.findMany({
       orderBy: { createdAt: 'desc' },
       take: 50,

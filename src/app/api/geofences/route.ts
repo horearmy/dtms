@@ -5,9 +5,9 @@ import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
 const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR'];
 
 export async function GET() {
-  const { error } = await guard(...MANAGE);
+  const { session, error } = await guard(...MANAGE);
   if (error) return error;
-  return runWithTenant(null, async () => {
+  return runWithTenant(session?.tenantId ?? null, async () => {
     const geofences = await prisma.geofence.findMany({
       orderBy: { createdAt: 'desc' },
       include: { events: { orderBy: { createdAt: 'desc' }, take: 3, include: { driver: true } } },

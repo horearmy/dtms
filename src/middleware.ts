@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
 const COOKIE_NAME = 'dtms_token';
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET || 'dtms-dev-secret-change-me'
-);
+const AUTH_SECRET = process.env.AUTH_SECRET;
+if (!AUTH_SECRET) {
+  throw new Error('AUTH_SECRET environment variable is required');
+}
+const secret = new TextEncoder().encode(AUTH_SECRET);
 
 const RATE_WINDOW_MS = 60_000;
 const RATE_API_LIMIT = 300;

@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { guard, runWithTenant } from '@/lib/api-guard';
 
 export async function GET(req: NextRequest) {
-  const { error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR', 'MANAGEMENT', 'CUSTOMER_SERVICE');
+  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR', 'MANAGEMENT', 'CUSTOMER_SERVICE');
   if (error) return error;
 
-  return runWithTenant(null, async () => {
+  return runWithTenant(session?.tenantId ?? null, async () => {
     const minutes = Number(req.nextUrl.searchParams.get('minutes')) || 60;
     const since = new Date(Date.now() - minutes * 60000);
 

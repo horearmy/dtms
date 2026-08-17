@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { guard, runWithTenant } from '@/lib/api-guard';
 
 export async function GET() {
-  const { error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR', 'MANAGEMENT');
+  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR', 'MANAGEMENT');
   if (error) return error;
 
-  return runWithTenant(null, async () => {
+  return runWithTenant(session?.tenantId ?? null, async () => {
     const reports = await prisma.dailyReport.findMany({
       orderBy: [{ reportDate: 'desc' }, { createdAt: 'desc' }],
       include: { driver: { select: { id: true, name: true, employeeId: true } } },

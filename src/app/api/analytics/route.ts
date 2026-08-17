@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { guard, runWithTenant } from '@/lib/api-guard';
 
 export async function GET() {
-  const { error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR', 'MANAGEMENT');
+  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR', 'MANAGEMENT');
   if (error) return error;
 
-  return runWithTenant(null, async () => {
+  return runWithTenant(session?.tenantId ?? null, async () => {
     const since = new Date(Date.now() - 7 * 86400000);
     const shipments = await prisma.shipment.findMany({
       where: { createdAt: { gte: since } },

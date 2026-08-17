@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { guard, runWithTenant } from '@/lib/api-guard';
 
 export async function GET(req: NextRequest) {
-  const { error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'SUPERVISOR', 'MANAGEMENT', 'CUSTOMER_SERVICE');
+  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'SUPERVISOR', 'MANAGEMENT', 'CUSTOMER_SERVICE');
   if (error) return error;
 
-  return runWithTenant(null, async () => {
+  return runWithTenant(session?.tenantId ?? null, async () => {
     const driverId = req.nextUrl.searchParams.get('driverId');
     if (!driverId) return NextResponse.json({ error: 'driverId wajib diisi' }, { status: 400 });
 
