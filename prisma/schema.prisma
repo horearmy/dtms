@@ -119,6 +119,7 @@ model User {
   auditLogs          AuditLog[]
 
   @@index([tenantId])
+  @@index([tenantId, username])
 }
 
 model Customer {

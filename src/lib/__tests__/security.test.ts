@@ -17,23 +17,23 @@ const mockPrisma = vi.mocked(prisma, true);
 
 describe('validatePassword', () => {
   it('menolak password < 8 karakter', () => {
-    expect(validatePassword('Ab1')).toContain('minimal 8');
+    expect(validatePassword('Ab1')).toEqual({ valid: false, error: expect.stringContaining('minimal 8') });
   });
 
   it('menolak tanpa huruf besar', () => {
-    expect(validatePassword('abcdefg1')).toContain('huruf besar');
+    expect(validatePassword('abcdefg1')).toEqual({ valid: false, error: expect.stringContaining('huruf besar') });
   });
 
   it('menolak tanpa huruf kecil', () => {
-    expect(validatePassword('ABCDEFG1')).toContain('huruf kecil');
+    expect(validatePassword('ABCDEFG1')).toEqual({ valid: false, error: expect.stringContaining('huruf kecil') });
   });
 
   it('menolak tanpa angka', () => {
-    expect(validatePassword('Abcdefgh')).toContain('angka');
+    expect(validatePassword('Abcdefgh')).toEqual({ valid: false, error: expect.stringContaining('angka') });
   });
 
   it('menerima password valid', () => {
-    expect(validatePassword('StrongPass1')).toBeNull();
+    expect(validatePassword('StrongPass1')).toEqual({ valid: true });
   });
 });
 

@@ -9,6 +9,7 @@ import {
   generateBackupCodes,
   hashBackupCodes,
 } from '@/lib/totp';
+import { encryptSecret } from '@/lib/totp-encrypt';
 
 export async function GET() {
   const session = await getSession();
@@ -23,9 +24,10 @@ export async function GET() {
   }
 
   const secret = generateTotpSecret();
+  const encryptedSecret = encryptSecret(secret);
   await prisma.user.update({
     where: { id: session.id },
-    data: { totpSecret: secret, totpEnabled: false },
+    data: { totpSecret: encryptedSecret, totpEnabled: false },
   });
 
   return NextResponse.json({

@@ -30,10 +30,37 @@ export async function cleanupLoginAttempts() {
   await prisma.loginAttempt.deleteMany({ where: { createdAt: { lt: older } } });
 }
 
-export function validatePassword(pw: string): string | null {
-  if (!pw || pw.length < 8) return 'Password minimal 8 karakter';
-  if (!/[A-Z]/.test(pw)) return 'Password harus mengandung huruf besar';
-  if (!/[a-z]/.test(pw)) return 'Password harus mengandung huruf kecil';
-  if (!/[0-9]/.test(pw)) return 'Password harus mengandung angka';
-  return null;
+export function validatePassword(pw: string): { valid: boolean; error?: string } {
+  if (!pw || pw.length < 8) return { valid: false, error: 'Password minimal 8 karakter' };
+  if (!/[A-Z]/.test(pw)) return { valid: false, error: 'Password harus mengandung huruf besar' };
+  if (!/[a-z]/.test(pw)) return { valid: false, error: 'Password harus mengandung huruf kecil' };
+  if (!/[0-9]/.test(pw)) return { valid: false, error: 'Password harus mengandung angka' };
+  return { valid: true };
+}
+
+// In-memory rate limiting
+type RateLimitEntry = { count: number; resetAt: number };
+const rateLimitStore = new Map<string, RateLimitEntry>();
+
+function cleanupRateLimits() {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore) {
+    if (now >= entry.resetAt) rateLimitStore.delete(key);
+  }
+}
+
+export function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+  cleanupRateLimits();
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+
+  if (!entry || now >= entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+
+  if (entry.count >= maxRequests) return false;
+
+  entry.count++;
+  return true;
 }

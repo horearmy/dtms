@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, createHash } from 'crypto';
+import { decryptSecret } from './totp-encrypt';
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 const TOTP_STEP = 30;
@@ -59,9 +60,10 @@ export function totp(secret: string, time = Date.now()): string {
 export function verifyTotp(secret: string, token: string, window = 1, time = Date.now()): boolean {
   const clean = token.replace(/\s/g, '');
   if (!/^\d{6}$/.test(clean)) return false;
+  const decrypted = decryptSecret(secret);
   const counter = Math.floor(time / 1000 / TOTP_STEP);
   for (let i = -window; i <= window; i++) {
-    if (hotp(secret, counter + i) === clean) return true;
+    if (hotp(decrypted, counter + i) === clean) return true;
   }
   return false;
 }

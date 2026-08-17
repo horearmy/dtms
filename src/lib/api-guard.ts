@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, type SessionUser } from './auth';
+import { tenantStore } from './prisma';
 
 export async function guard(
   ...roles: string[]
@@ -12,6 +13,43 @@ export async function guard(
     return { session, error: NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 }) };
   }
   return { session, error: null };
+}
+
+export async function runWithTenant<T>(tenantId: string | null | undefined, fn: () => Promise<T>): Promise<T> {
+  return tenantStore.run(tenantId ?? null, fn);
+}
+
+type HandlerFn = (req: NextRequest, session: SessionUser) => Promise<NextResponse>;
+type HandlerFnWithParams = (req: NextRequest, session: SessionUser, ctx: { params: Promise<Record<string, string>> }) => Promise<NextResponse>;
+
+export function requireAuth(...roles: string[]) {
+  return function wrap(handler: HandlerFn) {
+    return async function wrappedHandler(req: NextRequest): Promise<NextResponse> {
+      const session = await getSession();
+      if (!session) {
+        return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
+      }
+      if (roles.length > 0 && !roles.includes(session.role)) {
+        return NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 });
+      }
+      return tenantStore.run(session.tenantId ?? null, () => handler(req, session));
+    };
+  };
+}
+
+export function requireAuthParams(...roles: string[]) {
+  return function wrap(handler: HandlerFnWithParams) {
+    return async function wrappedHandler(req: NextRequest, ctx: { params: Promise<Record<string, string>> }): Promise<NextResponse> {
+      const session = await getSession();
+      if (!session) {
+        return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
+      }
+      if (roles.length > 0 && !roles.includes(session.role)) {
+        return NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 });
+      }
+      return tenantStore.run(session.tenantId ?? null, () => handler(req, session, ctx));
+    };
+  };
 }
 
 type AuditData = string | { oldData?: unknown; newData?: unknown };
@@ -36,18 +74,20 @@ export async function logAudit(
     const { prisma } = await import('./prisma');
     const oldData = typeof data === 'object' ? json(data.oldData) : undefined;
     const newData = typeof data === 'object' ? json(data.newData) : typeof data === 'string' ? data : undefined;
-    await prisma.auditLog.create({
-      data: {
-        userId: session?.id,
-        action,
-        module,
-        oldData,
-        newData,
-        ip: req?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req?.headers.get('x-real-ip') ?? null,
-        method: req?.method ?? null,
-        path: req?.nextUrl?.pathname ?? null,
-        userAgent: req?.headers.get('user-agent') ?? null,
-      },
+    await tenantStore.run(session?.tenantId ?? null, async () => {
+      await prisma.auditLog.create({
+        data: {
+          userId: session?.id,
+          action,
+          module,
+          oldData,
+          newData,
+          ip: req?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req?.headers.get('x-real-ip') ?? null,
+          method: req?.method ?? null,
+          path: req?.nextUrl?.pathname ?? null,
+          userAgent: req?.headers.get('user-agent') ?? null,
+        },
+      });
     });
   } catch {
     // jangan menggagalkan request utama

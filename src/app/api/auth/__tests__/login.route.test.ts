@@ -6,14 +6,16 @@ const {
   mockPrismaUser,
   mockLoginAttempt,
   mockAuditLog,
+  mockTenant,
   mockSetSession,
   mockIsLoginBlocked,
   mockRecordLoginAttempt,
   mockCleanup,
 } = vi.hoisted(() => ({
-  mockPrismaUser: { findUnique: vi.fn() },
+  mockPrismaUser: { findFirst: vi.fn() },
   mockLoginAttempt: { create: vi.fn(), deleteMany: vi.fn(), count: vi.fn() },
   mockAuditLog: { create: vi.fn() },
+  mockTenant: { findUnique: vi.fn() },
   mockSetSession: vi.fn(),
   mockIsLoginBlocked: vi.fn(),
   mockRecordLoginAttempt: vi.fn(),
@@ -21,9 +23,11 @@ const {
 }));
 
 vi.mock('@/lib/prisma', () => ({
-  prisma: { user: mockPrismaUser, loginAttempt: mockLoginAttempt, auditLog: mockAuditLog },
+  prisma: { user: mockPrismaUser, loginAttempt: mockLoginAttempt, auditLog: mockAuditLog, tenant: mockTenant },
 }));
 vi.mock('@/lib/auth', () => ({ setSession: mockSetSession }));
+vi.mock('@/lib/api-guard', () => ({ logAudit: vi.fn() }));
+vi.mock('@/lib/tenant', () => ({ setTenantCookie: vi.fn(() => ({ name: 'dtms_tenant', value: '', httpOnly: true, secure: false, sameSite: 'lax', path: '/', maxAge: 0 })) }));
 vi.mock('@/lib/security', () => ({
   getClientIp: () => '203.0.113.9',
   isLoginBlocked: mockIsLoginBlocked,
@@ -55,7 +59,10 @@ function loginReq(body: unknown) {
 }
 
 describe('POST /api/auth/login', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTenant.findUnique.mockResolvedValue({ id: 't1', active: true });
+  });
 
   it('menolak jika username/password kosong (400)', async () => {
     const res = await POST(loginReq({}));
@@ -64,15 +71,15 @@ describe('POST /api/auth/login', () => {
 
   it('mengembalikan 429 jika terblokir brute force', async () => {
     mockIsLoginBlocked.mockResolvedValue(true);
-    const res = await POST(loginReq({ username: 'admin', password: 'x' }));
+    const res = await POST(loginReq({ username: 'admin', password: 'x', tenantId: 't1' }));
     expect(res.status).toBe(429);
     expect(mockCleanup).toHaveBeenCalled();
   });
 
   it('menolak user yang tidak ada (401) + catat LOGIN_FAILED', async () => {
     mockIsLoginBlocked.mockResolvedValue(false);
-    mockPrismaUser.findUnique.mockResolvedValue(null);
-    const res = await POST(loginReq({ username: 'ghost', password: 'Xyz12345' }));
+    mockPrismaUser.findFirst.mockResolvedValue(null);
+    const res = await POST(loginReq({ username: 'ghost', password: 'Xyz12345', tenantId: 't1' }));
     expect(res.status).toBe(401);
     expect(mockRecordLoginAttempt).toHaveBeenCalledWith('ghost', '203.0.113.9', false);
     expect(mockAuditLog.create).toHaveBeenCalled();
@@ -80,24 +87,24 @@ describe('POST /api/auth/login', () => {
 
   it('menolak akun non-ACTIVE (403)', async () => {
     mockIsLoginBlocked.mockResolvedValue(false);
-    mockPrismaUser.findUnique.mockResolvedValue({ ...USER, status: 'INACTIVE' });
-    const res = await POST(loginReq({ username: 'admin', password: 'StrongPass1' }));
+    mockPrismaUser.findFirst.mockResolvedValue({ ...USER, status: 'INACTIVE' });
+    const res = await POST(loginReq({ username: 'admin', password: 'StrongPass1', tenantId: 't1' }));
     expect(res.status).toBe(403);
     expect(mockRecordLoginAttempt).toHaveBeenCalledWith('admin', '203.0.113.9', false);
   });
 
   it('menolak password salah (401)', async () => {
     mockIsLoginBlocked.mockResolvedValue(false);
-    mockPrismaUser.findUnique.mockResolvedValue(USER);
-    const res = await POST(loginReq({ username: 'admin', password: 'WrongPass1' }));
+    mockPrismaUser.findFirst.mockResolvedValue(USER);
+    const res = await POST(loginReq({ username: 'admin', password: 'WrongPass1', tenantId: 't1' }));
     expect(res.status).toBe(401);
     expect(mockRecordLoginAttempt).toHaveBeenCalledWith('admin', '203.0.113.9', false);
   });
 
   it('login sukses: setSession + recordLoginAttempt(success) + return user', async () => {
     mockIsLoginBlocked.mockResolvedValue(false);
-    mockPrismaUser.findUnique.mockResolvedValue(USER);
-    const res = await POST(loginReq({ username: 'Admin', password: 'StrongPass1' }));
+    mockPrismaUser.findFirst.mockResolvedValue(USER);
+    const res = await POST(loginReq({ username: 'Admin', password: 'StrongPass1', tenantId: 't1' }));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toMatchObject({ id: 'u1', name: 'Admin Utama', role: 'SUPER_ADMIN' });
@@ -109,8 +116,8 @@ describe('POST /api/auth/login', () => {
 
   it('mengembalikan 500 jika prisma gagal', async () => {
     mockIsLoginBlocked.mockResolvedValue(false);
-    mockPrismaUser.findUnique.mockRejectedValue(new Error('db down'));
-    const res = await POST(loginReq({ username: 'admin', password: 'StrongPass1' }));
+    mockPrismaUser.findFirst.mockRejectedValue(new Error('db down'));
+    const res = await POST(loginReq({ username: 'admin', password: 'StrongPass1', tenantId: 't1' }));
     expect(res.status).toBe(500);
   });
 });

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { setSession, signTwoFactorToken } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
 import { getClientIp, recordLoginAttempt } from '@/lib/security';
+import { setTenantCookie } from '@/lib/tenant';
 
 const googleJWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 
@@ -72,13 +73,29 @@ export async function GET(req: NextRequest) {
     }
 
     await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, pwdVersion: user.pwdVersion });
-    await logAudit(null, 'SSO_GOOGLE_LOGIN', 'AUTH', { newData: { email, username: user.username } }, req);
+
     const target = user.mustChangePassword
       ? '/account/password?first=1'
       : user.role === 'DRIVER'
         ? '/driver'
         : '/dashboard';
-    return NextResponse.redirect(`${origin}${target}`);
+    const response = NextResponse.redirect(`${origin}${target}`);
+    if (user.tenantId) {
+      const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { slug: true } });
+      if (tenant) {
+        const cookie = setTenantCookie(tenant.slug);
+        response.cookies.set(cookie.name, cookie.value, {
+          httpOnly: cookie.httpOnly,
+          secure: cookie.secure,
+          sameSite: cookie.sameSite,
+          path: cookie.path,
+          maxAge: cookie.maxAge,
+        });
+      }
+    }
+
+    await logAudit(null, 'SSO_GOOGLE_LOGIN', 'AUTH', { newData: { email, username: user.username } }, req);
+    return response;
   } catch (e) {
     console.error('google callback error', e);
     return redirectLogin(origin, 'Terjadi kesalahan saat login Google');

@@ -4,9 +4,10 @@ import { prisma } from './prisma';
 
 export const COOKIE_NAME = 'dtms_token';
 
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET || 'dtms-dev-secret-change-me'
-);
+if (!process.env.AUTH_SECRET) {
+  throw new Error('AUTH_SECRET environment variable is required. Set it in .env or your hosting platform.');
+}
+const secret = new TextEncoder().encode(process.env.AUTH_SECRET);
 
 export type SessionUser = {
   id: string;

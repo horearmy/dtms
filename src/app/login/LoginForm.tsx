@@ -4,9 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
+type Tenant = { id: string; name: string; slug: string; primaryColor: string };
+
 function LoginFormInner() {
   const router = useRouter();
   const search = useSearchParams();
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [selectedTenant, setSelectedTenant] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [twoFactorToken, setTwoFactorToken] = useState<string | null>(
@@ -15,6 +19,20 @@ function LoginFormInner() {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState(search.get('error') ? decodeURIComponent(search.get('error') || '') : '');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/tenants')
+      .then((r) => r.json())
+      .then((data: Tenant[]) => {
+        setTenants(data);
+        if (data.length === 1) setSelectedTenant(data[0].id);
+        if (data.length > 1) {
+          const saved = localStorage.getItem('dtms_tenant_id');
+          if (saved && data.some((t) => t.id === saved)) setSelectedTenant(saved);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   async function finishLogin(data: { mustChangePassword?: boolean; role?: string }) {
     const target = data.mustChangePassword ? '/account/password?first=1' : data.role === 'DRIVER' ? '/driver' : '/dashboard';
@@ -30,7 +48,7 @@ function LoginFormInner() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, tenantId: selectedTenant || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -38,6 +56,7 @@ function LoginFormInner() {
         setLoading(false);
         return;
       }
+      if (selectedTenant) localStorage.setItem('dtms_tenant_id', selectedTenant);
       if (data.twoFactorRequired) {
         setTwoFactorToken(data.twoFactorToken);
         setLoading(false);
@@ -73,14 +92,19 @@ function LoginFormInner() {
     }
   }
 
+  const selected = tenants.find((t) => t.id === selectedTenant);
+
   return (
     <div className="w-full max-w-md">
       <div className="bg-white rounded-2xl shadow-lg p-8">
         <div className="text-center mb-6">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-2xl font-bold text-white">
-            DT
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-bold text-white"
+            style={{ backgroundColor: selected?.primaryColor || '#2563eb' }}>
+            {selected ? selected.name.charAt(0).toUpperCase() : 'DT'}
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Delivery Tracking & Management System</h1>
+          <h1 className="text-xl font-bold text-gray-900">
+            {selected ? selected.name : 'Delivery Tracking & Management System'}
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
             {twoFactorToken ? 'Verifikasi 2 langkah' : 'Masuk untuk melanjutkan'}
           </p>
@@ -88,6 +112,25 @@ function LoginFormInner() {
 
         {!twoFactorToken ? (
           <form onSubmit={submit} className="space-y-4">
+            {tenants.length > 1 && (
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Perusahaan</label>
+                <select
+                  value={selectedTenant}
+                  onChange={(e) => setSelectedTenant(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                >
+                  <option value="">-- Pilih Perusahaan --</option>
+                  {tenants.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {tenants.length === 1 && (
+              <input type="hidden" value={tenants[0].id} />
+            )}
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Username</label>
               <input
@@ -115,8 +158,9 @@ function LoginFormInner() {
             {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-60"
+              disabled={loading || (tenants.length > 1 && !selectedTenant)}
+              className="w-full rounded-lg py-2.5 text-sm font-semibold text-white transition disabled:opacity-60"
+              style={{ backgroundColor: selected?.primaryColor || '#2563eb' }}
             >
               {loading ? 'Memproses...' : 'Masuk'}
             </button>
@@ -179,11 +223,13 @@ function LoginFormInner() {
           </form>
         )}
       </div>
-      <div className="mt-4 rounded-xl bg-white/70 px-4 py-3 text-xs text-gray-600">
-        <b>Akun demo:</b> superadmin/admin123 · admin/admin123 · dispatcher/admin123 ·
-        warehouse/admin123 · driver1/driver123<br />
-        Cek status kiriman: <a href="/tracking" className="font-semibold text-brand-600 underline">Tracking Resi</a>
-      </div>
+      {process.env.NEXT_PUBLIC_SHOW_DEMO_ACCOUNTS === 'true' || process.env.NODE_ENV === 'development' ? (
+        <div className="mt-4 rounded-xl bg-white/70 px-4 py-3 text-xs text-gray-600">
+          <b>Akun demo:</b> superadmin/admin123 · admin/admin123 · dispatcher/admin123 ·
+          warehouse/admin123 · driver1/driver123<br />
+          Cek status kiriman: <a href="/tracking" className="font-semibold text-brand-600 underline">Tracking Resi</a>
+        </div>
+      ) : null}
     </div>
   );
 }

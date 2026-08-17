@@ -4,15 +4,16 @@ import { prisma } from '@/lib/prisma';
 import { setSession, signTwoFactorToken } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
 import { getClientIp, isLoginBlocked, recordLoginAttempt, cleanupLoginAttempts } from '@/lib/security';
+import { setTenantCookie } from '@/lib/tenant';
 
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
     await cleanupLoginAttempts();
     const body = await req.json();
-    const { username, password } = body || {};
-    if (!username || !password) {
-      return NextResponse.json({ error: 'Username dan password wajib diisi' }, { status: 400 });
+    const { username, password, tenantId } = body || {};
+    if (!username || !password || !tenantId) {
+      return NextResponse.json({ error: 'Username, password, dan perusahaan wajib diisi' }, { status: 400 });
     }
 
     const key = String(username).trim().toLowerCase();
@@ -23,11 +24,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { username: key } });
+    const tenant = await prisma.tenant.findUnique({ where: { id: String(tenantId) } });
+    if (!tenant || !tenant.active) {
+      return NextResponse.json({ error: 'Perusahaan tidak valid atau tidak aktif' }, { status: 400 });
+    }
+
+    const user = await prisma.user.findFirst({ where: { username: key, tenantId: String(tenantId) } });
     if (!user) {
       await recordLoginAttempt(key, ip, false);
       await prisma.auditLog.create({
-        data: { action: 'LOGIN_FAILED', module: 'AUTH', newData: `username=${key}, ip=${ip}` },
+        data: { action: 'LOGIN_FAILED', module: 'AUTH', newData: `username=${key}, ip=${ip}, tenantId=${tenantId || 'none'}` },
       });
       return NextResponse.json({ error: 'Username atau password salah' }, { status: 401 });
     }
@@ -55,14 +61,31 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, pwdVersion: user.pwdVersion });
-    await logAudit(null, 'LOGIN_SUCCESS', 'AUTH', { newData: { username: user.username } }, req);
-    return NextResponse.json({
+    const response = NextResponse.json({
       id: user.id,
       name: user.name,
       role: user.role,
       mustChangePassword: user.mustChangePassword,
     });
+
+    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, pwdVersion: user.pwdVersion });
+
+    if (user.tenantId) {
+      const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { slug: true } });
+      if (tenant) {
+        const cookie = setTenantCookie(tenant.slug);
+        response.cookies.set(cookie.name, cookie.value, {
+          httpOnly: cookie.httpOnly,
+          secure: cookie.secure,
+          sameSite: cookie.sameSite,
+          path: cookie.path,
+          maxAge: cookie.maxAge,
+        });
+      }
+    }
+
+    await logAudit(null, 'LOGIN_SUCCESS', 'AUTH', { newData: { username: user.username, tenantId: user.tenantId } }, req);
+    return response;
   } catch (e) {
     console.error('login error', e);
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });

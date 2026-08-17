@@ -31,7 +31,7 @@ vi.mock('@/lib/prisma', () => ({
     notification: mockNotification,
   },
 }));
-vi.mock('@/lib/api-guard', () => ({ guard: mockGuard, logAudit: mockLogAudit }));
+vi.mock('@/lib/api-guard', () => ({ guard: mockGuard, logAudit: mockLogAudit, runWithTenant: (_tenantId: string | null | undefined, fn: () => Promise<unknown>) => fn() }));
 
 import { POST } from '../../shipments/[id]/scan/route';
 

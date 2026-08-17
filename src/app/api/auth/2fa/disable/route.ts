@@ -13,6 +13,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { code, password } = body || {};
+  if (!code || !password) {
+    return NextResponse.json({ error: 'Password dan kode 2FA/backup code wajib diisi' }, { status: 400 });
+  }
   const user = await prisma.user.findUnique({ where: { id: session.id } });
   if (!user) return NextResponse.json({ error: 'Akun tidak ditemukan' }, { status: 404 });
   if (!user.totpEnabled) {
@@ -25,9 +28,9 @@ export async function POST(req: NextRequest) {
     : false;
   const pwOk = password ? await bcrypt.compare(String(password), user.passwordHash) : false;
 
-  if (!codeOk && !pwOk) {
+  if (!codeOk || !pwOk) {
     await logAudit(session, 'TWO_FACTOR_DISABLE_FAILED', 'AUTH', {}, req);
-    return NextResponse.json({ error: 'Verifikasi gagal (kode 2FA atau password salah)' }, { status: 400 });
+    return NextResponse.json({ error: 'Password dan kode 2FA/backup code wajib diisi dengan benar' }, { status: 400 });
   }
 
   await prisma.user.update({

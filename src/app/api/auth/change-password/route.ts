@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password lama dan baru wajib diisi' }, { status: 400 });
   }
 
-  const pwError = validatePassword(newPassword);
-  if (pwError) return NextResponse.json({ error: pwError }, { status: 400 });
+  const { valid: pwValid, error: pwError } = validatePassword(newPassword);
+  if (!pwValid) return NextResponse.json({ error: pwError }, { status: 400 });
 
   const user = await prisma.user.findUnique({ where: { id: session.id } });
   if (!user) return NextResponse.json({ error: 'Akun tidak ditemukan' }, { status: 404 });

@@ -44,7 +44,8 @@ export async function middleware(req: NextRequest) {
   const isPublicPage = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
   const isTrackingApi = pathname.startsWith('/api/tracking/');
   const isDemoRequestApi = pathname === '/api/demo-request';
-  const isPublic = isPublicPage || isTrackingApi || isDemoRequestApi;
+  const isTenantListApi = pathname === '/api/auth/tenants';
+  const isPublic = isPublicPage || isTrackingApi || isDemoRequestApi || isTenantListApi;
 
   if (pathname.startsWith('/api/')) {
     if (isPublic) return NextResponse.next();

@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getClientIp, checkRateLimit } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (!checkRateLimit(`demo:${ip}`, 3, 3_600_000)) {
+    return NextResponse.json({ error: 'Terlalu banyak request, coba lagi nanti' }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
     const { name, email, phone, company, message } = body;
