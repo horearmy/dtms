@@ -69,8 +69,9 @@ function ScanInner() {
     setNotFound('');
     setHit(null);
     try {
-      const res = await fetch(`/api/shipments?q=${encodeURIComponent(q)}`);
-      const list = await res.json();
+      const res = await fetch(`/api/shipments?q=${encodeURIComponent(q)}&pageSize=100`);
+      const data = await res.json();
+      const list = data.items || [];
       const found = (list || []).find((s: ShipmentHit) => s.trackingNumber.toLowerCase() === q.toLowerCase() || s.id === q);
       if (!found) setNotFound('Resi tidak ditemukan. Pastikan kode sudah benar.');
       else setHit(found);

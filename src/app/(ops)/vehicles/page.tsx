@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
+import Pagination from '@/components/Pagination';
 import { formatNumber, MAINTENANCE_DISTANCE_KM } from '@/lib/constants';
 import PhotoField from '@/components/PhotoField';
 
@@ -43,17 +44,24 @@ const PHOTO_LABELS: { key: keyof typeof emptyForm; label: string }[] = [
 
 export default function VehiclesPage() {
   const [items, setItems] = useState<Vehicle[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Vehicle | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const pageSize = 20;
 
-  async function load() {
-    const res = await fetch('/api/vehicles');
-    if (res.ok) setItems(await res.json());
-  }
-  useEffect(() => { load(); }, []);
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/vehicles?page=${page}&pageSize=${pageSize}`);
+    if (res.ok) {
+      const data = await res.json();
+      setItems(data.items);
+      setTotal(data.total);
+    }
+  }, [page]);
+  useEffect(() => { load(); }, [load]);
 
   function openNew() {
     setEdit(null);
@@ -205,6 +213,7 @@ export default function VehiclesPage() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={total} pageSize={pageSize} onChange={setPage} />
       </div>
 
       <Modal open={open} title={edit ? 'Edit Kendaraan' : 'Tambah Kendaraan'} onClose={() => setOpen(false)} wide>

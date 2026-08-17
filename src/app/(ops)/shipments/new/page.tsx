@@ -21,7 +21,7 @@ export default function NewShipmentPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch('/api/customers').then((r) => r.ok && r.json()).then(setCustomers).catch(() => {});
+    fetch('/api/customers?pageSize=100').then((r) => r.ok && r.json()).then((d) => setCustomers(d.items || [])).catch(() => {});
   }, []);
 
   async function submit(e: React.FormEvent) {

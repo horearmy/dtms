@@ -8,11 +8,17 @@ import { ON_ROAD_STATUSES } from '@/lib/constants';
 
 const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR'];
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const { error } = await guard(...MANAGE);
   if (error) return error;
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
+  const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get('pageSize') || '20', 10)));
+
+  const total = await prisma.driver.count();
   const drivers = await prisma.driver.findMany({
     orderBy: { name: 'asc' },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
     include: { user: { select: { username: true } }, _count: { select: { assignments: true } } },
   });
   const scored = [];
@@ -24,7 +30,7 @@ export async function GET() {
     });
     scored.push({ ...d, stat, busy: !!trip || d.returning, activeTracking: trip?.shipment.trackingNumber || null });
   }
-  return NextResponse.json(scored);
+  return NextResponse.json({ items: scored, total, page, pageSize });
 }
 
 export async function POST(req: NextRequest) {

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import StatusBadge from '@/components/StatusBadge';
+import Pagination from '@/components/Pagination';
 import { EmptyRow, btnPrimary, inputCls } from '@/components/ui';
 import { formatNumber, formatDateTime, STATUS_LABELS } from '@/lib/constants';
 
@@ -40,16 +41,27 @@ const STATUS_FILTERS = [
 function ShipmentsInner() {
   const params = useSearchParams();
   const [items, setItems] = useState<Shipment[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [q, setQ] = useState(params.get('q') || '');
   const [status, setStatus] = useState('SEMUA');
   const [loading, setLoading] = useState(true);
+  const pageSize = 20;
 
   const load = useCallback(async () => {
     setLoading(true);
-    const url = `/api/shipments?q=${encodeURIComponent(q)}${status !== 'SEMUA' ? `&status=${status}` : ''}`;
+    const url = `/api/shipments?q=${encodeURIComponent(q)}${status !== 'SEMUA' ? `&status=${status}` : ''}&page=${page}&pageSize=${pageSize}`;
     const res = await fetch(url);
-    if (res.ok) setItems(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setItems(data.items);
+      setTotal(data.total);
+    }
     setLoading(false);
+  }, [q, status, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [q, status]);
 
   useEffect(() => {
@@ -62,7 +74,7 @@ function ShipmentsInner() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Shipment</h1>
-          <p className="text-sm text-slate-500">Manajemen pengiriman ({items.length} data)</p>
+          <p className="text-sm text-slate-500">Manajemen pengiriman ({total} data)</p>
         </div>
         <Link href="/shipments/new" className={btnPrimary}>+ Buat Shipment</Link>
       </div>
@@ -121,6 +133,7 @@ function ShipmentsInner() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={total} pageSize={pageSize} onChange={setPage} />
       </div>
     </div>
   );

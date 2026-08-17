@@ -22,25 +22,21 @@ const safeUser = <T extends { passwordHash?: string }>(u: T) => {
   return rest;
 };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const { error } = await guard(...MANAGE);
   if (error) return error;
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: 'asc' },
-    select: {
-      id: true,
-      name: true,
-      username: true,
-      role: true,
-      status: true,
-      phone: true,
-      mustChangePassword: true,
-      lastPasswordChange: true,
-      createdAt: true,
-      driver: { select: { id: true, employeeId: true, name: true } },
-    },
-  });
-  return NextResponse.json(users);
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
+  const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get('pageSize') || '20', 10)));
+  const select = {
+    id: true, name: true, username: true, role: true, status: true, phone: true,
+    mustChangePassword: true, lastPasswordChange: true, createdAt: true,
+    driver: { select: { id: true, employeeId: true, name: true } },
+  };
+  const [total, users] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.findMany({ orderBy: { createdAt: 'asc' }, skip: (page - 1) * pageSize, take: pageSize, select }),
+  ]);
+  return NextResponse.json({ items: users, total, page, pageSize });
 }
 
 export async function POST(req: NextRequest) {

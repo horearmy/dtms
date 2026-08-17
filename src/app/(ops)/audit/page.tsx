@@ -1,20 +1,43 @@
-import { prisma } from '@/lib/prisma';
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import Pagination from '@/components/Pagination';
 import { formatDateTime } from '@/lib/constants';
 
-export const dynamic = 'force-dynamic';
+type AuditLog = {
+  id: string;
+  action: string;
+  module: string;
+  newData: string | null;
+  createdAt: string;
+  user: { name: string; username: string } | null;
+};
 
-export default async function AuditPage() {
-  const logs = await prisma.auditLog.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 100,
-    include: { user: { select: { name: true, username: true } } },
-  });
+export default function AuditPage() {
+  const [items, setItems] = useState<AuditLog[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const pageSize = 20;
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch(`/api/audit?page=${page}&pageSize=${pageSize}`);
+    if (res.ok) {
+      const data = await res.json();
+      setItems(data.items);
+      setTotal(data.total);
+    }
+    setLoading(false);
+  }, [page]);
+
+  useEffect(() => { load(); }, [load]);
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-bold text-slate-900">Audit Log</h1>
-        <p className="text-sm text-slate-500">Rekam jejak aktivitas pengguna ({logs.length} catatan terbaru)</p>
+        <p className="text-sm text-slate-500">Rekam jejak aktivitas pengguna ({total} catatan)</p>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -30,7 +53,10 @@ export default async function AuditPage() {
               </tr>
             </thead>
             <tbody>
-              {logs.map((l) => (
+              {loading && (
+                <tr><td colSpan={5} className="py-8 text-center text-slate-400">Memuat...</td></tr>
+              )}
+              {!loading && items.map((l) => (
                 <tr key={l.id} className="border-b border-slate-100 last:border-0">
                   <td className="px-4 py-3 text-xs text-slate-500">{formatDateTime(l.createdAt)}</td>
                   <td className="px-4 py-3 text-slate-700">{l.user?.name || 'Sistem'}</td>
@@ -39,12 +65,13 @@ export default async function AuditPage() {
                   <td className="px-4 py-3 text-xs text-slate-500">{l.newData || '-'}</td>
                 </tr>
               ))}
-              {logs.length === 0 && (
+              {!loading && items.length === 0 && (
                 <tr><td colSpan={5} className="py-10 text-center text-slate-400">Belum ada aktivitas tercatat</td></tr>
               )}
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={total} pageSize={pageSize} onChange={setPage} />
       </div>
     </div>
   );

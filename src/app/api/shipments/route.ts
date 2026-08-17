@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
   if (error) return error;
   const q = req.nextUrl.searchParams.get('q') || '';
   const status = req.nextUrl.searchParams.get('status') || '';
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
+  const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get('pageSize') || '20', 10)));
 
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
@@ -23,17 +25,22 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const shipments = await prisma.shipment.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      sender: true,
-      receiver: true,
-      assignments: { include: { driver: true, vehicle: true } },
-      stops: { orderBy: { seq: 'asc' } },
-    },
-  });
-  return NextResponse.json(shipments);
+  const [total, shipments] = await Promise.all([
+    prisma.shipment.count({ where }),
+    prisma.shipment.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        sender: true,
+        receiver: true,
+        assignments: { include: { driver: true, vehicle: true } },
+        stops: { orderBy: { seq: 'asc' } },
+      },
+    }),
+  ]);
+  return NextResponse.json({ items: shipments, total, page, pageSize });
 }
 
 export async function POST(req: NextRequest) {

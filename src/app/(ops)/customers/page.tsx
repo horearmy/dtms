@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
 import LocationPicker, { type PickedLocation } from '@/components/LocationPicker';
+import Pagination from '@/components/Pagination';
 import { formatDate } from '@/lib/constants';
 
 type Customer = {
@@ -21,6 +22,8 @@ type Customer = {
 
 export default function CustomersPage() {
   const [items, setItems] = useState<Customer[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Customer | null>(null);
@@ -30,16 +33,25 @@ export default function CustomersPage() {
   });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const pageSize = 20;
 
-  async function load() {
-    const res = await fetch(`/api/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`);
-    if (res.ok) setItems(await res.json());
-  }
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch(`/api/customers?q=${encodeURIComponent(q)}&page=${page}&pageSize=${pageSize}`);
+    if (res.ok) {
+      const data = await res.json();
+      setItems(data.items);
+      setTotal(data.total);
+    }
+    setLoading(false);
+  }, [q, page]);
+
+  useEffect(() => { setPage(1); }, [q]);
 
   useEffect(() => {
     const t = setTimeout(load, 300);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [load]);
 
   function openNew() {
     setEdit(null);
@@ -158,6 +170,7 @@ export default function CustomersPage() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={total} pageSize={pageSize} onChange={setPage} />
       </div>
 
       <Modal open={open} wide title={edit ? 'Edit Customer' : 'Tambah Customer'} onClose={() => setOpen(false)}>

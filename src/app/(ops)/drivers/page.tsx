@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
 import PhotoField from '@/components/PhotoField';
 import DriverDetailModal from '@/components/DriverDetailModal';
+import Pagination from '@/components/Pagination';
 import { formatDate } from '@/lib/constants';
 
 type Driver = {
@@ -23,18 +24,25 @@ type Driver = {
 
 export default function DriversPage() {
   const [items, setItems] = useState<Driver[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Driver | null>(null);
   const [form, setForm] = useState({ employeeId: '', name: '', phone: '', photo: null as string | null, status: 'ACTIVE', username: '', password: '' });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const pageSize = 20;
 
-  async function load() {
-    const res = await fetch('/api/drivers');
-    if (res.ok) setItems(await res.json());
-  }
-  useEffect(() => { load(); }, []);
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/drivers?page=${page}&pageSize=${pageSize}`);
+    if (res.ok) {
+      const data = await res.json();
+      setItems(data.items);
+      setTotal(data.total);
+    }
+  }, [page]);
+  useEffect(() => { load(); }, [load]);
 
   function openNew() {
     setEdit(null);
@@ -155,6 +163,7 @@ export default function DriversPage() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={total} pageSize={pageSize} onChange={setPage} />
       </div>
 
       <Modal open={open} title={edit ? 'Edit Driver' : 'Tambah Driver'} onClose={() => setOpen(false)}>

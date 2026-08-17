@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
+import Pagination from '@/components/Pagination';
 import { ROLE_LABELS } from '@/lib/constants';
 import { formatDateTime } from '@/lib/constants';
 
@@ -42,17 +43,24 @@ const ROLE_BADGE: Record<string, string> = {
 
 export default function UsersPage() {
   const [items, setItems] = useState<UserRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<UserRow | null>(null);
   const [form, setForm] = useState({ name: '', username: '', phone: '', role: 'WAREHOUSE', status: 'ACTIVE', password: '' });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const pageSize = 20;
 
-  async function load() {
-    const res = await fetch('/api/users');
-    if (res.ok) setItems(await res.json());
-  }
-  useEffect(() => { load(); }, []);
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/users?page=${page}&pageSize=${pageSize}`);
+    if (res.ok) {
+      const data = await res.json();
+      setItems(data.items);
+      setTotal(data.total);
+    }
+  }, [page]);
+  useEffect(() => { load(); }, [load]);
 
   function openNew() {
     setEdit(null);
@@ -150,6 +158,7 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} total={total} pageSize={pageSize} onChange={setPage} />
       </div>
 
       <Modal open={open} title={edit ? 'Edit User' : 'Tambah User'} onClose={() => setOpen(false)}>

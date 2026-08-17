@@ -72,9 +72,9 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
 
   // muat daftar driver & kendaraan ketika modal assignment dibuka
   async function openAssign() {
-    const [dRes, vRes] = await Promise.all([fetch('/api/drivers'), fetch('/api/vehicles')]);
-    if (dRes.ok) setDrivers((await dRes.json()).filter((d: Driver) => d.status === 'ACTIVE' && !d.busy));
-    if (vRes.ok) setVehicles((await vRes.json()).filter((v: Vehicle) => v.status !== 'MAINTENANCE' && !v.busy));
+    const [dRes, vRes] = await Promise.all([fetch('/api/drivers?pageSize=100'), fetch('/api/vehicles?pageSize=100')]);
+    if (dRes.ok) setDrivers(((await dRes.json()).items || []).filter((d: Driver) => d.status === 'ACTIVE' && !d.busy));
+    if (vRes.ok) setVehicles(((await vRes.json()).items || []).filter((v: Vehicle) => v.status !== 'MAINTENANCE' && !v.busy));
     const cur = shipment?.assignments?.[0];
     setAssignForm({
       driverId: cur?.driver?.id || '',

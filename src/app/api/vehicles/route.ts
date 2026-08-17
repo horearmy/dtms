@@ -4,11 +4,17 @@ import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
 import { ON_ROAD_STATUSES } from '@/lib/constants';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const { error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR');
   if (error) return error;
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
+  const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get('pageSize') || '20', 10)));
+
+  const total = await prisma.vehicle.count();
   const vehicles = await prisma.vehicle.findMany({
     orderBy: { vehicleNumber: 'asc' },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
     include: { _count: { select: { assignments: true } } },
   });
   const result = [];
@@ -19,7 +25,7 @@ export async function GET() {
     });
     result.push({ ...v, busy: !!trip || v.returning, activeTracking: trip?.shipment.trackingNumber || null });
   }
-  return NextResponse.json(result);
+  return NextResponse.json({ items: result, total, page, pageSize });
 }
 
 export async function POST(req: NextRequest) {

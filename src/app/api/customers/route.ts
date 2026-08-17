@@ -8,12 +8,20 @@ export async function GET(req: NextRequest) {
   const { error } = await guard(...MANAGE);
   if (error) return error;
   const q = req.nextUrl.searchParams.get('q') || '';
-  const customers = await prisma.customer.findMany({
-    where: q ? { OR: [{ name: { contains: q } }, { phone: { contains: q } }, { city: { contains: q } }] } : undefined,
-    orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { sentBy: true, receivedBy: true } } },
-  });
-  return NextResponse.json(customers);
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
+  const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get('pageSize') || '20', 10)));
+  const where = q ? { OR: [{ name: { contains: q } }, { phone: { contains: q } }, { city: { contains: q } }] } : undefined;
+  const [total, customers] = await Promise.all([
+    prisma.customer.count({ where }),
+    prisma.customer.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: { _count: { select: { sentBy: true, receivedBy: true } } },
+    }),
+  ]);
+  return NextResponse.json({ items: customers, total, page, pageSize });
 }
 
 function toNum(v: unknown): number | null {
