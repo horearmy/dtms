@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
 import { ROLE_LABELS } from '@/lib/constants';
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import GpsSender from '@/components/GpsSender';
 import GpsStatus from '@/components/GpsStatus';
 import LogoutButton from '@/components/LogoutButton';
@@ -13,6 +14,7 @@ export default async function DriverLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-slate-100">
+      <ServiceWorkerRegister />
       <header className="sticky top-0 z-40 bg-brand-700 shadow">
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 font-bold text-white">DT</div>
