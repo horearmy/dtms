@@ -235,8 +235,6 @@ async function main() {
   await makeShipment({ sender: customers[5], receiver: customers[3], weight: 30.0, service: ServiceType.REGULAR, status: ShipmentStatus.RETURNED, from: daysAgo(3, 9, 0), to: { lat: -6.21, lng: 106.86 } });
   await makeShipment({ sender: customers[6], receiver: customers[2], weight: 2.0, service: ServiceType.REGULAR, status: ShipmentStatus.DISPATCHED, from: today, to: { lat: -6.91, lng: 107.60 } });
 
-  const { $disconnect } = prisma;
-
   // GPS logs untuk driver
   const gpsPoints = [
     [-6.2, 106.816, 40, 90],
@@ -282,7 +280,7 @@ async function main() {
     data: { userId: superAdmin.id, action: 'SEED_DATA', module: 'SYSTEM', newData: 'Database DTMS diisi data contoh', createdAt: now },
   });
 
-  await $disconnect();
+  await prisma.$disconnect();
   console.log('Seed selesai. Akun login: superadmin/admin123, admin/admin123, driver1/driver123');
 }
 

@@ -1,4 +1,4 @@
-﻿-- AlterTable
+-- AlterTable
 ALTER TABLE "AuditLog" ADD COLUMN     "ip" TEXT,
 ADD COLUMN     "method" TEXT,
 ADD COLUMN     "path" TEXT,

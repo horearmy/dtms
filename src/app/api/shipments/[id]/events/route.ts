@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
 import { STATUS_LABELS } from '@/lib/constants';
+import { isWhatsAppEnabled, sendShipmentStatusUpdate, sendDeliveryFailedAlert } from '@/lib/whatsapp';
 
 const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'CUSTOMER_SERVICE', 'SUPERVISOR', 'DRIVER'];
 
@@ -101,6 +102,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     { oldData: { status: shipment.status }, newData: { status, notes: notes || null } },
     req
   );
+
+  if (isWhatsAppEnabled()) {
+    try {
+      const fullShipment = await prisma.shipment.findUnique({
+        where: { id },
+        include: { receiver: true },
+      });
+      if (fullShipment?.receiver?.phone) {
+        if (status === 'DELIVERY_FAILED') {
+          await sendDeliveryFailedAlert(
+            shipment.trackingNumber,
+            fullShipment.receiver.name,
+            notes || 'Tidak diketahui'
+          );
+        } else {
+          const sla = fullShipment.slaDeadline;
+          await sendShipmentStatusUpdate(
+            shipment.trackingNumber,
+            status,
+            fullShipment.receiver.phone,
+            fullShipment.receiver.name,
+            fullShipment.destination,
+            sla
+          );
+        }
+      }
+    } catch {
+      // WhatsApp send is non-critical, don't fail the request
+    }
+  }
 
   return NextResponse.json({ event, shipment: updated });
 }

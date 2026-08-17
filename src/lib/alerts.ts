@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { isWhatsAppEnabled, sendSLABreachAlert, sendGPSDisconnectAlert } from './whatsapp';
 
 const STALE_GPS_MIN = 30;
 
@@ -27,6 +28,15 @@ export async function scanAlerts() {
         userId: null,
       },
     });
+
+    if (isWhatsAppEnabled()) {
+      try {
+        await sendSLABreachAlert(s.trackingNumber, s.receiver.name, deadline);
+      } catch {
+        // non-critical
+      }
+    }
+
     created++;
   }
 
@@ -56,6 +66,15 @@ export async function scanAlerts() {
         userId: null,
       },
     });
+
+    if (isWhatsAppEnabled()) {
+      try {
+        await sendGPSDisconnectAlert(d.name, Math.round(staleMin), last.latitude, last.longitude);
+      } catch {
+        // non-critical
+      }
+    }
+
     created++;
   }
 
