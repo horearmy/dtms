@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { scanAlerts } from '@/lib/alerts';
 import { getSLA } from '@/lib/eta';
 import StatCard from '@/components/StatCard';
 import StatusBadge from '@/components/StatusBadge';
@@ -18,8 +17,6 @@ export default async function DashboardPage() {
   const session = await getSession();
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-
-  await scanAlerts();
 
   const [totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts] = await Promise.all([
     prisma.shipment.count({ where: { createdAt: { gte: todayStart } } }),
