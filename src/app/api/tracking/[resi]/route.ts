@@ -18,7 +18,7 @@ function maskPhone(phone: string): string {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ resi: string }> }) {
   const ip = getClientIp(req);
-  if (!checkRateLimit(`tracking:${ip}`, 30, 60_000)) {
+  if (!await checkRateLimit(`tracking:${ip}`, 30, 60_000)) {
     return NextResponse.json({ error: 'Terlalu banyak request, coba lagi nanti' }, { status: 429 });
   }
 

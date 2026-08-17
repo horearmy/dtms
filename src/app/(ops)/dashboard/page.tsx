@@ -20,7 +20,10 @@ export default async function DashboardPage() {
 
   const [totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts] = await Promise.all([
     prisma.shipment.count({ where: { createdAt: { gte: todayStart } } }),
-    prisma.shipment.findMany({ include: { sender: true, receiver: true, assignments: { include: { driver: true } } } }),
+    prisma.shipment.findMany({ 
+      where: { status: { notIn: ['DELIVERED', 'RETURNED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'] } },
+      include: { sender: true, receiver: true, assignments: { include: { driver: true } } } 
+    }),
     prisma.shipment.count({ where: { status: 'DELIVERED' } }),
     prisma.shipment.count({ where: { status: { in: ACTIVE_STATUSES as never[] } } }),
     prisma.shipment.count({ where: { status: 'DELIVERY_FAILED' } }),

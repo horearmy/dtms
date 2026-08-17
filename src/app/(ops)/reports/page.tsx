@@ -7,8 +7,8 @@ import { STATUS_LABELS } from '@/lib/constants';
 export const dynamic = 'force-dynamic';
 
 export default async function ReportsPage() {
-  const [shipments, deliveries, returned, failed, drivers, totalCount, orderEvents, deliveredEvents, lastShipments, trendShipments] = await Promise.all([
-    prisma.shipment.findMany({ select: { status: true } }),
+  const [statusGroups, deliveries, returned, failed, drivers, totalCount, orderEvents, deliveredEvents, lastShipments, trendShipments] = await Promise.all([
+    prisma.shipment.groupBy({ by: ['status'], _count: { id: true } }),
     prisma.shipment.count({ where: { status: 'DELIVERED' } }),
     prisma.shipment.count({ where: { status: 'RETURNED' } }),
     prisma.shipment.count({ where: { status: 'DELIVERY_FAILED' } }),
@@ -43,11 +43,11 @@ export default async function ReportsPage() {
   for (const s of trendShipments) destCount.set(s.destination || '-', (destCount.get(s.destination || '-') || 0) + 1);
   const topDestinations = [...destCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-  const scoredDrivers = [];
-  for (const d of drivers) scoredDrivers.push({ ...d, stat: await driverScore(d.id) });
+  const driverStats = await Promise.all(drivers.map((d) => driverScore(d.id)));
+  const scoredDrivers = drivers.map((d, i) => ({ ...d, stat: driverStats[i] }));
 
   const map: Record<string, number> = {};
-  shipments.forEach((s) => (map[s.status] = (map[s.status] || 0) + 1));
+  statusGroups.forEach((g) => (map[g.status] = g._count.id));
   const successRate = totalCount ? Math.round((deliveries / totalCount) * 100) : 0;
   const failedRate = totalCount ? Math.round((failed / totalCount) * 100) : 0;
 

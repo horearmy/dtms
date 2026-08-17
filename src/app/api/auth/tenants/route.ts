@@ -4,7 +4,7 @@ import { getClientIp, checkRateLimit } from '@/lib/security';
 
 export async function GET(req: NextRequest) {
   const ip = getClientIp(req);
-  if (!checkRateLimit(`tenants:${ip}`, 10, 60_000)) {
+  if (!await checkRateLimit(`tenants:${ip}`, 10, 60_000)) {
     return NextResponse.json({ error: 'Terlalu banyak request, coba lagi nanti' }, { status: 429 });
   }
 

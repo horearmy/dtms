@@ -38,7 +38,7 @@ export function validatePassword(pw: string): { valid: boolean; error?: string }
   return { valid: true };
 }
 
-// In-memory rate limiting
+// Rate limiting — uses Redis if UPSTASH_REDIS_REST_URL is set, otherwise in-memory
 type RateLimitEntry = { count: number; resetAt: number };
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
@@ -49,18 +49,36 @@ function cleanupRateLimits() {
   }
 }
 
-export function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+async function getRedis() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  const { Redis } = await import('@upstash/redis').catch(() => ({ Redis: null as any }));
+  if (!Redis) return null;
+  return new Redis({ url, token });
+}
+
+export async function checkRateLimit(key: string, maxRequests: number, windowMs: number): Promise<boolean> {
+  const redis = await getRedis();
+  if (redis) {
+    try {
+      const current = await redis.incr(`rl:${key}`);
+      if (current === 1) {
+        await redis.pexpire(`rl:${key}`, windowMs);
+      }
+      return current <= maxRequests;
+    } catch {
+      // Fall through to in-memory
+    }
+  }
   cleanupRateLimits();
   const now = Date.now();
   const entry = rateLimitStore.get(key);
-
   if (!entry || now >= entry.resetAt) {
     rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
     return true;
   }
-
   if (entry.count >= maxRequests) return false;
-
   entry.count++;
   return true;
 }
