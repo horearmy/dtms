@@ -2,159 +2,233 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Package, MapPin, Clock, Truck, AlertTriangle, CheckCircle } from 'lucide-react';
+import StatusBadge from '@/components/StatusBadge';
+import DriverStatusCard from '@/components/DriverStatusCard';
+import { formatDateTime, formatDate, STATUS_LABELS } from '@/lib/constants';
+import { inputCls, btnPrimary } from '@/components/ui';
 
-type TaskSummary = {
+type Task = {
   id: string;
-  trackingNumber: string;
-  destination: string;
-  status: string;
   assignedAt: string;
-  vehicleNumber: string | null;
+  vehicle: { vehicleNumber: string } | null;
+  shipment: {
+    id: string;
+    trackingNumber: string;
+    status: string;
+    origin: string;
+    destination: string;
+    weight: number;
+    receiver: { name: string; phone: string; address: string | null; city: string | null };
+    sender: { name: string };
+    events: { status: string; createdAt: string }[];
+  };
 };
 
-export default function DriverDashboard() {
-  const [tasks, setTasks] = useState<TaskSummary[]>([]);
+type DailyReport = {
+  id: string;
+  reportDate: string;
+  deliveredCount: number;
+  failedCount: number;
+  rescheduledCount: number;
+  fuelLiter: number | null;
+  notes: string | null;
+};
+
+export default function DriverHomePage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [driverName, setDriverName] = useState('');
+  const [err, setErr] = useState('');
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  const [reports, setReports] = useState<DailyReport[]>([]);
+  const [reportDate, setReportDate] = useState(new Date().toISOString().slice(0, 10));
+  const [deliveredCount, setDeliveredCount] = useState('');
+  const [failedCount, setFailedCount] = useState('');
+  const [rescheduledCount, setRescheduledCount] = useState('');
+  const [fuelLiter, setFuelLiter] = useState('');
+  const [reportNotes, setReportNotes] = useState('');
+  const [reportMsg, setReportMsg] = useState('');
+  const [savingReport, setSavingReport] = useState(false);
 
-  async function fetchTasks() {
-    try {
-      const res = await fetch('/api/driver/tasks');
-      if (res.ok) {
-        const data = await res.json();
-        setTasks(data.tasks || []);
-        setDriverName(data.driverName || 'Driver');
-      }
-    } catch {
-      // offline mode — try cached
-      const cached = localStorage.getItem('driver_tasks');
-      if (cached) setTasks(JSON.parse(cached));
-    }
-    setLoading(false);
+  async function loadReports() {
+    const res = await fetch('/api/driver/daily-report');
+    if (res.ok) setReports((await res.json()).reports || []);
   }
 
-  const todayTasks = tasks.filter((t) => {
-    const d = new Date(t.assignedAt);
-    const today = new Date();
-    return d.toDateString() === today.toDateString();
-  });
-
-  const activeTasks = todayTasks.filter((t) => ['DISPATCHED', 'IN_TRANSIT'].includes(t.status));
-  const deliveredTasks = todayTasks.filter((t) => t.status === 'DELIVERED');
-  const failedTasks = todayTasks.filter((t) => t.status === 'DELIVERY_FAILED');
-
-  // Cache for offline
   useEffect(() => {
-    if (tasks.length > 0) {
-      localStorage.setItem('driver_tasks', JSON.stringify(tasks));
-    }
-  }, [tasks]);
+    fetch('/api/driver/tasks')
+      .then(async (r) => {
+        if (!r.ok) {
+          const d = await r.json();
+          setErr(d.error || 'Gagal memuat tugas');
+          return;
+        }
+        setTasks((await r.json()).assignments || []);
+      })
+      .catch(() => setErr('Gagal memuat tugas'))
+      .finally(() => setLoading(false));
+    loadReports();
+  }, []);
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-gray-500">Memuat...</div>;
+  async function submitReport(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingReport(true);
+    setReportMsg('');
+    const res = await fetch('/api/driver/daily-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reportDate,
+        deliveredCount,
+        failedCount,
+        rescheduledCount,
+        fuelLiter,
+        notes: reportNotes,
+      }),
+    });
+    if (!res.ok) setReportMsg((await res.json()).error || 'Gagal menyimpan laporan');
+    else {
+      setReportMsg('Laporan harian tersimpan');
+      setDeliveredCount('');
+      setFailedCount('');
+      setRescheduledCount('');
+      setFuelLiter('');
+      setReportNotes('');
+      await loadReports();
+    }
+    setSavingReport(false);
+  }
+
+  if (loading) return <div className="py-20 text-center text-[#667085]">Memuat tugas...</div>;
+  if (err) return <div className="py-20 text-center text-[#667085]">{err}</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 max-w-lg mx-auto">
-      {/* Header */}
-      <div className="mb-6 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 p-5 text-white">
-        <div className="text-sm opacity-80">Selamat Datang</div>
-        <div className="text-xl font-bold">{driverName}</div>
-        <div className="mt-2 flex items-center gap-4 text-sm opacity-90">
-          <span className="flex items-center gap-1"><Package size={14} /> {todayTasks.length} tugas hari ini</span>
-          <span className="flex items-center gap-1"><CheckCircle size={14} /> {deliveredTasks.length} selesai</span>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-[#101828]">Tugas Hari Ini</h1>
+        <p className="text-sm text-[#667085]">{tasks.length} penugasan</p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <StatCard icon={<Truck size={18} />} label="Aktif" value={activeTasks.length} color="bg-blue-50 text-blue-600" />
-        <StatCard icon={<CheckCircle size={18} />} label="Selesai" value={deliveredTasks.length} color="bg-green-50 text-green-600" />
-        <StatCard icon={<AlertTriangle size={18} />} label="Gagal" value={failedTasks.length} color="bg-red-50 text-red-600" />
-      </div>
+      <DriverStatusCard />
 
-      {/* Active Tasks */}
-      <div className="mb-6">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Tugas Aktif</h2>
-        {activeTasks.length === 0 ? (
-          <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-400">
-            Tidak ada tugas aktif
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {activeTasks.map((task) => (
-              <Link
-                key={task.id}
-                href={`/driver/tasks/${task.id}`}
-                className="block rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-mono text-sm font-semibold text-blue-600">{task.trackingNumber}</div>
-                    <div className="mt-1 flex items-center gap-1 text-sm text-gray-600">
-                      <MapPin size={12} /> {task.destination}
-                    </div>
-                  </div>
-                  <StatusBadge status={task.status} />
+      <div className="space-y-3">
+        {tasks.map((t) => {
+          const shipment = t.shipment;
+          const lastEvent = shipment.events[0];
+          const isDispatched = shipment.status === 'DISPATCHED';
+          const deliverable = shipment.status === 'OUT_FOR_DELIVERY';
+          const done = shipment.status === 'DELIVERED' || shipment.status === 'RETURNED';
+          return (
+            <div key={t.id} className="rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Link href={`/driver/tasks/${t.id}`} className="font-mono text-sm font-bold text-[#0D6EFD] hover:underline">
+                    {shipment.trackingNumber}
+                  </Link>
+                  <div className="mt-1"><StatusBadge status={shipment.status} /></div>
                 </div>
-                {task.vehicleNumber && (
-                  <div className="mt-2 flex items-center gap-1 text-xs text-gray-400">
-                    <Truck size={12} /> {task.vehicleNumber}
-                  </div>
-                )}
-              </Link>
-            ))}
+                {t.vehicle && <div className="text-xs text-[#667085]">{t.vehicle.vehicleNumber}</div>}
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-[11px] uppercase text-[#667085]">Penerima</div>
+                  <div className="font-semibold text-[#101828]">{shipment.receiver.name}</div>
+                  <div className="text-xs text-[#667085]">{shipment.receiver.address}, {shipment.receiver.city}</div>
+                  <div className="text-xs text-[#667085]">{shipment.receiver.phone}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase text-[#667085]">Pengiriman</div>
+                  <div className="text-xs text-[#667085]"><b>Asal:</b> {shipment.origin}</div>
+                  <div className="text-xs text-[#667085]"><b>Tujuan:</b> {shipment.destination}</div>
+                  <div className="text-xs text-[#667085]"><b>Berat:</b> {shipment.weight} kg</div>
+                  <div className="text-xs text-[#667085]">Status: {lastEvent ? STATUS_LABELS[lastEvent.status] : '-'}</div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Link href={`/driver/tasks/${t.id}`} className={btnPrimary}>
+                  {isDispatched ? 'Mulai Pengiriman' : deliverable ? 'Proses Delivery & POD' : done ? 'Lihat Laporan' : 'Lihat Detail'}
+                </Link>
+                <span className="text-xs text-[#667085]">Ditugaskan {formatDateTime(t.assignedAt)}</span>
+              </div>
+            </div>
+          );
+        })}
+        {tasks.length === 0 && (
+          <div className="rounded-xl border border-dashed border-[#E4E7EC] bg-white p-10 text-center text-sm text-[#667085]">
+            Tidak ada penugasan saat ini
           </div>
         )}
       </div>
 
-      {/* Recent Delivered */}
-      {deliveredTasks.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Selesai Hari Ini</h2>
-          <div className="space-y-2">
-            {deliveredTasks.slice(0, 5).map((task) => (
-              <div key={task.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 opacity-70">
-                <CheckCircle size={16} className="text-green-500" />
-                <div className="font-mono text-sm text-gray-600">{task.trackingNumber}</div>
-                <div className="ml-auto text-xs text-gray-400">{task.destination}</div>
-              </div>
-            ))}
+      <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <h2 className="text-sm font-bold text-[#101828]">Laporan Harian</h2>
+        <p className="text-xs text-[#667085]">Rekap pengiriman hari ini sebagai laporan kepada admin.</p>
+
+        <form onSubmit={submitReport} className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Tanggal</label>
+            <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className={inputCls} />
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Paket Terkirim</label>
+            <input type="number" min="0" value={deliveredCount} onChange={(e) => setDeliveredCount(e.target.value)} className={inputCls} placeholder="0" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Paket Gagal</label>
+            <input type="number" min="0" value={failedCount} onChange={(e) => setFailedCount(e.target.value)} className={inputCls} placeholder="0" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Dijadwalkan Ulang</label>
+            <input type="number" min="0" value={rescheduledCount} onChange={(e) => setRescheduledCount(e.target.value)} className={inputCls} placeholder="0" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">BBM (liter)</label>
+            <input type="number" min="0" step="0.1" value={fuelLiter} onChange={(e) => setFuelLiter(e.target.value)} className={inputCls} placeholder="mis. 5.5" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-[#667085]">Catatan / Kendala</label>
+            <input value={reportNotes} onChange={(e) => setReportNotes(e.target.value)} className={inputCls} placeholder="Kendala di lapangan, dsb" />
+          </div>
+          <div className="flex items-end sm:col-span-2 lg:col-span-3">
+            <button type="submit" disabled={savingReport} className={btnPrimary}>
+              {savingReport ? 'Menyimpan...' : 'Simpan Laporan Harian'}
+            </button>
+            {reportMsg && (
+              <span className={`ml-3 text-sm ${reportMsg.startsWith('Laporan') ? 'text-[#16B364]' : 'text-[#F5222D]'}`}>{reportMsg}</span>
+            )}
+          </div>
+        </form>
 
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
-  return (
-    <div className={`rounded-xl p-3 text-center ${color}`}>
-      <div className="flex justify-center mb-1">{icon}</div>
-      <div className="text-lg font-bold">{value}</div>
-      <div className="text-xs opacity-70">{label}</div>
+        {reports.length > 0 && (
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#E4E7EC] text-[11px] uppercase text-[#667085]">
+                  <th className="py-2 pr-4">Tanggal</th>
+                  <th className="py-2 pr-4">Terkirim</th>
+                  <th className="py-2 pr-4">Gagal</th>
+                  <th className="py-2 pr-4">Dijadwalkan Ulang</th>
+                  <th className="py-2 pr-4">BBM</th>
+                  <th className="py-2">Catatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reports.map((r) => (
+                  <tr key={r.id} className="border-b border-[#F7F9FC]">
+                    <td className="py-2 pr-4 font-semibold text-[#101828]">{formatDate(r.reportDate)}</td>
+                    <td className="py-2 pr-4 text-[#16B364]">{r.deliveredCount}</td>
+                    <td className="py-2 pr-4 text-[#F5222D]">{r.failedCount}</td>
+                    <td className="py-2 pr-4 text-[#101828]">{r.rescheduledCount}</td>
+                    <td className="py-2 pr-4 text-[#101828]">{r.fuelLiter != null ? `${r.fuelLiter} L` : '-'}</td>
+                    <td className="py-2 text-[#667085]">{r.notes || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    DISPATCHED: 'bg-cyan-50 text-cyan-700',
-    IN_TRANSIT: 'bg-blue-50 text-blue-700',
-    OUT_FOR_DELIVERY: 'bg-indigo-50 text-indigo-700',
-    DELIVERED: 'bg-green-50 text-green-700',
-    DELIVERY_FAILED: 'bg-red-50 text-red-700',
-  };
-  const labels: Record<string, string> = {
-    DISPATCHED: 'Dikirim', IN_TRANSIT: 'Transit', OUT_FOR_DELIVERY: 'Diantar',
-    DELIVERED: 'Selesai', DELIVERY_FAILED: 'Gagal',
-  };
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${styles[status] || 'bg-gray-50 text-gray-600'}`}>
-      {labels[status] || status}
-    </span>
   );
 }

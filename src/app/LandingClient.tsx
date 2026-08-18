@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { FEATURES, STATS, PRICING_PLANS } from '@/lib/landing-data';
 import DemoRequestForm from './DemoRequestForm';
 import LoginModal from './LoginModal';
