@@ -58,7 +58,6 @@ export default function Sidebar({ role, open, onClose }: { role: string; open?: 
       items: [
         { href: '/reports', label: 'Laporan', icon: <FileText size={18} /> },
         { href: '/analytics', label: 'Analitik', icon: <BarChart3 size={18} /> },
-        { href: '/reports', label: 'Export Data', icon: <Download size={18} /> },
       ],
     },
     {
