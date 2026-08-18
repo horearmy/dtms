@@ -98,13 +98,15 @@ export async function GET(req: NextRequest) {
       return r;
     }
 
-    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, pwdVersion: user.pwdVersion });
+    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, pwdVersion: user.pwdVersion });
 
     const target = user.mustChangePassword
       ? '/account/password?first=1'
       : user.role === 'DRIVER'
         ? '/driver'
-        : '/dashboard';
+        : user.role === 'SUPER_ADMIN'
+          ? '/tenants'
+          : '/dashboard';
     const response = NextResponse.redirect(`${origin}${target}`);
     response.cookies.delete('oauth_state');
     if (user.tenantId) {

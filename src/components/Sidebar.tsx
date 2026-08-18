@@ -23,54 +23,80 @@ import {
   TrendingUp,
   Download,
   MessageSquare,
+  Radar,
+  ClipboardList,
+  ShieldAlert,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type NavItem = { href: string; label: string; icon: React.ReactNode };
 type NavGroup = { title: string; items: NavItem[] };
 
-export default function Sidebar({ role, open, onClose }: { role: string; open?: boolean; onClose?: () => void }) {
+export default function Sidebar({ role, tenantPlan, open, onClose }: { role: string; tenantPlan: string | null; open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const showUsers = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'].includes(role);
   const isSuperAdmin = role === 'SUPER_ADMIN';
+  const showPremium = !isSuperAdmin && tenantPlan !== 'PREMIUM';
 
-  const groups: NavGroup[] = [
-    {
-      title: 'DASHBOARD',
-      items: [
-        { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
-      ],
-    },
-    {
-      title: 'OPERATIONS',
-      items: [
-        { href: '/shipments', label: 'Pengiriman', icon: <Package size={18} /> },
-        { href: '/tracking', label: 'Lacak Pengiriman', icon: <MapPin size={18} /> },
-        { href: '/customers', label: 'Pelanggan', icon: <Users size={18} /> },
-        { href: '/drivers', label: 'Kurir', icon: <Truck size={18} /> },
-        { href: '/vehicles', label: 'Kendaraan', icon: <Car size={18} /> },
-      ],
-    },
-    {
-      title: 'DATA & REPORTING',
-      items: [
-        { href: '/reports', label: 'Laporan', icon: <FileText size={18} /> },
-        { href: '/analytics', label: 'Analitik', icon: <BarChart3 size={18} /> },
-      ],
-    },
-    {
-      title: 'SYSTEM',
-      items: [
-        { href: '/notifications', label: 'Notifikasi', icon: <Bell size={18} /> },
-        { href: '/settings/whatsapp', label: 'Pengaturan', icon: <Settings size={18} /> },
-        ...(showUsers ? [{ href: '/users', label: 'Pengguna', icon: <Shield size={18} /> }] : []),
-        { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
-        ...(isSuperAdmin ? [{ href: '/tenants', label: 'Tenants', icon: <Building2 size={18} /> }] : []),
-      ],
-    },
-  ];
+  const groups: NavGroup[] = isSuperAdmin
+    ? [
+        {
+          title: 'TENANT MANAGEMENT',
+          items: [
+            { href: '/tenants', label: 'Tenants', icon: <Building2 size={18} /> },
+            { href: '/demo-requests', label: 'Permohonan Demo', icon: <ClipboardList size={18} /> },
+          ],
+        },
+        {
+          title: 'SYSTEM',
+          items: [
+            { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
+          ],
+        },
+      ]
+    : [
+        {
+          title: 'DASHBOARD',
+          items: [
+            { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+            { href: '/control-tower', label: 'Control Tower', icon: <Activity size={18} /> },
+          ],
+        },
+        {
+          title: 'OPERATIONS',
+          items: [
+            { href: '/orders', label: 'Orders', icon: <ClipboardList size={18} /> },
+            { href: '/dispatch', label: 'Dispatch Board', icon: <Zap size={18} /> },
+            { href: '/shipments', label: 'Pengiriman', icon: <Package size={18} /> },
+            { href: '/tracking', label: 'Lacak Pengiriman', icon: <MapPin size={18} /> },
+            { href: '/customers', label: 'Pelanggan', icon: <Users size={18} /> },
+            { href: '/drivers', label: 'Kurir', icon: <Truck size={18} /> },
+            { href: '/vehicles', label: 'Kendaraan', icon: <Car size={18} /> },
+            { href: '/map', label: 'Live Tracking Map', icon: <Radar size={18} /> },
+          ],
+        },
+        {
+          title: 'DATA & REPORTING',
+          items: [
+            { href: '/reports', label: 'Laporan', icon: <FileText size={18} /> },
+            { href: '/analytics', label: 'Analitik', icon: <BarChart3 size={18} /> },
+          ],
+        },
+        {
+          title: 'SYSTEM',
+          items: [
+            { href: '/exceptions', label: 'Exceptions', icon: <ShieldAlert size={18} /> },
+            { href: '/sla', label: 'SLA Policies', icon: <TrendingUp size={18} /> },
+            { href: '/notifications', label: 'Notifikasi', icon: <Bell size={18} /> },
+            { href: '/settings/whatsapp', label: 'Pengaturan', icon: <Settings size={18} /> },
+            ...(showUsers ? [{ href: '/users', label: 'Pengguna', icon: <Shield size={18} /> }] : []),
+            { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
+          ],
+        },
+      ];
 
   function toggleGroup(title: string) {
     setCollapsed((prev) => ({ ...prev, [title]: !prev[title] }));
@@ -118,12 +144,7 @@ export default function Sidebar({ role, open, onClose }: { role: string; open?: 
               </button>
               {!collapsed[group.title] && (
                 <div className="mt-0.5 space-y-0.5">
-                  {group.items
-                    .filter((item) => {
-                      if (item.href === '/analytics') return showUsers;
-                      return true;
-                    })
-                    .map((item) => {
+                  {group.items.map((item) => {
                       const active = isActive(item.href);
                       return (
                         <Link
@@ -149,20 +170,22 @@ export default function Sidebar({ role, open, onClose }: { role: string; open?: 
         </nav>
 
         {/* Premium Card */}
-        <div className="mx-3 mb-3">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp size={16} className="text-[#0D6EFD]" />
-              <span className="text-xs font-semibold text-white">Premium</span>
+        {showPremium && (
+          <div className="mx-3 mb-3">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp size={16} className="text-[#0D6EFD]" />
+                <span className="text-xs font-semibold text-white">Premium</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-white/50 mb-3">
+                Tingkatkan pengalaman Anda dengan fitur premium
+              </p>
+              <button className="w-full rounded-lg bg-[#0D6EFD] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#0B5FD5]">
+                Upgrade Sekarang
+              </button>
             </div>
-            <p className="text-[11px] leading-relaxed text-white/50 mb-3">
-              Tingkatkan pengalaman Anda dengan fitur premium
-            </p>
-            <button className="w-full rounded-lg bg-[#0D6EFD] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#0B5FD5]">
-              Upgrade Sekarang
-            </button>
           </div>
-        </div>
+        )}
 
         {/* Footer */}
         <div className="border-t border-white/5 px-5 py-3">

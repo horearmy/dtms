@@ -15,6 +15,7 @@ export type SessionUser = {
   username: string;
   role: string;
   tenantId: string | null;
+  branchId: string | null;
 };
 
 export async function signToken(user: SessionUser & { pwdVersion?: number }) {
@@ -24,6 +25,7 @@ export async function signToken(user: SessionUser & { pwdVersion?: number }) {
     username: user.username,
     role: user.role,
     tenantId: user.tenantId,
+    branchId: user.branchId,
     pwd: user.pwdVersion ?? 1,
   })
     .setProtectedHeader({ alg: 'HS256' })
@@ -41,6 +43,7 @@ export async function verifyToken(token: string): Promise<SessionUser & { pwd: n
       username: payload.username as string,
       role: payload.role as string,
       tenantId: (payload.tenantId as string) ?? null,
+      branchId: (payload.branchId as string) ?? null,
       pwd: (payload.pwd as number) ?? 1,
     };
   } catch {
@@ -57,7 +60,7 @@ export async function getSession(): Promise<SessionUser | null> {
   const user = await prisma.user.findUnique({ where: { id: payload.id } });
   if (!user || user.status !== 'ACTIVE') return null;
   if (user.pwdVersion !== payload.pwd) return null;
-  return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId };
+  return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId };
 }
 
 export async function setSession(user: SessionUser & { pwdVersion?: number }) {

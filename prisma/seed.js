@@ -1,5 +1,73 @@
-const { PrismaClient, ShipmentStatus, ServiceType, Role, GeofenceType } = require('@prisma/client');
+const { PrismaClient, ShipmentStatus, ServiceType, Role, GeofenceType, TenantStatus } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+
+const P = {
+  TENANT: { READ: 'tenant.read', CREATE: 'tenant.create', UPDATE: 'tenant.update', DELETE: 'tenant.delete' },
+  USER: { READ: 'user.read', CREATE: 'user.create', UPDATE: 'user.update', DELETE: 'user.delete' },
+  DRIVER: { READ: 'driver.read', CREATE: 'driver.create', UPDATE: 'driver.update', DELETE: 'driver.delete', ASSIGN: 'driver.assign' },
+  VEHICLE: { READ: 'vehicle.read', CREATE: 'vehicle.create', UPDATE: 'vehicle.update', DELETE: 'vehicle.delete' },
+  CUSTOMER: { READ: 'customer.read', CREATE: 'customer.create', UPDATE: 'customer.update', DELETE: 'customer.delete' },
+  SHIPMENT: { READ: 'shipment.read', CREATE: 'shipment.create', UPDATE: 'shipment.update', CANCEL: 'shipment.cancel', ASSIGN: 'shipment.assign', EXPORT: 'shipment.export' },
+  ORDER: { READ: 'order.read', CREATE: 'order.create', UPDATE: 'order.update', CANCEL: 'order.cancel', APPROVE: 'order.approve' },
+  DELIVERY: { READ: 'delivery.read', DISPATCH: 'delivery.dispatch', START: 'delivery.start', COMPLETE: 'delivery.complete', FAIL: 'delivery.fail', RESCHEDULE: 'delivery.reschedule' },
+  WAREHOUSE: { READ: 'warehouse.read', SCAN: 'warehouse.scan', SORT: 'warehouse.sort', UPDATE: 'warehouse.update' },
+  REPORT: { VIEW: 'report.view', EXPORT: 'report.export' },
+  AUDIT: { READ: 'audit.read' },
+  GEOFENCE: { READ: 'geofence.read', CREATE: 'geofence.create', UPDATE: 'geofence.update', DELETE: 'geofence.delete' },
+  NOTIFICATION: { READ: 'notification.read', SEND: 'notification.send' },
+  ORGANIZATION: { READ: 'organization.read', CREATE: 'organization.create', UPDATE: 'organization.update', DELETE: 'organization.delete' },
+  SETTINGS: { READ: 'settings.read', UPDATE: 'settings.update' },
+};
+const allPerms = Object.values(P).flatMap((r) => Object.values(r));
+
+const ROLE_PERMS = {
+  SUPER_ADMIN: allPerms,
+  ADMIN_OPERASIONAL: [
+    P.USER.READ, P.USER.CREATE, P.USER.UPDATE,
+    P.DRIVER.READ, P.DRIVER.CREATE, P.DRIVER.UPDATE, P.DRIVER.ASSIGN,
+    P.VEHICLE.READ, P.VEHICLE.CREATE, P.VEHICLE.UPDATE,
+    P.CUSTOMER.READ, P.CUSTOMER.CREATE, P.CUSTOMER.UPDATE,
+    P.SHIPMENT.READ, P.SHIPMENT.CREATE, P.SHIPMENT.UPDATE, P.SHIPMENT.CANCEL, P.SHIPMENT.ASSIGN, P.SHIPMENT.EXPORT,
+    P.ORDER.READ, P.ORDER.CREATE, P.ORDER.UPDATE, P.ORDER.CANCEL, P.ORDER.APPROVE,
+    P.DELIVERY.READ, P.DELIVERY.DISPATCH, P.DELIVERY.START, P.DELIVERY.COMPLETE, P.DELIVERY.FAIL, P.DELIVERY.RESCHEDULE,
+    P.WAREHOUSE.READ, P.WAREHOUSE.SCAN, P.WAREHOUSE.SORT,
+    P.REPORT.VIEW, P.REPORT.EXPORT,
+    P.AUDIT.READ, P.GEOFENCE.READ, P.GEOFENCE.CREATE, P.GEOFENCE.UPDATE,
+    P.NOTIFICATION.READ, P.NOTIFICATION.SEND,
+    P.ORGANIZATION.READ, P.ORGANIZATION.CREATE, P.ORGANIZATION.UPDATE,
+    P.SETTINGS.READ, P.SETTINGS.UPDATE,
+  ],
+  DISPATCHER: [
+    P.SHIPMENT.READ, P.SHIPMENT.UPDATE,
+    P.DRIVER.READ, P.DRIVER.ASSIGN, P.VEHICLE.READ,
+    P.DELIVERY.READ, P.DELIVERY.DISPATCH, P.DELIVERY.START, P.DELIVERY.COMPLETE, P.DELIVERY.FAIL, P.DELIVERY.RESCHEDULE,
+    P.CUSTOMER.READ, P.WAREHOUSE.READ, P.REPORT.VIEW, P.NOTIFICATION.READ, P.NOTIFICATION.SEND,
+  ],
+  WAREHOUSE: [
+    P.SHIPMENT.READ, P.SHIPMENT.UPDATE,
+    P.WAREHOUSE.READ, P.WAREHOUSE.SCAN, P.WAREHOUSE.SORT,
+    P.DRIVER.READ, P.CUSTOMER.READ, P.REPORT.VIEW,
+  ],
+  SUPERVISOR: [
+    P.SHIPMENT.READ, P.DRIVER.READ, P.DRIVER.UPDATE,
+    P.VEHICLE.READ, P.VEHICLE.UPDATE,
+    P.DELIVERY.READ, P.WAREHOUSE.READ, P.REPORT.VIEW, P.REPORT.EXPORT, P.AUDIT.READ, P.NOTIFICATION.READ,
+  ],
+  MANAGEMENT: [
+    P.SHIPMENT.READ, P.SHIPMENT.EXPORT, P.DRIVER.READ, P.VEHICLE.READ, P.CUSTOMER.READ,
+    P.DELIVERY.READ, P.WAREHOUSE.READ, P.REPORT.VIEW, P.REPORT.EXPORT, P.NOTIFICATION.READ,
+  ],
+  CUSTOMER_SERVICE: [
+    P.SHIPMENT.READ, P.SHIPMENT.UPDATE, P.ORDER.READ, P.ORDER.UPDATE,
+    P.CUSTOMER.READ, P.CUSTOMER.CREATE, P.CUSTOMER.UPDATE,
+    P.DELIVERY.READ, P.DELIVERY.RESCHEDULE, P.NOTIFICATION.READ, P.NOTIFICATION.SEND, P.REPORT.VIEW,
+  ],
+  DRIVER: [
+    P.SHIPMENT.READ, P.DELIVERY.READ, P.DELIVERY.START, P.DELIVERY.COMPLETE, P.DELIVERY.FAIL,
+    P.WAREHOUSE.READ, P.WAREHOUSE.SCAN,
+  ],
+  CUSTOMER: [P.SHIPMENT.READ, P.NOTIFICATION.READ],
+};
 
 const prisma = new PrismaClient();
 
@@ -27,6 +95,8 @@ const slaDeadlineFor = (service, createdAt) =>
 async function main() {
   console.log('Seeding database DTMS...');
 
+  await prisma.rolePermission.deleteMany();
+  await prisma.permission.deleteMany();
   await prisma.demoRequest.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.notification.deleteMany();
@@ -43,16 +113,26 @@ async function main() {
   await prisma.vehicle.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.hub.deleteMany();
+  await prisma.warehouse.deleteMany();
+  await prisma.department.deleteMany();
+  await prisma.branch.deleteMany();
+  await prisma.company.deleteMany();
   await prisma.tenant.deleteMany();
 
   const tenant = await prisma.tenant.create({
     data: {
       name: 'DTMS Demo',
       slug: 'default',
+      code: 'DTMS',
+      status: TenantStatus.ACTIVE,
       primaryColor: '#2563eb',
       secondaryColor: '#1e40af',
       accentColor: '#3b82f6',
       plan: 'ENTERPRISE',
+      timezone: 'Asia/Jakarta',
+      locale: 'id-ID',
+      currency: 'IDR',
       maxUsers: 100,
       maxDrivers: 100,
       maxShipments: 10000,
@@ -65,10 +145,15 @@ async function main() {
     data: {
       name: 'PT Logistik Nusantara',
       slug: 'logistik-nusantara',
+      code: 'LOGNUS',
+      status: TenantStatus.ACTIVE,
       primaryColor: '#059669',
       secondaryColor: '#047857',
       accentColor: '#10b981',
       plan: 'BUSINESS',
+      timezone: 'Asia/Jakarta',
+      locale: 'id-ID',
+      currency: 'IDR',
       maxUsers: 25,
       maxDrivers: 50,
       maxShipments: 1000,
@@ -76,6 +161,56 @@ async function main() {
   });
 
   const hash = (pw) => bcrypt.hashSync(pw, 10);
+
+  const company = await prisma.company.create({
+    data: { tenantId: tenant.id, name: 'DTMS Logistics', code: 'LOG', city: 'Jakarta', address: 'Jl. Sudirman No. 1', latitude: -6.2088, longitude: 106.8456 },
+  });
+
+  const branch = await prisma.branch.create({
+    data: { tenantId: tenant.id, companyId: company.id, name: 'Cabang Jakarta Pusat', code: 'JKT-PUSAT', city: 'Jakarta', address: 'Jl. Thamrin No. 10', latitude: -6.1865, longitude: 106.8346 },
+  });
+
+  const branchBandung = await prisma.branch.create({
+    data: { tenantId: tenant.id, companyId: company.id, name: 'Cabang Bandung', code: 'BDG', city: 'Bandung', address: 'Jl. Asia Afrika No. 1', latitude: -6.9175, longitude: 107.6191 },
+  });
+
+  await prisma.department.create({ data: { tenantId: tenant.id, companyId: company.id, name: 'Operasional', code: 'OPS' } });
+  await prisma.department.create({ data: { tenantId: tenant.id, companyId: company.id, name: 'Logistik', code: 'LOG' } });
+  await prisma.department.create({ data: { tenantId: tenant.id, companyId: company.id, name: 'Finance', code: 'FIN' } });
+
+  const warehouse = await prisma.warehouse.create({
+    data: { tenantId: tenant.id, branchId: branch.id, name: 'Gudang Pusat Jakarta', code: 'GDC-JKT', city: 'Jakarta', latitude: -6.213, longitude: 106.845, radiusMeters: 800 },
+  });
+
+  const hub = await prisma.hub.create({
+    data: { tenantId: tenant.id, branchId: branchBandung.id, name: 'Hub Bandung', code: 'HUB-BDG', city: 'Bandung', latitude: -6.917, longitude: 107.619, radiusMeters: 800 },
+  });
+
+  // --- Permissions ---
+  const permissionCodes = new Set();
+  Object.values(ROLE_PERMS).forEach((perms) => perms.forEach((p) => permissionCodes.add(p)));
+  const permissionRecords = {};
+  for (const code of permissionCodes) {
+    const [resource, action] = code.split('.');
+    const perm = await prisma.permission.upsert({
+      where: { code },
+      update: {},
+      create: { code, resource, action, label: `${resource}.${action}` },
+    });
+    permissionRecords[code] = perm;
+  }
+
+  for (const [role, perms] of Object.entries(ROLE_PERMS)) {
+    for (const permCode of perms) {
+      const perm = permissionRecords[permCode];
+      if (!perm) continue;
+      await prisma.rolePermission.upsert({
+        where: { permissionId_role_tenantId: { permissionId: perm.id, role, tenantId: tenant.id } },
+        update: {},
+        create: { permissionId: perm.id, role, tenantId: tenant.id },
+      });
+    }
+  }
 
   const superAdmin = await prisma.user.create({
     data: { name: 'Super Admin', username: 'superadmin', passwordHash: hash('admin123'), role: Role.SUPER_ADMIN, email: 'superadmin@dtms.local', tenantId: tenant.id },

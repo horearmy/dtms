@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await prisma.demoRequest.create({
+    const demo = await prisma.demoRequest.create({
       data: {
         name: String(name).slice(0, 100),
         email: String(email).slice(0, 150),
@@ -36,6 +36,20 @@ export async function POST(req: NextRequest) {
         message: message ? String(message).slice(0, 1000) : null,
       },
     });
+
+    const admins = await prisma.user.findMany({
+      where: { role: { in: ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'] }, status: 'ACTIVE' },
+      select: { id: true },
+    });
+
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((a) => ({
+          userId: a.id,
+          message: `Permohonan Demo baru dari ${demo.name} (${demo.company}). Silakan ditindaklanjuti.`,
+        })),
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch {

@@ -7,35 +7,172 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TenantStatus {
+  PROSPECT
+  PENDING_APPROVAL
+  ONBOARDING
+  UAT
+  ACTIVE
+  SUSPENDED
+  GRACE_PERIOD
+  OFFBOARDING
+  ARCHIVED
+}
+
 model Tenant {
-  id              String   @id @default(cuid())
+  id              String       @id @default(cuid())
   name            String
-  slug            String   @unique
+  slug            String       @unique
+  code            String?      @unique
+  status          TenantStatus @default(ACTIVE)
   logoUrl         String?
   faviconUrl      String?
-  primaryColor    String   @default("#2563eb")
-  secondaryColor  String   @default("#1e40af")
-  accentColor     String   @default("#3b82f6")
-  domain          String?  @unique
-  plan            String   @default("FREE")
+  primaryColor    String       @default("#2563eb")
+  secondaryColor  String       @default("#1e40af")
+  accentColor     String       @default("#3b82f6")
+  domain          String?      @unique
+  plan            String       @default("FREE")
+  timezone        String       @default("Asia/Jakarta")
+  locale          String       @default("id-ID")
+  currency        String       @default("IDR")
   contactName     String?
   contactEmail    String?
   contactPhone    String?
-  maxUsers        Int      @default(5)
-  maxDrivers      Int      @default(10)
-  maxShipments    Int      @default(100)
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  maxUsers        Int          @default(5)
+  maxDrivers      Int          @default(10)
+  maxShipments    Int          @default(100)
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
   users           User[]
   customers       Customer[]
   shipments       Shipment[]
   drivers         Driver[]
   vehicles        Vehicle[]
   geofences       Geofence[]
+  companies       Company[]
+  branches        Branch[]
+  warehouses      Warehouse[]
+  rolePermissions RolePermission[]
+  orders          Order[]
+  shipmentEvents  ShipmentEvent[]
+  exceptions      Exception[]
+  slaPolicies     SlaPolicy[]
+  slaEvents       SlaEvent[]
+  integrations    IntegrationConfig[]
+  apiKeys         ApiKey[]
+  webhooks        WebhookSubscription[]
+  files           UploadedFile[]
 
   @@index([slug])
   @@index([domain])
+  @@index([code])
+  @@index([status])
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  code        String?
+  address     String?
+  city        String?
+  postalCode  String?
+  phone       String?
+  email       String?
+  latitude    Float?
+  longitude   Float?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  branches    Branch[]
+  departments Department[]
+
+  @@index([tenantId])
+  @@unique([tenantId, code])
+}
+
+model Branch {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  name        String
+  code        String?
+  address     String?
+  city        String?
+  postalCode  String?
+  phone       String?
+  latitude    Float?
+  longitude   Float?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  warehouses  Warehouse[]
+  hubs        Hub[]
+  users       User[]
+  orders      Order[]
+
+  @@index([tenantId])
+  @@index([companyId])
+  @@unique([tenantId, code])
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  tenantId    String
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  code        String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([companyId])
+}
+
+model Warehouse {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId    String?
+  branch      Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  name        String
+  code        String?
+  address     String?
+  city        String?
+  latitude    Float?
+  longitude   Float?
+  radiusMeters Float  @default(500)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@unique([tenantId, code])
+}
+
+model Hub {
+  id          String   @id @default(cuid())
+  tenantId    String
+  branchId    String
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name        String
+  code        String?
+  address     String?
+  city        String?
+  latitude    Float?
+  longitude   Float?
+  radiusMeters Float  @default(500)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@unique([tenantId, code])
 }
 
 enum Role {
@@ -77,6 +214,58 @@ enum ShipmentStatus {
   RETURNED
 }
 
+enum ShipmentEventType {
+  SHIPMENT_CREATED
+  WAREHOUSE_RECEIVED
+  SORTED
+  ASSIGNED
+  DISPATCHED
+  GPS_STARTED
+  ARRIVED_HUB
+  OUT_FOR_DELIVERY
+  DELIVERED
+  POD_SUBMITTED
+  POD_VERIFIED
+  COMPLETED
+  DELIVERY_FAILED
+  RESCHEDULED
+  RETURNED
+  CANCELLED
+  STATUS_UPDATED
+}
+
+enum ExceptionStatus {
+  OPEN
+  ASSIGNED
+  INVESTIGATING
+  ACTION_REQUIRED
+  RESOLVED
+  VERIFIED
+  CLOSED
+  CANCELLED
+}
+
+enum ExceptionSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ExceptionType {
+  DELIVERY_FAILED
+  ADDRESS_UNREACHABLE
+  CUSTOMER_UNAVAILABLE
+  DAMAGED_GOODS
+  LOST_PACKAGE
+  SLA_BREACH
+  VEHICLE_BREAKDOWN
+  DRIVER_ISSUE
+  ROUTE_DEVIATION
+  WEATHER
+  OTHER
+}
+
 enum ServiceType {
   SAME_DAY
   NEXT_DAY
@@ -90,6 +279,28 @@ enum GeofenceType {
   DESTINATION
 }
 
+enum OrderStatus {
+  DRAFT
+  RECEIVED
+  VALIDATING
+  VALIDATED
+  REJECTED
+  CONFIRMED
+  CANCELLED
+  FULFILLED
+}
+
+enum OrderSource {
+  MANUAL
+  API
+  ERP
+  WMS
+  CRM
+  CSV
+  EDI
+  MARKETPLACE
+}
+
 enum GeofenceEventType {
   ENTER
   EXIT
@@ -99,6 +310,8 @@ model User {
   id                 String         @id @default(cuid())
   tenantId           String?
   tenant             Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId           String?
+  branch             Branch?        @relation(fields: [branchId], references: [id])
   name               String
   username           String         @unique
   passwordHash       String
@@ -117,9 +330,11 @@ model User {
   driver             Driver?
   notifications      Notification[]
   auditLogs          AuditLog[]
+  ownedExceptions    Exception[]
 
   @@index([tenantId])
   @@index([tenantId, username])
+  @@index([branchId])
 }
 
 model Customer {
@@ -177,6 +392,10 @@ model Shipment {
   notifications  Notification[]
   stops          ShipmentStop[]
   scans          WarehouseScan[]
+  order          Order?
+  shipmentEvents ShipmentEvent[]
+  exceptions     Exception[]
+  slaEvents      SlaEvent[]
 
   @@index([tenantId])
 }
@@ -305,6 +524,28 @@ model TrackingEvent {
   createdAt  DateTime      @default(now())
 }
 
+model ShipmentEvent {
+  id             String            @id @default(cuid())
+  tenantId       String?
+  tenant         Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipmentId     String
+  shipment       Shipment          @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  eventType      ShipmentEventType
+  previousStatus ShipmentStatus?
+  newStatus      ShipmentStatus?
+  actorType      String?
+  actorId        String?
+  metadata       String?
+  latitude       Float?
+  longitude      Float?
+  occurredAt     DateTime          @default(now())
+  createdAt      DateTime          @default(now())
+
+  @@index([tenantId])
+  @@index([shipmentId])
+  @@index([createdAt])
+}
+
 model GpsLog {
   id        String   @id @default(cuid())
   driverId  String
@@ -357,6 +598,66 @@ model AuditLog {
   path      String?
   userAgent String?
   createdAt DateTime @default(now())
+}
+
+model Order {
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderNumber    String       @unique
+  source         OrderSource  @default(MANUAL)
+  status         OrderStatus @default(DRAFT)
+  customerId     String?
+  customerName   String
+  customerPhone  String
+  customerEmail  String?
+  senderName     String?
+  senderPhone    String?
+  senderAddress  String?
+  senderCity     String?
+  senderLat      Float?
+  senderLng      Float?
+  destName       String
+  destPhone      String?
+  destAddress    String
+  destCity       String?
+  destLat        Float?
+  destLng        Float?
+  serviceType    ServiceType  @default(REGULAR)
+  weight         Float
+  volume         Float?
+  itemValue      Float?
+  fragile        Boolean      @default(false)
+  notes          String?
+  slaDeadline    DateTime?
+  confirmedAt    DateTime?
+  cancelledAt    DateTime?
+  cancelReason   String?
+  shipmentId     String?      @unique
+  shipment       Shipment?    @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  branchId       String?
+  branch         Branch?      @relation(fields: [branchId], references: [id])
+  createdBy      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  items          OrderItem[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemName  String
+  quantity  Int     @default(1)
+  weight    Float?
+  dimension String?
+
+  @@index([orderId])
 }
 
 model WarehouseScan {
@@ -428,4 +729,208 @@ model DemoRequest {
 
   @@index([status])
   @@index([createdAt])
+}
+
+model Permission {
+  id        String         @id @default(cuid())
+  code      String         @unique
+  resource  String
+  action    String
+  label     String?
+  createdAt DateTime       @default(now())
+  roles     RolePermission[]
+
+  @@index([resource])
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role
+  tenantId     String?
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId     String?
+  createdAt    DateTime @default(now())
+
+  @@unique([permissionId, role, tenantId])
+  @@index([role])
+  @@index([tenantId])
+}
+
+model Exception {
+  id           String            @id @default(cuid())
+  tenantId     String
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipmentId   String?
+  shipment     Shipment?         @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  type         ExceptionType
+  severity     ExceptionSeverity @default(MEDIUM)
+  status       ExceptionStatus   @default(OPEN)
+  title        String
+  description  String?
+  ownerId      String?
+  owner        User?             @relation(fields: [ownerId], references: [id])
+  dueAt        DateTime?
+  resolvedAt   DateTime?
+  resolution   String?
+  createdBy    String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([tenantId])
+  @@index([shipmentId])
+  @@index([status])
+  @@index([severity])
+  @@index([ownerId])
+}
+
+model SlaPolicy {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name           String
+  serviceType    ServiceType @default(REGULAR)
+  originCity     String?
+  destCity       String?
+  priority       Int      @default(0)
+  targetHours    Int
+  cutoffTime     String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  events         SlaEvent[]
+
+  @@index([tenantId])
+  @@index([tenantId, serviceType])
+}
+
+model SlaEvent {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  policyId   String?
+  policy     SlaPolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  status     String   @default("ON_TRACK")
+  deadline   DateTime
+  breachedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([shipmentId])
+  @@index([status])
+}
+
+enum IntegrationType {
+  REST_API
+  WEBHOOK
+  SFTP
+  CSV
+  EDI
+}
+
+model IntegrationConfig {
+  id          String          @id @default(cuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  type        IntegrationType
+  baseUrl     String?
+  active      Boolean         @default(true)
+  config      Json?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  logs        IntegrationLog[]
+  webhooks    WebhookSubscription[]
+
+  @@index([tenantId])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  keyHash   String   @unique
+  keyPrefix String
+  scopes    String[]
+  active    Boolean  @default(true)
+  lastUsed  DateTime?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model UploadedFile {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  objectKey   String   @unique
+  fileName    String
+  mimeType    String
+  size        Int
+  checksum    String?
+  uploadedById String?
+  category    String   @default("general")
+  shipmentId  String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([objectKey])
+  @@index([shipmentId])
+}
+
+model WebhookSubscription {
+  id              String            @id @default(cuid())
+  tenantId        String
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integrationId   String?
+  integration     IntegrationConfig? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+  url             String
+  events          String[]
+  secret          String?
+  active          Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  deliveries      WebhookDelivery[]
+
+  @@index([tenantId])
+}
+
+model WebhookDelivery {
+  id              String              @id @default(cuid())
+  subscriptionId  String
+  subscription    WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  event           String
+  payload         Json
+  statusCode      Int?
+  responseBody    String?
+  attempt         Int                 @default(0)
+  maxAttempts     Int                 @default(3)
+  status          String              @default("PENDING")
+  nextRetryAt     DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime            @default(now())
+
+  @@index([subscriptionId])
+  @@index([status])
+}
+
+model IntegrationLog {
+  id            String            @id @default(cuid())
+  integrationId String
+  integration   IntegrationConfig @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  direction     String            // INBOUND | OUTBOUND
+  method        String?
+  path          String?
+  statusCode    Int?
+  request       Json?
+  response      Json?
+  error         String?
+  durationMs    Int?
+  createdAt     DateTime          @default(now())
+
+  @@index([integrationId])
 }

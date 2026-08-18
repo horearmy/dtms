@@ -60,7 +60,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const body = await req.json();
-  const { name, primaryColor, secondaryColor, accentColor, domain, plan, contactName, contactEmail, contactPhone, maxUsers, maxDrivers, maxShipments, active } = body;
+  const { name, code, status, primaryColor, secondaryColor, accentColor, domain, plan, timezone, locale, currency, contactName, contactEmail, contactPhone, maxUsers, maxDrivers, maxShipments, active } = body;
 
   const existing = await prisma.tenant.findUnique({ where: { id } });
   if (!existing) {
@@ -74,15 +74,27 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
+  if (code && code !== existing.code) {
+    const codeTaken = await prisma.tenant.findUnique({ where: { code } });
+    if (codeTaken) {
+      return NextResponse.json({ error: 'Kode tenant sudah digunakan' }, { status: 409 });
+    }
+  }
+
   const tenant = await prisma.tenant.update({
     where: { id },
     data: {
       ...(name !== undefined && { name: String(name).slice(0, 100) }),
+      ...(code !== undefined && { code: code ? String(code).slice(0, 20) : null }),
+      ...(status !== undefined && { status }),
       ...(primaryColor !== undefined && { primaryColor }),
       ...(secondaryColor !== undefined && { secondaryColor }),
       ...(accentColor !== undefined && { accentColor }),
       ...(domain !== undefined && { domain: domain ? String(domain).slice(0, 100) : null }),
       ...(plan !== undefined && { plan }),
+      ...(timezone !== undefined && { timezone: timezone || 'Asia/Jakarta' }),
+      ...(locale !== undefined && { locale: locale || 'id-ID' }),
+      ...(currency !== undefined && { currency: currency || 'IDR' }),
       ...(contactName !== undefined && { contactName: contactName ? String(contactName).slice(0, 100) : null }),
       ...(contactEmail !== undefined && { contactEmail: contactEmail ? String(contactEmail).slice(0, 150) : null }),
       ...(contactPhone !== undefined && { contactPhone: contactPhone ? String(contactPhone).slice(0, 20) : null }),

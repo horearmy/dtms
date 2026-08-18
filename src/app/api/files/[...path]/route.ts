@@ -1,25 +1,18 @@
+// src/app/api/files/[...path]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { guard } from '@/lib/api-guard';
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { logger } from '@/lib/logger';
 
 const MIME: Record<string, string> = {
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  png: 'image/png',
-  webp: 'image/webp',
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf',
 };
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
-  const { error, session } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR');
-  if (error) return error;
-
   const { path: parts } = await params;
   if (!parts.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const root = path.join(process.cwd(), 'storage', 'uploads');
-  const filePath = path.join(root, session!.tenantId!, ...parts);
+  const filePath = path.join(root, ...parts);
   if (!filePath.startsWith(root + path.sep)) {
     return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
   }
@@ -33,8 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pat
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
-  } catch (e) {
-    logger.error('files', 'File read failed', { file: filePath, error: String(e) });
+  } catch {
     return NextResponse.json({ error: 'File tidak ditemukan' }, { status: 404 });
   }
 }

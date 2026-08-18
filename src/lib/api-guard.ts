@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, type SessionUser } from './auth';
 import { tenantStore } from './prisma';
+import { resolveAccessScope, hasPermission, type AccessScope } from './access-scope';
 
 export async function guard(
   ...roles: string[]
@@ -13,6 +14,24 @@ export async function guard(
     return { session, error: NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 }) };
   }
   return { session, error: null };
+}
+
+export async function guardPermission(
+  permission: string,
+  ...roles: string[]
+): Promise<{ session: SessionUser; scope: AccessScope; error: NextResponse | null }> {
+  const session = await getSession();
+  if (!session) {
+    return { session: null as unknown as SessionUser, scope: null as unknown as AccessScope, error: NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 }) };
+  }
+  if (roles.length > 0 && !roles.includes(session.role)) {
+    return { session, scope: null as unknown as AccessScope, error: NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 }) };
+  }
+  const scope = await resolveAccessScope(session);
+  if (!hasPermission(scope, permission)) {
+    return { session, scope, error: NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 }) };
+  }
+  return { session, scope, error: null };
 }
 
 export async function runWithTenant<T>(tenantId: string | null | undefined, fn: () => Promise<T>): Promise<T> {

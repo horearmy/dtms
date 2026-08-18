@@ -7,12 +7,17 @@ type Tenant = {
   id: string;
   name: string;
   slug: string;
+  code: string | null;
   logoUrl: string | null;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
   domain: string | null;
   plan: string;
+  status: string;
+  timezone: string;
+  locale: string;
+  currency: string;
   active: boolean;
   maxUsers: number;
   maxDrivers: number;
@@ -26,21 +31,23 @@ export default function TenantList() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editTenant, setEditTenant] = useState<Tenant | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
   const [form, setForm] = useState({
-    name: '', slug: '', primaryColor: '#2563eb', secondaryColor: '#1e40af', accentColor: '#3b82f6',
-    domain: '', plan: 'FREE', contactName: '', contactEmail: '', contactPhone: '',
+    name: '', slug: '', code: '', status: 'ACTIVE',
+    primaryColor: '#2563eb', secondaryColor: '#1e40af', accentColor: '#3b82f6',
+    domain: '', plan: 'FREE', timezone: 'Asia/Jakarta', locale: 'id-ID', currency: 'IDR',
+    contactName: '', contactEmail: '', contactPhone: '',
     maxUsers: 5, maxDrivers: 10, maxShipments: 100,
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchTenants();
-  }, []);
+  useEffect(() => { fetchTenants(); }, [statusFilter]);
 
   async function fetchTenants() {
     setLoading(true);
-    const res = await fetch('/api/tenants');
+    const url = statusFilter ? `/api/tenants?status=${statusFilter}` : '/api/tenants';
+    const res = await fetch(url);
     if (res.ok) setTenants(await res.json());
     setLoading(false);
   }
@@ -48,8 +55,10 @@ export default function TenantList() {
   function openCreate() {
     setEditTenant(null);
     setForm({
-      name: '', slug: '', primaryColor: '#2563eb', secondaryColor: '#1e40af', accentColor: '#3b82f6',
-      domain: '', plan: 'FREE', contactName: '', contactEmail: '', contactPhone: '',
+      name: '', slug: '', code: '', status: 'ACTIVE',
+      primaryColor: '#2563eb', secondaryColor: '#1e40af', accentColor: '#3b82f6',
+      domain: '', plan: 'FREE', timezone: 'Asia/Jakarta', locale: 'id-ID', currency: 'IDR',
+      contactName: '', contactEmail: '', contactPhone: '',
       maxUsers: 5, maxDrivers: 10, maxShipments: 100,
     });
     setShowForm(true);
@@ -59,8 +68,9 @@ export default function TenantList() {
   function openEdit(t: Tenant) {
     setEditTenant(t);
     setForm({
-      name: t.name, slug: t.slug, primaryColor: t.primaryColor, secondaryColor: t.secondaryColor,
-      accentColor: t.accentColor, domain: t.domain || '', plan: t.plan,
+      name: t.name, slug: t.slug, code: t.code || '', status: t.status,
+      primaryColor: t.primaryColor, secondaryColor: t.secondaryColor, accentColor: t.accentColor,
+      domain: t.domain || '', plan: t.plan, timezone: t.timezone, locale: t.locale, currency: t.currency,
       contactName: '', contactEmail: '', contactPhone: '',
       maxUsers: t.maxUsers, maxDrivers: t.maxDrivers, maxShipments: t.maxShipments,
     });
@@ -81,17 +91,14 @@ export default function TenantList() {
         body: JSON.stringify({
           ...form,
           domain: form.domain || null,
+          code: form.code || null,
           contactName: form.contactName || null,
           contactEmail: form.contactEmail || null,
           contactPhone: form.contactPhone || null,
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Gagal menyimpan');
-        setSaving(false);
-        return;
-      }
+      if (!res.ok) { setError(data.error || 'Gagal menyimpan'); setSaving(false); return; }
       setShowForm(false);
       fetchTenants();
     } catch {
@@ -116,18 +123,32 @@ export default function TenantList() {
   }
 
   const planBadge = (plan: string) => {
-    const colors: Record<string, string> = {
-      FREE: 'bg-[#F7F9FC] text-[#667085]',
-      STARTER: 'bg-[#0D6EFD]/10 text-[#0D6EFD]',
-      BUSINESS: 'bg-purple-100 text-purple-700',
-      ENTERPRISE: 'bg-amber-100 text-amber-700',
+    const c: Record<string, string> = {
+      FREE: 'bg-[#F7F9FC] text-[#667085]', STARTER: 'bg-[#0D6EFD]/10 text-[#0D6EFD]',
+      BUSINESS: 'bg-purple-100 text-purple-700', ENTERPRISE: 'bg-amber-100 text-amber-700',
     };
-    return colors[plan] || colors.FREE;
+    return c[plan] || c.FREE;
+  };
+
+  const statusBadge = (s: string) => {
+    const c: Record<string, string> = {
+      ACTIVE: 'bg-emerald-100 text-emerald-700', SUSPENDED: 'bg-amber-100 text-amber-700',
+      INACTIVE: 'bg-gray-100 text-gray-600', PENDING: 'bg-blue-100 text-blue-700',
+    };
+    return c[s] || c.ACTIVE;
   };
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex items-center gap-3 justify-end">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
+          <option value="">Semua Status</option>
+          <option value="ACTIVE">Active</option>
+          <option value="PENDING">Pending</option>
+          <option value="SUSPENDED">Suspended</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
         <button onClick={openCreate} className="rounded-lg bg-[#0D6EFD] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0B5FD5]">
           + Tenant Baru
         </button>
@@ -135,12 +156,12 @@ export default function TenantList() {
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
             <h2 className="mb-4 text-lg font-bold text-[#101828]">{editTenant ? 'Edit Tenant' : 'Tenant Baru'}</h2>
             <form onSubmit={save} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#667085]">Nama Perusahaan *</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Nama *</label>
                   <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
                 </div>
@@ -149,6 +170,69 @@ export default function TenantList() {
                   <input type="text" required pattern="[a-z0-9-]+" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })}
                     disabled={!!editTenant}
                     className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none disabled:bg-[#F7F9FC]" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Kode</label>
+                  <input type="text" maxLength={20} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })}
+                    placeholder="DTMS"
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Status</label>
+                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
+                    <option value="ACTIVE">Active</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="SUSPENDED">Suspended</option>
+                    <option value="INACTIVE">Inactive</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Plan</label>
+                  <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })}
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
+                    <option value="FREE">Free</option>
+                    <option value="STARTER">Starter</option>
+                    <option value="BUSINESS">Business</option>
+                    <option value="ENTERPRISE">Enterprise</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Timezone</label>
+                  <select value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })}
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
+                    <option value="Asia/Jakarta">WIB (Asia/Jakarta)</option>
+                    <option value="Asia/Makassar">WITA (Asia/Makassar)</option>
+                    <option value="Asia/Jayapura">WIT (Asia/Jayapura)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Mata Uang</label>
+                  <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
+                    <option value="IDR">IDR</option>
+                    <option value="USD">USD</option>
+                    <option value="SGD">SGD</option>
+                    <option value="MYR">MYR</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Domain</label>
+                  <input type="text" value={form.domain} onChange={(e) => setForm({ ...form, domain: e.target.value })}
+                    placeholder="logistik.example.com"
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Locale</label>
+                  <select value={form.locale} onChange={(e) => setForm({ ...form, locale: e.target.value })}
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
+                    <option value="id-ID">Indonesia (id-ID)</option>
+                    <option value="en-US">English (en-US)</option>
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
@@ -168,24 +252,6 @@ export default function TenantList() {
                     className="h-10 w-full cursor-pointer rounded-lg border border-[#E4E7EC]" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#667085]">Domain</label>
-                  <input type="text" value={form.domain} onChange={(e) => setForm({ ...form, domain: e.target.value })}
-                    placeholder="logistik.example.com"
-                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#667085]">Plan</label>
-                  <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })}
-                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
-                    <option value="FREE">Free</option>
-                    <option value="STARTER">Starter</option>
-                    <option value="BUSINESS">Business</option>
-                    <option value="ENTERPRISE">Enterprise</option>
-                  </select>
-                </div>
-              </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[#667085]">Max Users</label>
@@ -198,7 +264,7 @@ export default function TenantList() {
                     className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#667085]">Max Shipments/bln</label>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Max Kiriman/bulan</label>
                   <input type="number" min={1} value={form.maxShipments} onChange={(e) => setForm({ ...form, maxShipments: +e.target.value })}
                     className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
                 </div>
@@ -223,9 +289,9 @@ export default function TenantList() {
             <tr className="bg-[#F7F9FC] text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
               <th className="px-4 py-3">Tenant</th>
               <th className="px-4 py-3">Plan</th>
-              <th className="px-4 py-3">Branding</th>
-              <th className="px-4 py-3">Usage</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Lokasi</th>
+              <th className="px-4 py-3">Usage</th>
               <th className="px-4 py-3">Aksi</th>
             </tr>
           </thead>
@@ -239,27 +305,23 @@ export default function TenantList() {
                 <td className="px-4 py-3">
                   <Link href={`/tenants/${t.id}`} className="block hover:opacity-80">
                     <div className="font-semibold text-[#0D6EFD] hover:underline">{t.name}</div>
-                    <div className="text-xs text-[#667085]">{t.slug}{t.domain ? ` · ${t.domain}` : ''}</div>
+                    <div className="text-xs text-[#667085]">{t.code ? `${t.code} · ` : ''}{t.slug}{t.domain ? ` · ${t.domain}` : ''}</div>
                   </Link>
                 </td>
                 <td className="px-4 py-3">
                   <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${planBadge(t.plan)}`}>{t.plan}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-4 w-4 rounded" style={{ backgroundColor: t.primaryColor }} />
-                    <span className="h-4 w-4 rounded" style={{ backgroundColor: t.secondaryColor }} />
-                    <span className="h-4 w-4 rounded" style={{ backgroundColor: t.accentColor }} />
-                  </div>
+                  <button onClick={() => toggleActive(t.id, t.active)}
+                    className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge(t.status)}`}>
+                    {t.status}
+                  </button>
+                </td>
+                <td className="px-4 py-3 text-xs text-[#667085]">
+                  {t.timezone?.replace('Asia/', '')} · {t.currency}
                 </td>
                 <td className="px-4 py-3 text-xs text-[#667085]">
                   {t._count.users}/{t.maxUsers} user · {t._count.shipments}/{t.maxShipments} kiriman
-                </td>
-                <td className="px-4 py-3">
-                  <button onClick={() => toggleActive(t.id, t.active)}
-                    className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${t.active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                    {t.active ? 'Aktif' : 'Nonaktif'}
-                  </button>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">

@@ -16,7 +16,7 @@ type AnyArgs = Record<string, any>;
 const TENANT_SCOPED = new Set([
   'user', 'customer', 'shipment', 'shipmentStop', 'shipmentItem',
   'driver', 'vehicle', 'vehicleMaintenance', 'dailyReport',
-  'deliveryAssignment', 'trackingEvent', 'gpsLog', 'proofOfDelivery',
+  'trackingEvent', 'proofOfDelivery',
 ]);
 
 function addTenantFilter(args: AnyArgs, tenantId: string | null): AnyArgs {
@@ -96,9 +96,7 @@ export const prisma = basePrisma.$extends({
     vehicle: modelExtension('vehicle'),
     vehicleMaintenance: modelExtension('vehicleMaintenance'),
     dailyReport: modelExtension('dailyReport'),
-    deliveryAssignment: modelExtension('deliveryAssignment'),
     trackingEvent: modelExtension('trackingEvent'),
-    gpsLog: modelExtension('gpsLog'),
     proofOfDelivery: modelExtension('proofOfDelivery'),
   },
 });

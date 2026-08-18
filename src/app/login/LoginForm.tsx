@@ -36,7 +36,7 @@ function LoginFormInner() {
   }, []);
 
   async function finishLogin(data: { mustChangePassword?: boolean; role?: string }) {
-    const target = data.mustChangePassword ? '/account/password?first=1' : data.role === 'DRIVER' ? '/driver' : '/dashboard';
+    const target = data.mustChangePassword ? '/account/password?first=1' : data.role === 'DRIVER' ? '/driver' : data.role === 'SUPER_ADMIN' ? '/tenants' : '/dashboard';
     router.push(target);
     router.refresh();
   }

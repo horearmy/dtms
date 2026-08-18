@@ -42,7 +42,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const ip = clientIp(req);
 
-  const PUBLIC_PATHS = ['/', '/login', '/tracking', '/features', '/pricing', '/demo-request'];
+  const PUBLIC_PATHS = ['/', '/login', '/tracking', '/features', '/pricing', '/demo-request', '/track'];
   const isPublicPage = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
   const isTrackingApi = pathname.startsWith('/api/tracking/');
   const isDemoRequestApi = pathname === '/api/demo-request';
@@ -76,10 +76,17 @@ export async function middleware(req: NextRequest) {
   const isDriverRoute = pathname === '/driver' || pathname.startsWith('/driver/');
   const isOpsDash = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
   const isUsersRoute = pathname === '/users' || pathname.startsWith('/users/');
+  const isSuperAdminOnlyRoute = pathname === '/tenants' || pathname.startsWith('/tenants/') || pathname === '/demo-requests' || pathname.startsWith('/demo-requests/') || pathname === '/audit' || pathname.startsWith('/audit/') || pathname === '/account' || pathname.startsWith('/account/');
+  const isOperationalRoute = !isSuperAdminOnlyRoute && !isDriverRoute && pathname !== '/tracking' && pathname !== '/login' && !pathname.startsWith('/tracking/') && !pathname.startsWith('/api/');
 
   try {
     const { payload } = await jwtVerify(token, secret);
     const role = payload.role as string;
+    if (role === 'SUPER_ADMIN' && isOperationalRoute) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/tenants';
+      return NextResponse.redirect(url);
+    }
     if (isDriverRoute && role !== 'DRIVER') {
       const url = req.nextUrl.clone();
       url.pathname = '/dashboard';
@@ -105,6 +112,7 @@ export const config = {
   matcher: [
     '/api/:path*',
     '/dashboard/:path*',
+    '/control-tower/:path*',
     '/shipments/:path*',
     '/drivers/:path*',
     '/vehicles/:path*',
@@ -119,5 +127,11 @@ export const config = {
     '/settings/:path*',
     '/tenants/:path*',
     '/warehouse/:path*',
+    '/orders/:path*',
+    '/dispatch/:path*',
+    '/exceptions/:path*',
+    '/sla/:path*',
+    '/demo-requests/:path*',
+    '/health/:path*',
   ],
 };

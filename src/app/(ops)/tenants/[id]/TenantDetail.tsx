@@ -8,6 +8,7 @@ type TenantData = {
   id: string;
   name: string;
   slug: string;
+  code: string | null;
   logoUrl: string | null;
   faviconUrl: string | null;
   primaryColor: string;
@@ -15,6 +16,10 @@ type TenantData = {
   accentColor: string;
   domain: string | null;
   plan: string;
+  status: string;
+  timezone: string;
+  locale: string;
+  currency: string;
   contactName: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
@@ -62,6 +67,11 @@ const PLAN_COLORS: Record<string, string> = {
   BUSINESS: 'bg-purple-100 text-purple-700', ENTERPRISE: 'bg-amber-100 text-amber-700',
 };
 
+const TENANT_STATUS_COLORS: Record<string, string> = {
+  ACTIVE: 'bg-emerald-100 text-emerald-700', SUSPENDED: 'bg-amber-100 text-amber-700',
+  INACTIVE: 'bg-gray-100 text-gray-600', PENDING: 'bg-blue-100 text-blue-700',
+};
+
 function UsageBar({ used, max, label }: { used: number; max: number; label: string }) {
   const pct = max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0;
   const barColor = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-yellow-500' : 'bg-[#0D6EFD]';
@@ -107,13 +117,16 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-[#101828]">{tenant.name}</h1>
-          <p className="text-sm text-[#667085]">{tenant.slug} {tenant.domain ? `· ${tenant.domain}` : ''}</p>
+          <p className="text-sm text-[#667085]">{tenant.code ? `${tenant.code} · ` : ''}{tenant.slug}{tenant.domain ? ` · ${tenant.domain}` : ''}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={toggleActive}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${tenant.active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
             {tenant.active ? 'Aktif' : 'Nonaktif'}
           </button>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${TENANT_STATUS_COLORS[tenant.status] || TENANT_STATUS_COLORS.ACTIVE}`}>
+            {tenant.status}
+          </span>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PLAN_COLORS[tenant.plan] || PLAN_COLORS.FREE}`}>
             {tenant.plan}
           </span>
@@ -126,6 +139,14 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
           <span className="h-6 w-6 rounded-lg border border-[#E4E7EC]" style={{ backgroundColor: tenant.primaryColor }} title="Primary" />
           <span className="h-6 w-6 rounded-lg border border-[#E4E7EC]" style={{ backgroundColor: tenant.secondaryColor }} title="Secondary" />
           <span className="h-6 w-6 rounded-lg border border-[#E4E7EC]" style={{ backgroundColor: tenant.accentColor }} title="Accent" />
+        </div>
+        <div className="h-6 w-px bg-[#E4E7EC]" />
+        <div className="text-xs text-[#667085]">
+          Timezone: <span className="font-medium text-[#101828]">{tenant.timezone?.replace('Asia/', '')}</span>
+        </div>
+        <div className="h-6 w-px bg-[#E4E7EC]" />
+        <div className="text-xs text-[#667085]">
+          Locale: <span className="font-medium text-[#101828]">{tenant.locale}</span> · <span className="font-medium text-[#101828]">{tenant.currency}</span>
         </div>
         <div className="h-6 w-px bg-[#E4E7EC]" />
         <div className="text-xs text-[#667085]">
