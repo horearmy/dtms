@@ -7,8 +7,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'DRIVER', 'CUSTOMER_SERVICE');
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
-    const body = await req.json();
-    const { receiverName, signature, photo, notes, lat, lng } = body || {};
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Body tidak valid' }, { status: 400 });
+    }
+    const receiverName = String(body.receiverName || '');
+    const signature = typeof body.signature === 'string' ? body.signature : null;
+    const photo = typeof body.photo === 'string' ? body.photo : null;
+    const notes = String(body.notes || '');
+    const lat = typeof body.lat === 'number' ? body.lat : null;
+    const lng = typeof body.lng === 'number' ? body.lng : null;
 
     const shipment = await prisma.shipment.findUnique({ where: { id }, include: { receiver: true } });
     if (!shipment) return NextResponse.json({ error: 'Shipment tidak ditemukan' }, { status: 404 });
@@ -24,7 +34,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    // Validasi jika role DRIVER: harus merupakan driver yang ditugaskan
     if (session?.role === 'DRIVER') {
       const driver = await prisma.driver.findUnique({ where: { userId: session.id } });
       const assignment = await prisma.deliveryAssignment.findFirst({
@@ -35,42 +44,47 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.proofOfDelivery.upsert({
-        where: { shipmentId: id },
-        create: {
-          shipmentId: id,
-          receiverName: receiverName || shipment.receiver.name,
-          signature: signature || null,
-          photo: photo || null,
-          latitude: lat ?? null,
-          longitude: lng ?? null,
-          notes: notes || null,
-        },
-        update: {
-          receiverName: receiverName || shipment.receiver.name,
-          signature: signature || undefined,
-          photo: photo || undefined,
-          latitude: lat ?? undefined,
-          longitude: lng ?? undefined,
-          notes: notes || undefined,
-        },
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.proofOfDelivery.upsert({
+          where: { shipmentId: id },
+          create: {
+            shipmentId: id,
+            receiverName: receiverName || shipment.receiver.name,
+            signature: signature || null,
+            photo: photo || null,
+            latitude: lat ?? null,
+            longitude: lng ?? null,
+            notes: notes || null,
+          },
+          update: {
+            receiverName: receiverName || shipment.receiver.name,
+            signature: signature || undefined as string | undefined,
+            photo: photo || undefined as string | undefined,
+            latitude: lat ?? undefined,
+            longitude: lng ?? undefined,
+            notes: notes || undefined as string | undefined,
+          },
+        });
+        await tx.shipment.update({ where: { id }, data: { status: 'DELIVERED' } });
+        await tx.trackingEvent.create({
+          data: {
+            shipmentId: id,
+            status: 'DELIVERED',
+            latitude: lat ?? null,
+            longitude: lng ?? null,
+            notes: 'POD diterima: ' + (receiverName || shipment.receiver.name),
+            createdBy: session?.id,
+          },
+        });
+        await tx.notification.create({
+          data: { shipmentId: id, message: `${shipment.trackingNumber} telah diterima oleh ${receiverName || shipment.receiver.name}` },
+        });
       });
-      await tx.shipment.update({ where: { id }, data: { status: 'DELIVERED' } });
-      await tx.trackingEvent.create({
-        data: {
-          shipmentId: id,
-          status: 'DELIVERED',
-          latitude: lat ?? null,
-          longitude: lng ?? null,
-          notes: 'POD diterima: ' + (receiverName || shipment.receiver.name),
-          createdBy: session?.id,
-        },
-      });
-      await tx.notification.create({
-        data: { shipmentId: id, message: `${shipment.trackingNumber} telah diterima oleh ${receiverName || shipment.receiver.name}` },
-      });
-    });
+    } catch (txErr) {
+      console.error('[POD] Transaction error:', txErr);
+      return NextResponse.json({ error: 'Gagal menyimpan POD' }, { status: 500 });
+    }
 
     await logAudit(session, 'POD_COMPLETE', 'SHIPMENT', { newData: { trackingNumber: shipment.trackingNumber, receiver: receiverName || shipment.receiver.name } }, req);
     return NextResponse.json({ ok: true });
