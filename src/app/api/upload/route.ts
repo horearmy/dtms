@@ -2,19 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api-guard';
 import { prisma } from '@/lib/prisma';
-import { mkdir, writeFile } from 'fs/promises';
-import path from 'path';
-import { randomBytes, createHash } from 'crypto';
+import { uploadFile, getFileUrl } from '@/lib/storage';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_BYTES = 10 * 1024 * 1024;
-
-function extOf(type: string) {
-  if (type === 'image/png') return 'png';
-  if (type === 'image/webp') return 'webp';
-  if (type === 'application/pdf') return 'pdf';
-  return 'jpg';
-}
 
 export async function POST(req: NextRequest) {
   const { session, error } = await guard();
@@ -36,25 +27,25 @@ export async function POST(req: NextRequest) {
   }
 
   const tenantId = session?.tenantId || 'public';
-  const fileId = randomBytes(8).toString('hex');
-  const ext = extOf(file.type);
-  const filename = `${Date.now()}-${fileId}.${ext}`;
-  const objectKey = `${tenantId}/${category}/${filename}`;
-
-  const dir = path.join(process.cwd(), 'storage', 'uploads', tenantId, category);
-  await mkdir(dir, { recursive: true });
   const buf = Buffer.from(await file.arrayBuffer());
-  const checksum = createHash('md5').update(buf).digest('hex');
-  await writeFile(path.join(dir, filename), buf);
+
+  const result = await uploadFile({
+    tenantId,
+    category,
+    entityId: shipmentId || undefined,
+    fileName: file.name,
+    mimeType: file.type,
+    buffer: buf,
+  });
 
   const record = await prisma.uploadedFile.create({
     data: {
       tenantId: session?.tenantId || null,
-      objectKey,
+      objectKey: result.key,
       fileName: file.name,
       mimeType: file.type,
       size: file.size,
-      checksum,
+      checksum: result.checksum,
       uploadedById: session?.id || null,
       category,
       shipmentId,
@@ -63,7 +54,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     id: record.id,
-    url: `/api/files/${objectKey}`,
+    url: getFileUrl(result.key),
     fileName: file.name,
     size: file.size,
     mimeType: file.type,

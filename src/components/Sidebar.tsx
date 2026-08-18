@@ -27,6 +27,8 @@ import {
   ClipboardList,
   ShieldAlert,
   Activity,
+  Plug,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -91,9 +93,11 @@ export default function Sidebar({ role, tenantPlan, open, onClose }: { role: str
             { href: '/exceptions', label: 'Exceptions', icon: <ShieldAlert size={18} /> },
             { href: '/sla', label: 'SLA Policies', icon: <TrendingUp size={18} /> },
             { href: '/notifications', label: 'Notifikasi', icon: <Bell size={18} /> },
+            { href: '/integrations', label: 'Integrations', icon: <Plug size={18} /> },
             { href: '/settings/whatsapp', label: 'Pengaturan', icon: <Settings size={18} /> },
             ...(showUsers ? [{ href: '/users', label: 'Pengguna', icon: <Shield size={18} /> }] : []),
             { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
+            ...(showUsers ? [] : [{ href: '/billing', label: 'Billing', icon: <CreditCard size={18} /> }]),
           ],
         },
       ];

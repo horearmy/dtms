@@ -1,0 +1,202 @@
+// src/lib/storage.ts
+// Object storage abstraction — S3/MinIO with local filesystem fallback.
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+
+const STORAGE_TYPE = process.env.STORAGE_TYPE || 'local'; // 's3' | 'local'
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'storage', 'uploads');
+
+// ─── S3 Config ───────────────────────────────────────────
+const S3_CONFIG = {
+  endpoint: process.env.S3_ENDPOINT || '',
+  bucket: process.env.S3_BUCKET || 'dtms-uploads',
+  region: process.env.S3_REGION || 'us-east-1',
+  accessKeyId: process.env.S3_ACCESS_KEY || '',
+  secretAccessKey: process.env.S3_SECRET_KEY || '',
+  forcePathStyle: true,
+};
+
+// ─── Types ───────────────────────────────────────────────
+interface StorageResult {
+  key: string;
+  url: string;
+  size: number;
+  mimeType: string;
+  checksum: string;
+}
+
+interface UploadOptions {
+  tenantId: string;
+  category: string; // 'pod', 'signature', 'vehicle', 'document'
+  entityId?: string;
+  fileName: string;
+  mimeType: string;
+  buffer: Buffer;
+}
+
+// ─── Public API ──────────────────────────────────────────
+export async function uploadFile(opts: UploadOptions): Promise<StorageResult> {
+  const key = buildKey(opts.tenantId, opts.category, opts.entityId, opts.fileName);
+  const checksum = crypto.createHash('sha256').update(opts.buffer).digest('hex');
+
+  if (STORAGE_TYPE === 's3') {
+    return uploadToS3(key, opts.buffer, opts.mimeType, checksum);
+  }
+  return uploadToLocal(key, opts.buffer, opts.mimeType, checksum);
+}
+
+export async function getFile(key: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  if (STORAGE_TYPE === 's3') {
+    return getFromS3(key);
+  }
+  return getFromLocal(key);
+}
+
+export async function deleteFile(key: string): Promise<boolean> {
+  if (STORAGE_TYPE === 's3') {
+    return deleteFromS3(key);
+  }
+  return deleteFromLocal(key);
+}
+
+export function getFileUrl(key: string): string {
+  if (STORAGE_TYPE === 's3') {
+    return `${S3_CONFIG.endpoint}/${S3_CONFIG.bucket}/${key}`;
+  }
+  return `/api/files/${key}`;
+}
+
+// ─── Key Builder ─────────────────────────────────────────
+function buildKey(tenantId: string, category: string, entityId: string | undefined, fileName: string): string {
+  const ext = path.extname(fileName);
+  const hash = crypto.randomBytes(8).toString('hex');
+  const date = new Date().toISOString().slice(0, 10);
+  return `tenant/${tenantId}/${category}/${date}/${entityId || 'general'}/${hash}${ext}`;
+}
+
+// ─── Local Storage ───────────────────────────────────────
+async function uploadToLocal(key: string, buffer: Buffer, mimeType: string, checksum: string): Promise<StorageResult> {
+  const fullPath = path.join(UPLOAD_DIR, key);
+  const dir = path.dirname(fullPath);
+
+  await fs.promises.mkdir(dir, { recursive: true });
+  await fs.promises.writeFile(fullPath, buffer);
+
+  return { key, url: `/api/files/${key}`, size: buffer.length, mimeType, checksum };
+}
+
+async function getFromLocal(key: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  try {
+    const fullPath = path.join(UPLOAD_DIR, key);
+    const buffer = await fs.promises.readFile(fullPath);
+    const mimeType = getMimeType(key);
+    return { buffer, mimeType };
+  } catch {
+    return null;
+  }
+}
+
+async function deleteFromLocal(key: string): Promise<boolean> {
+  try {
+    const fullPath = path.join(UPLOAD_DIR, key);
+    await fs.promises.unlink(fullPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── S3 Storage (AWS SDK v3-compatible) ──────────────────
+async function uploadToS3(key: string, buffer: Buffer, mimeType: string, checksum: string): Promise<StorageResult> {
+  // Dynamic import to avoid loading AWS SDK if not needed
+  const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+
+  const client = new S3Client({
+    endpoint: S3_CONFIG.endpoint,
+    region: S3_CONFIG.region,
+    credentials: {
+      accessKeyId: S3_CONFIG.accessKeyId,
+      secretAccessKey: S3_CONFIG.secretAccessKey,
+    },
+    forcePathStyle: S3_CONFIG.forcePathStyle,
+  });
+
+  await client.send(new PutObjectCommand({
+    Bucket: S3_CONFIG.bucket,
+    Key: key,
+    Body: buffer,
+    ContentType: mimeType,
+    ChecksumSHA256: checksum,
+  }));
+
+  const url = `${S3_CONFIG.endpoint}/${S3_CONFIG.bucket}/${key}`;
+  return { key, url, size: buffer.length, mimeType, checksum };
+}
+
+async function getFromS3(key: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  try {
+    const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
+
+    const client = new S3Client({
+      endpoint: S3_CONFIG.endpoint,
+      region: S3_CONFIG.region,
+      credentials: {
+        accessKeyId: S3_CONFIG.accessKeyId,
+        secretAccessKey: S3_CONFIG.secretAccessKey,
+      },
+      forcePathStyle: S3_CONFIG.forcePathStyle,
+    });
+
+    const res = await client.send(new GetObjectCommand({ Bucket: S3_CONFIG.bucket, Key: key }));
+    const stream = res.Body;
+    if (!stream) return null;
+
+    const chunks: Uint8Array[] = [];
+    const reader = stream.transformToWebStream().getReader();
+    let done = false;
+    while (!done) {
+      const result = await reader.read();
+      done = result.done;
+      if (result.value) chunks.push(result.value);
+    }
+
+    const buffer = Buffer.concat(chunks);
+    const mimeType = getMimeType(key);
+    return { buffer, mimeType };
+  } catch {
+    return null;
+  }
+}
+
+async function deleteFromS3(key: string): Promise<boolean> {
+  try {
+    const { S3Client, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+
+    const client = new S3Client({
+      endpoint: S3_CONFIG.endpoint,
+      region: S3_CONFIG.region,
+      credentials: {
+        accessKeyId: S3_CONFIG.accessKeyId,
+        secretAccessKey: S3_CONFIG.secretAccessKey,
+      },
+      forcePathStyle: S3_CONFIG.forcePathStyle,
+    });
+
+    await client.send(new DeleteObjectCommand({ Bucket: S3_CONFIG.bucket, Key: key }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Helpers ─────────────────────────────────────────────
+function getMimeType(key: string): string {
+  const ext = path.extname(key).toLowerCase();
+  const map: Record<string, string> = {
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+    '.gif': 'image/gif', '.webp': 'image/webp', '.pdf': 'application/pdf',
+    '.csv': 'text/csv', '.json': 'application/json',
+  };
+  return map[ext] || 'application/octet-stream';
+}

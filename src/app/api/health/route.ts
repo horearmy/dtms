@@ -3,6 +3,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStats } from '@/lib/job-queue';
+import { collectSystemMetrics } from '@/lib/metrics';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +31,13 @@ export async function GET() {
 
   // Uptime
   const uptime = Math.round(process.uptime());
+
+  // Collect metrics
+  collectSystemMetrics();
+
+  if (!healthy) {
+    logger.warn('Health check degraded', { checks });
+  }
 
   return NextResponse.json(
     { status: healthy ? 'healthy' : 'degraded', uptime, checks, timestamp: new Date().toISOString() },
