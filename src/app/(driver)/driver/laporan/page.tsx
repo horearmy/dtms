@@ -59,21 +59,27 @@ function TaskLaporCard({ task, onDone }: { task: Task; onDone: () => void }) {
       lat = pos.lat;
       lng = pos.lng;
     } catch {}
-    const res = await fetch(`/api/shipments/${s.id}/events`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        status: step.status,
-        notes: `Laporan kedatangan: ${arrivalNote.trim() || step.label}`,
-        lat,
-        lng,
-      }),
-    });
-    if (!res.ok) setMsg((await res.json()).error || 'Gagal mengirim laporan');
-    else {
-      setMsg('Laporan kedatangan terkirim');
-      setArrivalNote('');
-      setTimeout(onDone, 600);
+    try {
+      const res = await fetch(`/api/shipments/${s.id}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: step.status,
+          notes: `Laporan kedatangan: ${arrivalNote.trim() || step.label}`,
+          lat,
+          lng,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Gagal mengirim laporan' }));
+        setMsg(data.error || 'Gagal mengirim laporan');
+      } else {
+        setMsg('Laporan kedatangan terkirim');
+        setArrivalNote('');
+        setTimeout(onDone, 600);
+      }
+    } catch {
+      setMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
     setBusy(false);
   }
@@ -83,16 +89,22 @@ function TaskLaporCard({ task, onDone }: { task: Task; onDone: () => void }) {
     if (busy) return;
     setBusy(true);
     setMsg('');
-    const { lat, lng } = await getGPS();
-    const res = await fetch(`/api/shipments/${s.id}/pod`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ receiverName, signature, photo, notes, lat, lng }),
-    });
-    if (!res.ok) setMsg((await res.json()).error || 'Gagal menyimpan laporan');
-    else {
-      setMsg('Berhasil! Laporan delivery terkirim.');
-      setTimeout(onDone, 600);
+    try {
+      const { lat, lng } = await getGPS();
+      const res = await fetch(`/api/shipments/${s.id}/pod`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receiverName, signature, photo, notes, lat, lng }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Gagal menyimpan laporan' }));
+        setMsg(data.error || 'Gagal menyimpan laporan');
+      } else {
+        setMsg('Berhasil! Laporan delivery terkirim.');
+        setTimeout(onDone, 600);
+      }
+    } catch {
+      setMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
     setBusy(false);
   }

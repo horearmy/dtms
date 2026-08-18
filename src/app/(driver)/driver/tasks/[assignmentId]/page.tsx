@@ -82,15 +82,19 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
 
   async function load() {
     setLoading(true);
-    const res = await fetch(`/api/driver/tasks/${assignmentId}`);
-    if (!res.ok) {
-      setErr('Tugas tidak ditemukan');
-      setLoading(false);
-      return;
+    try {
+      const res = await fetch(`/api/driver/tasks/${assignmentId}`);
+      if (!res.ok) {
+        setErr('Tugas tidak ditemukan');
+        setLoading(false);
+        return;
+      }
+      const data = (await res.json()).assignment;
+      setTask(data);
+      setReceiverName(data.shipment.receiver.name);
+    } catch {
+      setErr('Gagal terhubung ke server');
     }
-    const data = (await res.json()).assignment;
-    setTask(data);
-    setReceiverName(data.shipment.receiver.name);
     setLoading(false);
   }
   useEffect(() => { load(); loadDriverStatus(); }, [assignmentId]);
@@ -105,15 +109,21 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
 
   async function submitPOD(e: React.FormEvent) {
     e.preventDefault();
-    const { lat, lng } = await getGPS();
     setBusy(true);
-    const res = await fetch(`/api/shipments/${task!.shipment.id}/pod`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ receiverName, signature, photo, notes, lat, lng }),
-    });
-    if (!res.ok) setMsg((await res.json()).error || 'Gagal menyimpan POD');
-    else setMsg('Berhasil! Barang ditandai terkirim.');
+    try {
+      const { lat, lng } = await getGPS();
+      const res = await fetch(`/api/shipments/${task!.shipment.id}/pod`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receiverName, signature, photo, notes, lat, lng }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Gagal menyimpan POD' }));
+        setMsg(data.error || 'Gagal menyimpan POD');
+      } else setMsg('Berhasil! Barang ditandai terkirim.');
+    } catch {
+      setMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
+    }
     setBusy(false);
     await load();
   }
@@ -149,12 +159,16 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
     } catch {
       // lokasi opsional
     }
-    const res = await updateStatus(step.status, `Cek-in driver: ${step.label}`, lat, lng);
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: 'Gagal memperbarui status' }));
-      setMsg(error.error || 'Gagal memperbarui status');
-    } else {
-      setMsg('Status diperbarui');
+    try {
+      const res = await updateStatus(step.status, `Cek-in driver: ${step.label}`, lat, lng);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Gagal memperbarui status' }));
+        setMsg(error.error || 'Gagal memperbarui status');
+      } else {
+        setMsg('Status diperbarui');
+      }
+    } catch {
+      setMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
     setBusy(false);
     await load();

@@ -50,8 +50,10 @@ export default function DriverHomePage() {
   const [savingReport, setSavingReport] = useState(false);
 
   async function loadReports() {
-    const res = await fetch('/api/driver/daily-report');
-    if (res.ok) setReports((await res.json()).reports || []);
+    try {
+      const res = await fetch('/api/driver/daily-report');
+      if (res.ok) setReports((await res.json()).reports || []);
+    } catch {}
   }
 
   useEffect(() => {
@@ -73,27 +75,33 @@ export default function DriverHomePage() {
     e.preventDefault();
     setSavingReport(true);
     setReportMsg('');
-    const res = await fetch('/api/driver/daily-report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        reportDate,
-        deliveredCount,
-        failedCount,
-        rescheduledCount,
-        fuelLiter,
-        notes: reportNotes,
-      }),
-    });
-    if (!res.ok) setReportMsg((await res.json()).error || 'Gagal menyimpan laporan');
-    else {
-      setReportMsg('Laporan harian tersimpan');
-      setDeliveredCount('');
-      setFailedCount('');
-      setRescheduledCount('');
-      setFuelLiter('');
-      setReportNotes('');
-      await loadReports();
+    try {
+      const res = await fetch('/api/driver/daily-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportDate,
+          deliveredCount,
+          failedCount,
+          rescheduledCount,
+          fuelLiter,
+          notes: reportNotes,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Gagal menyimpan laporan' }));
+        setReportMsg(data.error || 'Gagal menyimpan laporan');
+      } else {
+        setReportMsg('Laporan harian tersimpan');
+        setDeliveredCount('');
+        setFailedCount('');
+        setRescheduledCount('');
+        setFuelLiter('');
+        setReportNotes('');
+        await loadReports();
+      }
+    } catch {
+      setReportMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
     setSavingReport(false);
   }
