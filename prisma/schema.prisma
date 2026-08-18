@@ -67,6 +67,7 @@ model Tenant {
   invoices        Invoice[]
   payments        Payment[]
   usageRecords    UsageRecord[]
+  demoRequests    DemoRequest[]
 
   @@index([slug])
   @@index([domain])
@@ -722,14 +723,17 @@ model LoginAttempt {
 }
 
 model DemoRequest {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   email     String
   phone     String?
   company   String
   message   String?
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
+  status    String    @default("PENDING")
+  tenantId  String?
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  provisionedAt DateTime?
+  createdAt DateTime  @default(now())
 
   @@index([status])
   @@index([createdAt])

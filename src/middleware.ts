@@ -124,6 +124,7 @@ export const config = {
     '/geofences/:path*',
     '/account/:path*',
     '/driver/:path*',
+    '/customer/:path*',
     '/settings/:path*',
     '/tenants/:path*',
     '/warehouse/:path*',
@@ -133,5 +134,7 @@ export const config = {
     '/sla/:path*',
     '/demo-requests/:path*',
     '/health/:path*',
+    '/billing/:path*',
+    '/integrations/:path*',
   ],
 };

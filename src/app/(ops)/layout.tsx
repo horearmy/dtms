@@ -7,7 +7,8 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
   const session = await getSession();
   if (!session) redirect('/login');
   if (session.role === 'DRIVER') redirect('/driver');
-  if (session.role === 'SUPER_ADMIN') redirect('/tenants');
+
+  const superAdminPages = ['/tenants', '/demo-requests', '/audit', '/billing', '/integrations'];
 
   let tenantPlan: string | null = null;
   if (session.tenantId) {

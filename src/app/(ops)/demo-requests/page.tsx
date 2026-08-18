@@ -5,6 +5,8 @@ import Pagination from '@/components/Pagination';
 import { formatDateTime } from '@/lib/constants';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
 
+type TenantRef = { id: string; slug: string; name: string };
+
 type DemoRow = {
   id: string;
   name: string;
@@ -13,7 +15,16 @@ type DemoRow = {
   company: string;
   message: string | null;
   status: string;
+  tenantId: string | null;
+  provisionedAt: string | null;
+  tenant: TenantRef | null;
   createdAt: string;
+};
+
+type ProvisionResult = {
+  slug: string;
+  adminUsername: string;
+  adminPassword: string;
 };
 
 const STATUS_OPTIONS = [
@@ -37,6 +48,9 @@ export default function DemoRequestsPage() {
   const [q, setQ] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [detail, setDetail] = useState<DemoRow | null>(null);
+  const [provisionResult, setProvisionResult] = useState<ProvisionResult | null>(null);
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const pageSize = 20;
 
   const load = useCallback(async () => {
@@ -54,12 +68,18 @@ export default function DemoRequestsPage() {
   useEffect(() => { load(); }, [load]);
 
   async function updateStatus(id: string, status: string) {
-    await fetch('/api/demo-requests', {
+    setProcessing(id);
+    const res = await fetch('/api/demo-requests', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status }),
     });
+    const data = await res.json();
+    if (data.provisioning) {
+      setProvisionResult(data.provisioning);
+    }
     await load();
+    setProcessing(null);
   }
 
   async function remove(id: string) {
@@ -72,6 +92,14 @@ export default function DemoRequestsPage() {
     e.preventDefault();
     setPage(1);
     load();
+  }
+
+  async function copyCredentials() {
+    if (!provisionResult || !detail) return;
+    const text = `Akun DTMS untuk ${detail.company}:\nURL: ${window.location.origin}\nUsername: ${provisionResult.adminUsername}\nPassword: ${provisionResult.adminPassword}\n\nSilakan login dan ganti password.`;
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   return (
@@ -128,6 +156,7 @@ export default function DemoRequestsPage() {
                     <select
                       value={d.status}
                       onChange={(e) => updateStatus(d.id, e.target.value)}
+                      disabled={processing === d.id || d.status === 'COMPLETED'}
                       className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_BADGE[d.status] || ''}`}
                     >
                       {STATUS_OPTIONS.map((s) => (
@@ -149,9 +178,9 @@ export default function DemoRequestsPage() {
         <Pagination page={page} total={total} pageSize={pageSize} onChange={setPage} />
       </div>
 
-      <Modal open={!!detail} title="Detail Permohonan" onClose={() => setDetail(null)}>
+      <Modal open={!!detail} title="Detail Permohonan" onClose={() => { setDetail(null); setProvisionResult(null); }}>
         {detail && (
-          <div className="space-y-3 text-sm">
+          <div className="space-y-4 text-sm">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="text-xs text-[#667085]">Nama</div>
@@ -185,6 +214,58 @@ export default function DemoRequestsPage() {
                 <div className="text-xs text-[#667085]">Tanggal</div>
                 <div>{formatDateTime(detail.createdAt)}</div>
               </div>
+            </div>
+
+            {detail.tenant && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <div className="text-xs font-semibold text-emerald-700 mb-1">Tenant Aktif</div>
+                <div className="text-sm text-emerald-800">{detail.tenant.name}</div>
+                <div className="text-xs text-emerald-600">Slug: {detail.tenant.slug} · /login</div>
+              </div>
+            )}
+
+            {provisionResult && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2">
+                <div className="text-xs font-semibold text-blue-700">Tenant Berhasil Dibuat</div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-xs text-blue-600">Username:</span>
+                    <div className="font-mono font-bold text-blue-800">{provisionResult.adminUsername}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-blue-600">Password:</span>
+                    <div className="font-mono font-bold text-blue-800">{provisionResult.adminPassword}</div>
+                  </div>
+                </div>
+                <div className="text-xs text-blue-600">Slug: {provisionResult.slug}</div>
+                <button
+                  onClick={copyCredentials}
+                  className="rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                >
+                  {copied ? 'Tersalin!' : 'Salin Kredensial'}
+                </button>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#E4E7EC]">
+              {detail.status !== 'COMPLETED' && (
+                <button
+                  onClick={() => { updateStatus(detail.id, 'COMPLETED'); setDetail(null); }}
+                  disabled={processing === detail.id}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {processing === detail.id ? 'Memproses...' : 'Setujui & Buat Tenant'}
+                </button>
+              )}
+              {detail.status !== 'COMPLETED' && (
+                <button
+                  onClick={() => { updateStatus(detail.id, 'REJECTED'); setDetail(null); }}
+                  disabled={processing === detail.id}
+                  className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  Tolak
+                </button>
+              )}
             </div>
           </div>
         )}

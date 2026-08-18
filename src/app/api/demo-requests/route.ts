@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guard, runWithTenant } from '@/lib/api-guard';
+import { provisionTenant } from '@/lib/provisioning';
 
 export async function GET(req: NextRequest) {
   const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        include: { tenant: { select: { id: true, slug: true, name: true } } },
       }),
     ]);
 
@@ -48,6 +50,48 @@ export async function PATCH(req: NextRequest) {
     if (!allowed.includes(status)) {
       return NextResponse.json({ error: `Status harus salah satu dari: ${allowed.join(', ')}` }, { status: 400 });
     }
+
+    const existing = await prisma.demoRequest.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 404 });
+    }
+
+    if (existing.status === 'COMPLETED') {
+      return NextResponse.json({ error: 'Sudah diproses sebelumnya' }, { status: 400 });
+    }
+
+    if (status === 'COMPLETED' && !existing.tenantId) {
+      try {
+        const result = await provisionTenant(id);
+
+        await prisma.notification.createMany({
+          data: {
+            userId: session!.id,
+            message: `Tenant "${result.tenantName}" berhasil dibuat. Slug: ${result.slug}, Admin: ${result.adminUsername}`,
+          },
+        });
+
+        const updated = await prisma.demoRequest.findUnique({
+          where: { id },
+          include: { tenant: { select: { id: true, slug: true, name: true } } },
+        });
+
+        return NextResponse.json({
+          ...updated,
+          provisioning: {
+            slug: result.slug,
+            adminUsername: result.adminUsername,
+            adminPassword: result.adminPassword,
+          },
+        });
+      } catch (err) {
+        return NextResponse.json(
+          { error: `Gagal provisioning: ${err instanceof Error ? err.message : 'Unknown error'}` },
+          { status: 500 }
+        );
+      }
+    }
+
     const updated = await prisma.demoRequest.update({ where: { id }, data: { status } });
     return NextResponse.json(updated);
   });
