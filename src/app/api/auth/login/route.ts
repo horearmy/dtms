@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { setSession, signTwoFactorToken } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
-import { getClientIp, isLoginBlocked, recordLoginAttempt, cleanupLoginAttempts } from '@/lib/security';
+import { getClientIp, isLoginBlocked, recordLoginAttempt, cleanupLoginAttempts, getRemainingAttempts, getLockoutDuration } from '@/lib/security';
 import { setTenantCookie } from '@/lib/tenant';
 import { logger } from '@/lib/logger';
 
@@ -19,8 +19,9 @@ export async function POST(req: NextRequest) {
 
     const key = String(username).trim().toLowerCase();
     if (await isLoginBlocked(key, ip)) {
+      const retryAfter = await getLockoutDuration(key, ip);
       return NextResponse.json(
-        { error: 'Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit.' },
+        { error: `Terlalu banyak percobaan login. Silakan coba lagi dalam ${Math.ceil(retryAfter / 60)} menit.`, retryAfter },
         { status: 429 }
       );
     }
@@ -36,11 +37,13 @@ export async function POST(req: NextRequest) {
       await prisma.auditLog.create({
         data: { action: 'LOGIN_FAILED', module: 'AUTH', newData: `username=${key}, ip=${ip}, tenantId=${tenantId || 'none'}` },
       });
-      return NextResponse.json({ error: 'Username atau password salah' }, { status: 401 });
+      const remainingAttempts = await getRemainingAttempts(key, ip);
+      return NextResponse.json({ error: 'Username atau password salah', remainingAttempts }, { status: 401 });
     }
     if (user.status !== 'ACTIVE') {
       await recordLoginAttempt(key, ip, false);
-      return NextResponse.json({ error: 'Akun tidak aktif' }, { status: 403 });
+      const remainingAttempts = await getRemainingAttempts(key, ip);
+      return NextResponse.json({ error: 'Akun tidak aktif', remainingAttempts }, { status: 403 });
     }
 
     const ok = await bcrypt.compare(password, user.passwordHash);
@@ -49,7 +52,8 @@ export async function POST(req: NextRequest) {
       await prisma.auditLog.create({
         data: { userId: user.id, action: 'LOGIN_FAILED', module: 'AUTH', newData: `ip=${ip}` },
       });
-      return NextResponse.json({ error: 'Username atau password salah' }, { status: 401 });
+      const remainingAttempts = await getRemainingAttempts(key, ip);
+      return NextResponse.json({ error: 'Username atau password salah', remainingAttempts }, { status: 401 });
     }
 
     await recordLoginAttempt(key, ip, true);

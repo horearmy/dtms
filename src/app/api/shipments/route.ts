@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { coordForCity } from '@/lib/constants';
 import { slaDeadlineFor } from '@/lib/eta';
 
-const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'CUSTOMER_SERVICE', 'WAREHOUSE', 'SUPERVISOR'];
-
 export async function GET(req: NextRequest) {
-  const { session, error } = await guard(...MANAGE);
+  const { session, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const q = req.nextUrl.searchParams.get('q') || '';
@@ -46,7 +45,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'CUSTOMER_SERVICE');
+  const { session, error } = await guardPermission(PERMISSIONS.SHIPMENT.CREATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();

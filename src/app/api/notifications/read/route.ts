@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
-export async function POST() {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'CUSTOMER_SERVICE', 'SUPERVISOR', 'MANAGEMENT', 'DRIVER');
+export async function POST(req: NextRequest) {
+  const { session, scope, error } = await guardPermission(PERMISSIONS.NOTIFICATION.READ);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
@@ -15,6 +16,9 @@ export async function POST() {
     } else {
       await prisma.notification.updateMany({ where: { status: 'UNREAD' }, data: { status: 'READ' } });
     }
+
+    await logAudit(session, 'READ_NOTIFICATIONS', 'NOTIFICATION', undefined, req);
+
     return NextResponse.json({ ok: true });
   });
 }

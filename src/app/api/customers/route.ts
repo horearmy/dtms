@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
-
-const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'CUSTOMER_SERVICE'];
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await guard(...MANAGE);
+  const { session, scope, error } = await guardPermission(PERMISSIONS.CUSTOMER.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const q = req.nextUrl.searchParams.get('q') || '';
@@ -33,7 +32,7 @@ function toNum(v: unknown): number | null {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard(...MANAGE);
+  const { session, scope, error } = await guardPermission(PERMISSIONS.CUSTOMER.CREATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();

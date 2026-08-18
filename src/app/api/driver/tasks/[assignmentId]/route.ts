@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ assignmentId: string }> }) {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
   if (error) return error;
 
   const { assignmentId } = await params;

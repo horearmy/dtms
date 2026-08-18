@@ -1,13 +1,12 @@
 // src/app/api/integrations/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { guard, guardPermission } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
 import { prisma } from '@/lib/prisma';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET() {
-  const { session, error } = await guard();
+  const { session, error } = await guardPermission(PERMISSIONS.INTEGRATION.READ);
   if (error) return error;
-  const perm = await guardPermission('settings.view');
-  if (perm.error) return perm.error;
 
   const integrations = await prisma.integrationConfig.findMany({
     where: session?.tenantId ? { tenantId: session.tenantId } : {},
@@ -20,10 +19,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, error } = await guardPermission(PERMISSIONS.INTEGRATION.CREATE);
   if (error) return error;
-  const perm = await guardPermission('settings.edit');
-  if (perm.error) return perm.error;
 
   const body = await req.json();
   const integration = await prisma.integrationConfig.create({

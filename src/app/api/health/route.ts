@@ -5,12 +5,13 @@ import { prisma } from '@/lib/prisma';
 import { getStats } from '@/lib/job-queue';
 import { collectSystemMetrics } from '@/lib/metrics';
 import { logger } from '@/lib/logger';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
   if (error) return error;
   const checks: Record<string, string> = {};
   let healthy = true;

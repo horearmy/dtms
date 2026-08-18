@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ShipmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { ON_ROAD_STATUSES } from '@/lib/constants';
+import { sendTextMessage, isWhatsAppEnabled } from '@/lib/whatsapp';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER');
+  const { session, error } = await guardPermission(PERMISSIONS.SHIPMENT.ASSIGN);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
@@ -81,6 +83,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const assignment = await prisma.deliveryAssignment.create({
       data: { shipmentId: id, driverId, vehicleId: vehicleId || null },
     });
+
+    if (isWhatsAppEnabled() && driver.phone) {
+      try {
+        await sendTextMessage(
+          driver.phone,
+          `Anda ditugaskan untuk pengiriman resi *${shipment.trackingNumber}*\n` +
+          `Tujuan: ${shipment.destination}\n\n` +
+          `Silakan persiapkan diri untuk pengiriman.`
+        );
+      } catch {
+        // WhatsApp failure is non-critical
+      }
+    }
 
     await logAudit(session, 'ASSIGN_DRIVER', 'SHIPMENT', { newData: { trackingNumber: shipment.trackingNumber, driverId, vehicleId: vehicleId || null } }, req);
     return NextResponse.json({ assignment }, { status: 201 });

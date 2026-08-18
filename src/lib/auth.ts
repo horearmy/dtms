@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { prisma } from './prisma';
+import crypto from 'crypto';
 
 export const COOKIE_NAME = 'dtms_token';
 
@@ -51,16 +52,63 @@ export async function verifyToken(token: string): Promise<SessionUser & { pwd: n
   }
 }
 
+async function verifyApiKey(authHeader: string): Promise<SessionUser | null> {
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!token || !token.startsWith('dtms_')) return null;
+
+  const keyHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  const apiKey = await prisma.apiKey.findUnique({
+    where: { keyHash },
+    include: { tenant: { select: { id: true, active: true, status: true } } },
+  });
+
+  if (!apiKey || !apiKey.active) return null;
+  if (apiKey.expiresAt && apiKey.expiresAt < new Date()) return null;
+  if (apiKey.tenant && (!apiKey.tenant.active || apiKey.tenant.status !== 'ACTIVE')) return null;
+
+  await prisma.apiKey.update({
+    where: { id: apiKey.id },
+    data: { lastUsed: new Date() },
+  }).catch(() => {});
+
+  const serviceUser = await prisma.user.findFirst({
+    where: { tenantId: apiKey.tenantId, role: 'ADMIN_OPERASIONAL', status: 'ACTIVE' },
+    select: { id: true, name: true, username: true, role: true, tenantId: true, branchId: true },
+  });
+
+  if (!serviceUser) return null;
+
+  return {
+    id: serviceUser.id,
+    name: serviceUser.name,
+    username: `apikey:${apiKey.keyPrefix}`,
+    role: serviceUser.role,
+    tenantId: serviceUser.tenantId,
+    branchId: serviceUser.branchId,
+  };
+}
+
 export async function getSession(): Promise<SessionUser | null> {
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
-  if (!token) return null;
-  const payload = await verifyToken(token);
-  if (!payload) return null;
-  const user = await prisma.user.findUnique({ where: { id: payload.id } });
-  if (!user || user.status !== 'ACTIVE') return null;
-  if (user.pwdVersion !== payload.pwd) return null;
-  return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId };
+
+  if (token) {
+    const payload = await verifyToken(token);
+    if (!payload) return null;
+    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    if (!user || user.status !== 'ACTIVE') return null;
+    if (user.pwdVersion !== payload.pwd) return null;
+    return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId };
+  }
+
+  const hdrs = await headers();
+  const authHeader = hdrs.get('authorization');
+  if (authHeader) {
+    return verifyApiKey(authHeader);
+  }
+
+  return null;
 }
 
 export async function setSession(user: SessionUser & { pwdVersion?: number }) {

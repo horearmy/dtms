@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ShipmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { STATUS_LABELS } from '@/lib/constants';
 
-const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'SUPERVISOR'];
 const WAREHOUSE_FLOW: Record<string, string> = {
   ORDER_CREATED: 'WAREHOUSE_RECEIVED',
   PICKUP_SCHEDULED: 'WAREHOUSE_RECEIVED',
@@ -16,7 +16,7 @@ const ALLOWED = ['WAREHOUSE_RECEIVED', 'DISPATCHED'];
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, error } = await guard(...MANAGE);
+  const { session, error } = await guardPermission(PERMISSIONS.WAREHOUSE.SCAN);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();

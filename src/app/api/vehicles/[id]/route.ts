@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR', 'WAREHOUSE', 'CUSTOMER_SERVICE');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.VEHICLE.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const vehicle = await prisma.vehicle.findUnique({
@@ -39,7 +40,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.VEHICLE.UPDATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
@@ -75,7 +76,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.VEHICLE.DELETE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     try {

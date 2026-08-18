@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { evaluateSlaStatus } from '@/lib/sla';
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.SLA.READ);
   if (error) return error;
 
   const status = req.nextUrl.searchParams.get('status') || '';
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST() {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.SLA.CREATE);
   if (error) return error;
 
   if (!session?.tenantId) {

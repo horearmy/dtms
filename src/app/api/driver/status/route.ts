@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { ShipmentStatus } from '@prisma/client';
 
 const ACTIVE_STATUS: ShipmentStatus[] = ['DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY'];
 
 export async function GET() {
-  const { session, error } = await guard('DRIVER', 'SUPER_ADMIN', 'DISPATCHER', 'ADMIN_OPERASIONAL', 'SUPERVISOR');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.DELIVERY.START);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

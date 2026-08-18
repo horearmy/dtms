@@ -1,7 +1,8 @@
 // src/app/api/driver/sync/route.ts
 // Offline driver sync endpoint — accepts batched offline actions for server commit.
 import { NextRequest, NextResponse } from 'next/server';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 import { ingestGps } from '@/lib/gps-processor';
 import { ShipmentStatus } from '@prisma/client';
@@ -15,7 +16,7 @@ interface OfflineAction {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.GPS.SEND);
   if (error) return error;
 
   const body = await req.json();

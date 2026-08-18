@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET() {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
   if (error) return error;
 
   // Find customer linked to this user via email

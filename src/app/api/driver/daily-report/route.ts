@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.DAILY_REPORT.CREATE);
   if (error) return error;
 
   const driver = await prisma.driver.findFirst({ where: { userId: session?.id } });
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.DAILY_REPORT.READ);
   if (error) return error;
 
   const driver = await prisma.driver.findFirst({ where: { userId: session?.id } });

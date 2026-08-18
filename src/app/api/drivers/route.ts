@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { ShipmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { driverScore } from '@/lib/scoring';
 import { ON_ROAD_STATUSES } from '@/lib/constants';
 import { validatePassword } from '@/lib/security';
 
-const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR'];
-
 export async function GET(req: NextRequest) {
-  const { session, error } = await guard(...MANAGE);
+  const { session, scope, error } = await guardPermission(PERMISSIONS.DRIVER.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
@@ -37,7 +36,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard(...MANAGE);
+  const { session, scope, error } = await guardPermission(PERMISSIONS.DRIVER.CREATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();

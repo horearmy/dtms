@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { checkGeofences } from '@/lib/geofence';
 import { haversineKm } from '@/lib/eta';
 import { MAINTENANCE_DISTANCE_KM } from '@/lib/constants';
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard('DRIVER', 'SUPER_ADMIN', 'DISPATCHER', 'ADMIN_OPERASIONAL');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.GPS.SEND);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

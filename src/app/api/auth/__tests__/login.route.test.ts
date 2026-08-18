@@ -11,6 +11,8 @@ const {
   mockIsLoginBlocked,
   mockRecordLoginAttempt,
   mockCleanup,
+  mockGetRemainingAttempts,
+  mockGetLockoutDuration,
 } = vi.hoisted(() => ({
   mockPrismaUser: { findFirst: vi.fn() },
   mockLoginAttempt: { create: vi.fn(), deleteMany: vi.fn(), count: vi.fn() },
@@ -20,6 +22,8 @@ const {
   mockIsLoginBlocked: vi.fn(),
   mockRecordLoginAttempt: vi.fn(),
   mockCleanup: vi.fn(),
+  mockGetRemainingAttempts: vi.fn().mockResolvedValue(4),
+  mockGetLockoutDuration: vi.fn().mockResolvedValue(0),
 }));
 
 vi.mock('@/lib/prisma', () => ({
@@ -33,6 +37,8 @@ vi.mock('@/lib/security', () => ({
   isLoginBlocked: mockIsLoginBlocked,
   recordLoginAttempt: mockRecordLoginAttempt,
   cleanupLoginAttempts: mockCleanup,
+  getRemainingAttempts: mockGetRemainingAttempts,
+  getLockoutDuration: mockGetLockoutDuration,
 }));
 
 import { POST } from '../login/route';

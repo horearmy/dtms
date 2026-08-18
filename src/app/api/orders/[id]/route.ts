@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guardPermission, logAudit } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
+
+const VALID_ORDER_STATUSES = ['DRAFT', 'RECEIVED', 'VALIDATING', 'VALIDATED', 'REJECTED', 'CONFIRMED', 'CANCELLED', 'FULFILLED'] as const;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.ORDER.READ);
   if (error) return error;
 
   const { id } = await params;
@@ -25,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'CUSTOMER_SERVICE');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.ORDER.UPDATE);
   if (error) return error;
 
   const { id } = await params;
@@ -39,20 +42,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const data: Record<string, unknown> = {};
   if (status) {
-    data.status = status;
-    if (status === 'CONFIRMED') data.confirmedAt = new Date();
-    if (status === 'CANCELLED') {
+    const trimmedStatus = String(status).trim();
+    if (!(VALID_ORDER_STATUSES as readonly string[]).includes(trimmedStatus)) {
+      return NextResponse.json({ error: `Status tidak valid. Nilai yang diizinkan: ${VALID_ORDER_STATUSES.join(', ')}` }, { status: 400 });
+    }
+    data.status = trimmedStatus;
+    if (trimmedStatus === 'CONFIRMED') data.confirmedAt = new Date();
+    if (trimmedStatus === 'CANCELLED') {
       data.cancelledAt = new Date();
-      data.cancelReason = cancelReason ? String(cancelReason).slice(0, 500) : null;
+      data.cancelReason = cancelReason ? String(cancelReason).trim().slice(0, 500) : null;
     }
   }
 
   const order = await prisma.order.update({ where: { id }, data });
+
+  await logAudit(session, 'UPDATE_ORDER', 'ORDER', { newData: { status } }, req);
+
   return NextResponse.json(order);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { session, scope, error } = await guardPermission(PERMISSIONS.ORDER.CANCEL);
   if (error) return error;
 
   const { id } = await params;
@@ -67,5 +77,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   await prisma.orderItem.deleteMany({ where: { orderId: id } });
   await prisma.order.delete({ where: { id } });
+
+  await logAudit(session, 'DELETE_ORDER', 'ORDER', { newData: { id } }, req);
+
   return NextResponse.json({ ok: true });
 }

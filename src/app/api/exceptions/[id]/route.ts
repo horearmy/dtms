@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guardPermission, logAudit } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { broadcast } from '@/lib/sse-bus';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.EXCEPTION.UPDATE);
   if (error) return error;
 
   const { id } = await params;
@@ -33,6 +34,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     updatedAt: exception.updatedAt.toISOString(),
   });
   broadcast(channel, 'control-tower:update', { type: 'exception' });
+
+  await logAudit(session, 'UPDATE_EXCEPTION', 'EXCEPTION', { newData: { status } }, req);
 
   return NextResponse.json(exception);
 }

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, runWithTenant } from '@/lib/api-guard';
-
-const VIEW = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'CUSTOMER_SERVICE', 'SUPERVISOR', 'MANAGEMENT'];
+import { guardPermission, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, error } = await guard(...VIEW);
+  const { session, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const shipment = await prisma.shipment.findUnique({

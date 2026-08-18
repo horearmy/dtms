@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
+
+const VALID_ACTIONS = ['START', 'ARRIVE', 'POD', 'FAIL'] as const;
 
 export async function GET() {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
   if (error) return error;
 
   const driver = await prisma.driver.findFirst({
@@ -50,31 +53,41 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard('DRIVER', 'SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.DELIVERY.START);
   if (error) return error;
 
   const body = await req.json();
   const { shipmentId, action, reason, recipientName, notes } = body;
 
-  if (!shipmentId || !action) {
-    return NextResponse.json({ error: 'shipmentId dan action wajib' }, { status: 400 });
+  const trimmedShipmentId = shipmentId ? String(shipmentId).trim() : '';
+  if (!trimmedShipmentId) {
+    return NextResponse.json({ error: 'shipmentId wajib diisi' }, { status: 400 });
   }
 
-  const shipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
+  const trimmedAction = action ? String(action).trim().toUpperCase() : '';
+  if (!trimmedAction || !(VALID_ACTIONS as readonly string[]).includes(trimmedAction)) {
+    return NextResponse.json({ error: `action wajib diisi dan harus salah satu dari: ${VALID_ACTIONS.join(', ')}` }, { status: 400 });
+  }
+
+  const trimmedReason = reason ? String(reason).trim().slice(0, 500) : null;
+  const trimmedRecipientName = recipientName ? String(recipientName).trim().slice(0, 100) : null;
+  const trimmedNotes = notes ? String(notes).trim().slice(0, 500) : null;
+
+  const shipment = await prisma.shipment.findUnique({ where: { id: trimmedShipmentId } });
   if (!shipment) return NextResponse.json({ error: 'Shipment tidak ditemukan' }, { status: 404 });
 
   const driver = await prisma.driver.findFirst({ where: { userId: session?.id } });
   if (!driver) return NextResponse.json({ error: 'Driver tidak terdaftar' }, { status: 403 });
 
   const assignment = await prisma.deliveryAssignment.findFirst({
-    where: { shipmentId, driverId: driver.id },
+    where: { shipmentId: trimmedShipmentId, driverId: driver.id },
   });
   if (!assignment) return NextResponse.json({ error: 'Tidak ada penugasan untuk shipment ini' }, { status: 403 });
 
   let newStatus = shipment.status;
   const metadata: Record<string, unknown> = {};
 
-  switch (action) {
+  switch (trimmedAction) {
     case 'START':
       newStatus = 'IN_TRANSIT';
       break;
@@ -83,31 +96,31 @@ export async function POST(req: NextRequest) {
       break;
     case 'POD':
       newStatus = 'DELIVERED';
-      metadata.recipientName = recipientName;
-      metadata.notes = notes;
+      metadata.recipientName = trimmedRecipientName;
+      metadata.notes = trimmedNotes;
       await prisma.proofOfDelivery.create({
         data: {
-          shipmentId,
-          receiverName: recipientName || 'Unknown',
-          notes: notes || null,
+          shipmentId: trimmedShipmentId,
+          receiverName: trimmedRecipientName || 'Unknown',
+          notes: trimmedNotes,
         },
       });
       break;
     case 'FAIL':
       newStatus = 'DELIVERY_FAILED';
-      metadata.reason = reason;
+      metadata.reason = trimmedReason;
       break;
     default:
       return NextResponse.json({ error: 'Action tidak valid' }, { status: 400 });
   }
 
-  await prisma.shipment.update({ where: { id: shipmentId }, data: { status: newStatus as never } });
+  await prisma.shipment.update({ where: { id: trimmedShipmentId }, data: { status: newStatus as never } });
 
   await prisma.shipmentEvent.create({
     data: {
       tenantId: shipment.tenantId,
-      shipmentId,
-      eventType: action === 'POD' ? 'DELIVERED' : action === 'FAIL' ? 'DELIVERY_FAILED' : 'STATUS_UPDATED',
+      shipmentId: trimmedShipmentId,
+      eventType: trimmedAction === 'POD' ? 'DELIVERED' : trimmedAction === 'FAIL' ? 'DELIVERY_FAILED' : 'STATUS_UPDATED',
       previousStatus: shipment.status,
       newStatus: newStatus as never,
       actorType: 'DRIVER',

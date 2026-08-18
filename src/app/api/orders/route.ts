@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guardPermission, logAudit } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
+
+const VALID_SERVICE_TYPES = ['SAME_DAY', 'NEXT_DAY', 'REGULAR'] as const;
 
 function generateOrderNumber(tenantCode: string, index: number) {
   const date = new Date();
@@ -9,7 +12,7 @@ function generateOrderNumber(tenantCode: string, index: number) {
 }
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.ORDER.READ);
   if (error) return error;
 
   const url = req.nextUrl.searchParams;
@@ -45,7 +48,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'CUSTOMER_SERVICE');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.ORDER.CREATE);
   if (error) return error;
 
   const body = await req.json();
@@ -56,9 +59,46 @@ export async function POST(req: NextRequest) {
     items, notes,
   } = body;
 
-  if (!customerName || !customerPhone || !destName || !destAddress || !weight) {
-    return NextResponse.json({ error: 'Data wajib tidak lengkap' }, { status: 400 });
+  const trimmedCustomerName = customerName ? String(customerName).trim().slice(0, 100) : '';
+  const trimmedCustomerPhone = customerPhone ? String(customerPhone).trim().slice(0, 20) : '';
+  const trimmedCustomerEmail = customerEmail ? String(customerEmail).trim().slice(0, 150) : null;
+  const trimmedDestName = destName ? String(destName).trim().slice(0, 100) : '';
+  const trimmedDestAddress = destAddress ? String(destAddress).trim().slice(0, 255) : '';
+  const trimmedDestCity = destCity ? String(destCity).trim().slice(0, 100) : null;
+  const trimmedNotes = notes ? String(notes).trim().slice(0, 500) : null;
+
+  if (!trimmedCustomerName || !trimmedCustomerPhone || !trimmedDestName || !trimmedDestAddress) {
+    return NextResponse.json({ error: 'Data wajib tidak lengkap (customerName, customerPhone, destName, destAddress)' }, { status: 400 });
   }
+
+  const parsedWeight = Number(weight);
+  if (weight == null || isNaN(parsedWeight) || parsedWeight <= 0) {
+    return NextResponse.json({ error: 'Weight harus berupa angka positif' }, { status: 400 });
+  }
+
+  const trimmedServiceType = serviceType ? String(serviceType).trim() : 'REGULAR';
+  if (!(VALID_SERVICE_TYPES as readonly string[]).includes(trimmedServiceType)) {
+    return NextResponse.json({ error: `serviceType tidak valid. Nilai yang diizinkan: ${VALID_SERVICE_TYPES.join(', ')}` }, { status: 400 });
+  }
+
+  const parsedLat = destLat != null && destLat !== '' ? parseFloat(String(destLat)) : null;
+  if (parsedLat !== null && (isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90)) {
+    return NextResponse.json({ error: 'destLat harus antara -90 dan 90' }, { status: 400 });
+  }
+  const parsedLng = destLng != null && destLng !== '' ? parseFloat(String(destLng)) : null;
+  if (parsedLng !== null && (isNaN(parsedLng) || parsedLng < -180 || parsedLng > 180)) {
+    return NextResponse.json({ error: 'destLng harus antara -180 dan 180' }, { status: 400 });
+  }
+  const parsedVolume = volume != null && volume !== '' ? parseFloat(String(volume)) : null;
+  if (parsedVolume !== null && isNaN(parsedVolume)) {
+    return NextResponse.json({ error: 'volume harus berupa angka' }, { status: 400 });
+  }
+  const parsedItemValue = itemValue != null && itemValue !== '' ? parseFloat(String(itemValue)) : null;
+  if (parsedItemValue !== null && isNaN(parsedItemValue)) {
+    return NextResponse.json({ error: 'itemValue harus berupa angka' }, { status: 400 });
+  }
+
+  const sanitizedItems = Array.isArray(items) ? items.slice(0, 50) : [];
 
   const tenant = session?.tenantId
     ? await prisma.tenant.findUnique({ where: { id: session.tenantId } })
@@ -72,34 +112,36 @@ export async function POST(req: NextRequest) {
     data: {
       tenantId: session?.tenantId || '',
       orderNumber,
-      customerName: String(customerName).slice(0, 100),
-      customerPhone: String(customerPhone).slice(0, 20),
-      customerEmail: customerEmail ? String(customerEmail).slice(0, 150) : null,
-      destName: String(destName).slice(0, 100),
-      destAddress: String(destAddress).slice(0, 255),
-      destCity: destCity ? String(destCity).slice(0, 100) : null,
-      destLat: destLat ? parseFloat(destLat) : null,
-      destLng: destLng ? parseFloat(destLng) : null,
-      serviceType: serviceType || 'REGULAR',
-      weight: parseFloat(weight),
-      volume: volume ? parseFloat(volume) : null,
+      customerName: trimmedCustomerName,
+      customerPhone: trimmedCustomerPhone,
+      customerEmail: trimmedCustomerEmail,
+      destName: trimmedDestName,
+      destAddress: trimmedDestAddress,
+      destCity: trimmedDestCity,
+      destLat: parsedLat,
+      destLng: parsedLng,
+      serviceType: trimmedServiceType as never,
+      weight: parsedWeight,
+      volume: parsedVolume,
       fragile: !!fragile,
-      itemValue: itemValue ? parseFloat(itemValue) : null,
-      notes: notes ? String(notes).slice(0, 500) : null,
+      itemValue: parsedItemValue,
+      notes: trimmedNotes,
       branchId: session?.branchId || null,
       createdBy: session?.id || null,
       status: 'RECEIVED',
-      items: items?.length
-        ? { create: items.map((i: { itemName: string; quantity?: number; weight?: number; dimension?: string }) => ({
-            itemName: String(i.itemName).slice(0, 100),
-            quantity: i.quantity || 1,
+      items: sanitizedItems.length
+        ? { create: sanitizedItems.map((i: { itemName: string; quantity?: number; weight?: number; dimension?: string }) => ({
+            itemName: String(i.itemName || '').trim().slice(0, 100),
+            quantity: Math.max(1, Math.min(10000, Number(i.quantity) || 1)),
             weight: i.weight ? parseFloat(String(i.weight)) : null,
-            dimension: i.dimension ? String(i.dimension).slice(0, 50) : null,
+            dimension: i.dimension ? String(i.dimension).trim().slice(0, 50) : null,
           })) }
         : undefined,
     },
     include: { items: true },
   });
+
+  await logAudit(session, 'CREATE_ORDER', 'ORDER', { newData: { destination: destName, receiverName: customerName } }, req);
 
   return NextResponse.json(order, { status: 201 });
 }

@@ -1,13 +1,12 @@
 // src/app/api/webhooks/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { guard, guardPermission } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
 import { prisma } from '@/lib/prisma';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { session, error } = await guard();
+  const { session, error } = await guardPermission(PERMISSIONS.WEBHOOK.UPDATE);
   if (error) return error;
-  const perm = await guardPermission('settings.edit');
-  if (perm.error) return perm.error;
   const { id } = await params;
   const body = await req.json();
 
@@ -20,10 +19,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { session, error } = await guard();
+  const { session, error } = await guardPermission(PERMISSIONS.WEBHOOK.DELETE);
   if (error) return error;
-  const perm = await guardPermission('settings.delete');
-  if (perm.error) return perm.error;
   const { id } = await params;
 
   await prisma.webhookSubscription.deleteMany({

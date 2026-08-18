@@ -1,11 +1,12 @@
 // src/app/api/files/route.ts
 // List uploaded files for the current tenant.
 import { NextRequest, NextResponse } from 'next/server';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
 import { prisma } from '@/lib/prisma';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, error } = await guardPermission(PERMISSIONS.FILE.READ);
   if (error) return error;
 
   const url = new URL(req.url);

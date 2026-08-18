@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.GEOFENCE.UPDATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const { id } = await params;
@@ -27,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.GEOFENCE.DELETE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const { id } = await params;

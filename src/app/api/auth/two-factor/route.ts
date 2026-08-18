@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { setSession, verifyTwoFactorToken } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
 import { verifyTotp, verifyBackupCode, removeBackupCode } from '@/lib/totp';
-import { getClientIp, recordLoginAttempt } from '@/lib/security';
+import { getClientIp, recordLoginAttempt, isLoginBlocked, getRemainingAttempts, getLockoutDuration } from '@/lib/security';
 import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
@@ -28,6 +28,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '2FA tidak aktif untuk akun ini' }, { status: 400 });
     }
 
+    if (await isLoginBlocked(user.username, ip)) {
+      const retryAfter = await getLockoutDuration(user.username, ip);
+      return NextResponse.json(
+        { error: `Terlalu banyak percobaan kode 2FA. Silakan coba lagi dalam ${Math.ceil(retryAfter / 60)} menit.`, retryAfter },
+        { status: 429 }
+      );
+    }
+
     const inputCode = String(code).trim();
     const totpOk = user.totpSecret ? verifyTotp(user.totpSecret, inputCode) : false;
     const backupOk = verifyBackupCode(user.backupCodes, inputCode);
@@ -35,7 +43,8 @@ export async function POST(req: NextRequest) {
     if (!totpOk && !backupOk) {
       await recordLoginAttempt(user.username, ip, false);
       await logAudit(null, 'TWO_FACTOR_LOGIN_FAILED', 'AUTH', { newData: { username: user.username } }, req);
-      return NextResponse.json({ error: 'Kode 2FA salah' }, { status: 401 });
+      const remainingAttempts = await getRemainingAttempts(user.username, ip);
+      return NextResponse.json({ error: 'Kode 2FA salah', remainingAttempts }, { status: 401 });
     }
 
     if (backupOk) {

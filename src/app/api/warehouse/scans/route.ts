@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, runWithTenant } from '@/lib/api-guard';
-
-const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'SUPERVISOR'];
+import { guardPermission, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET() {
-  const { session, error } = await guard(...MANAGE);
+  const { session, scope, error } = await guardPermission(PERMISSIONS.WAREHOUSE.READ);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

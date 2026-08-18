@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { provisionTenant } from '@/lib/provisioning';
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.USER.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.USER.UPDATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
@@ -99,7 +100,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { session, error } = await guard('SUPER_ADMIN');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.USER.DELETE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const id = req.nextUrl.searchParams.get('id');

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { getPlans, getTenantSubscription, getUsageSummary, createSubscription, generateInvoice } from '@/lib/billing';
 import { startMetricsCollector } from '@/lib/metrics';
 
@@ -8,7 +9,7 @@ startMetricsCollector();
 
 // GET — plans + current subscription + usage
 export async function GET() {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.BILLING.READ);
   if (error) return error;
 
   const [plans, subscription, usage] = await Promise.all([
@@ -22,7 +23,7 @@ export async function GET() {
 
 // POST — subscribe to plan
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard('SUPER_ADMIN');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.BILLING.MANAGE);
   if (error) return error;
 
   const body = await req.json();

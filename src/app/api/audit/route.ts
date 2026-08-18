@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.AUDIT.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));

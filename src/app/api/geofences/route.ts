@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
-
-const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR'];
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET() {
-  const { session, error } = await guard(...MANAGE);
+  const { session, scope, error } = await guardPermission(PERMISSIONS.GEOFENCE.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const geofences = await prisma.geofence.findMany({
@@ -17,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.GEOFENCE.CREATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();

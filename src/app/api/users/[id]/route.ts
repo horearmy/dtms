@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import type { Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 import { validatePassword } from '@/lib/security';
-
-const MANAGE = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'];
 
 const ASSIGNABLE_ROLES: string[] = [
   'SUPER_ADMIN',
@@ -19,7 +18,7 @@ const ASSIGNABLE_ROLES: string[] = [
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, error } = await guard(...MANAGE);
+  const { session, scope, error } = await guardPermission(PERMISSIONS.USER.UPDATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
@@ -96,7 +95,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, error } = await guard(...MANAGE);
+  const { session, scope, error } = await guardPermission(PERMISSIONS.USER.DELETE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     if (id === session?.id) {

@@ -71,6 +71,44 @@ export function requireAuthParams(...roles: string[]) {
   };
 }
 
+export function requirePermission(permission: string, ...roles: string[]) {
+  return function wrap(handler: HandlerFn) {
+    return async function wrappedHandler(req: NextRequest): Promise<NextResponse> {
+      const session = await getSession();
+      if (!session) {
+        return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
+      }
+      if (roles.length > 0 && !roles.includes(session.role)) {
+        return NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 });
+      }
+      const scope = await resolveAccessScope(session);
+      if (!hasPermission(scope, permission)) {
+        return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 });
+      }
+      return tenantStore.run(session.tenantId ?? null, () => handler(req, session));
+    };
+  };
+}
+
+export function requirePermissionParams(permission: string, ...roles: string[]) {
+  return function wrap(handler: HandlerFnWithParams) {
+    return async function wrappedHandler(req: NextRequest, ctx: { params: Promise<Record<string, string>> }): Promise<NextResponse> {
+      const session = await getSession();
+      if (!session) {
+        return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
+      }
+      if (roles.length > 0 && !roles.includes(session.role)) {
+        return NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 });
+      }
+      const scope = await resolveAccessScope(session);
+      if (!hasPermission(scope, permission)) {
+        return NextResponse.json({ error: 'Tidak memiliki izin' }, { status: 403 });
+      }
+      return tenantStore.run(session.tenantId ?? null, () => handler(req, session, ctx));
+    };
+  };
+}
+
 type AuditData = string | { oldData?: unknown; newData?: unknown };
 
 function json(v: unknown): string | undefined {

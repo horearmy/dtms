@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, scope, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
   if (error) return error;
 
   const shipmentId = req.nextUrl.searchParams.get('shipmentId');
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE', 'DRIVER');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.SHIPMENT.UPDATE);
   if (error) return error;
 
   const body = await req.json();

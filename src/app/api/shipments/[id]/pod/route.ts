@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
+import { sendShipmentStatusUpdate } from '@/lib/whatsapp';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'DRIVER', 'CUSTOMER_SERVICE');
+  const { session, error } = await guardPermission(PERMISSIONS.DELIVERY.COMPLETE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     let body: Record<string, unknown> = {};
@@ -83,7 +85,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       });
     } catch (txErr) {
       console.error('[POD] Transaction error:', txErr);
-      return NextResponse.json({ error: 'Gagal menyimpan POD' }, { status: 500 });
+      return NextResponse.json({ error: 'Gagal menyimpan POD', detail: txErr instanceof Error ? txErr.message : 'Unknown error' }, { status: 500 });
+    }
+
+    try {
+      await sendShipmentStatusUpdate(
+        shipment.trackingNumber,
+        'DELIVERED',
+        shipment.receiver.phone,
+        receiverName || shipment.receiver.name,
+        shipment.destination,
+        null
+      );
+    } catch {
+      // WhatsApp failure is non-critical
     }
 
     await logAudit(session, 'POD_COMPLETE', 'SHIPMENT', { newData: { trackingNumber: shipment.trackingNumber, receiver: receiverName || shipment.receiver.name } }, req);

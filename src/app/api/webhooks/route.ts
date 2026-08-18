@@ -1,14 +1,13 @@
 // src/app/api/webhooks/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { guard, guardPermission } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
 import { prisma } from '@/lib/prisma';
+import { PERMISSIONS } from '@/lib/permissions';
 import crypto from 'crypto';
 
 export async function GET() {
-  const { session, error } = await guard();
+  const { session, error } = await guardPermission(PERMISSIONS.WEBHOOK.READ);
   if (error) return error;
-  const perm = await guardPermission('settings.view');
-  if (perm.error) return perm.error;
 
   const webhooks = await prisma.webhookSubscription.findMany({
     where: session?.tenantId ? { tenantId: session.tenantId } : {},
@@ -21,10 +20,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, error } = await guardPermission(PERMISSIONS.WEBHOOK.CREATE);
   if (error) return error;
-  const perm = await guardPermission('settings.edit');
-  if (perm.error) return perm.error;
 
   const body = await req.json();
   const secret = body.secret || crypto.randomBytes(32).toString('hex');

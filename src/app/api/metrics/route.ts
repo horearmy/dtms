@@ -3,12 +3,13 @@
 import { NextResponse } from 'next/server';
 import { collectMetrics, collectSystemMetrics } from '@/lib/metrics';
 import { getStats } from '@/lib/job-queue';
-import { guard } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { session, error } = await guard('SUPER_ADMIN');
+  const { session, scope, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
   if (error) return error;
   collectSystemMetrics();
 

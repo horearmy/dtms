@@ -1,14 +1,13 @@
 // src/app/api/api-keys/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { guard, guardPermission } from '@/lib/api-guard';
+import { guardPermission } from '@/lib/api-guard';
 import { prisma } from '@/lib/prisma';
+import { PERMISSIONS } from '@/lib/permissions';
 import crypto from 'crypto';
 
 export async function GET() {
-  const { session, error } = await guard();
+  const { session, error } = await guardPermission(PERMISSIONS.API_KEY.READ);
   if (error) return error;
-  const perm = await guardPermission('settings.view');
-  if (perm.error) return perm.error;
 
   const keys = await prisma.apiKey.findMany({
     where: session?.tenantId ? { tenantId: session.tenantId } : {},
@@ -22,10 +21,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, error } = await guardPermission(PERMISSIONS.API_KEY.CREATE);
   if (error) return error;
-  const perm = await guardPermission('settings.edit');
-  if (perm.error) return perm.error;
 
   const body = await req.json();
   const rawKey = `dtms_${crypto.randomBytes(24).toString('hex')}`;
