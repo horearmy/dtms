@@ -184,9 +184,9 @@ export default function Sidebar({ role, tenantPlan, open, onClose }: { role: str
               <p className="text-[11px] leading-relaxed text-white/50 mb-3">
                 Tingkatkan pengalaman Anda dengan fitur premium
               </p>
-              <button className="w-full rounded-lg bg-[#0D6EFD] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#0B5FD5]">
+              <Link href="/billing" className="block w-full rounded-lg bg-[#0D6EFD] px-3 py-1.5 text-center text-xs font-semibold text-white transition hover:bg-[#0B5FD5]">
                 Upgrade Sekarang
-              </button>
+              </Link>
             </div>
           </div>
         )}
