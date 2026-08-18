@@ -62,6 +62,7 @@ export async function PATCH(req: NextRequest) {
 
     if (status === 'COMPLETED' && !existing.tenantId) {
       try {
+        await prisma.demoRequest.update({ where: { id }, data: { status: 'COMPLETED' } });
         const result = await provisionTenant(id);
 
         await prisma.notification.createMany({

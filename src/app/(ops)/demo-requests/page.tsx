@@ -69,16 +69,25 @@ export default function DemoRequestsPage() {
 
   async function updateStatus(id: string, status: string) {
     setProcessing(id);
-    const res = await fetch('/api/demo-requests', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status }),
-    });
-    const data = await res.json();
-    if (data.provisioning) {
-      setProvisionResult(data.provisioning);
+    try {
+      const res = await fetch('/api/demo-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Gagal memperbarui status');
+        setProcessing(null);
+        return;
+      }
+      if (data.provisioning) {
+        setProvisionResult(data.provisioning);
+      }
+      await load();
+    } catch {
+      alert('Terjadi kesalahan jaringan');
     }
-    await load();
     setProcessing(null);
   }
 
@@ -250,7 +259,7 @@ export default function DemoRequestsPage() {
             <div className="flex justify-end gap-2 pt-2 border-t border-[#E4E7EC]">
               {detail.status !== 'COMPLETED' && (
                 <button
-                  onClick={() => { updateStatus(detail.id, 'COMPLETED'); setDetail(null); }}
+                  onClick={async () => { await updateStatus(detail.id, 'COMPLETED'); }}
                   disabled={processing === detail.id}
                   className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                 >

@@ -14,7 +14,6 @@ interface ProvisionResult {
 export async function provisionTenant(requestId: string): Promise<ProvisionResult> {
   const request = await prisma.demoRequest.findUnique({ where: { id: requestId } });
   if (!request) throw new Error('Demo request tidak ditemukan');
-  if (request.status !== 'COMPLETED') throw new Error('Status harus COMPLETED');
   if (request.tenantId) throw new Error('Sudah diproses sebelumnya');
 
   const slug = generateSlug(request.company);

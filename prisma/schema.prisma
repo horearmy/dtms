@@ -318,9 +318,9 @@ model User {
   branchId           String?
   branch             Branch?        @relation(fields: [branchId], references: [id])
   name               String
-  username           String         @unique
+  username           String
   passwordHash       String
-  email              String?        @unique
+  email              String?
   provider           String         @default("LOCAL")
   role               Role
   status             UserStatus     @default(ACTIVE)
@@ -338,7 +338,7 @@ model User {
   ownedExceptions    Exception[]
 
   @@index([tenantId])
-  @@index([tenantId, username])
+  @@unique([tenantId, username])
   @@index([branchId])
 }
 
