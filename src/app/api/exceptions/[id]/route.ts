@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guard } from '@/lib/api-guard';
+import { broadcast } from '@/lib/sse-bus';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'SUPERVISOR');
@@ -23,5 +24,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (ownerId !== undefined) data.ownerId = ownerId || null;
 
   const exception = await prisma.exception.update({ where: { id }, data });
+
+  const channel = existing.tenantId ? `tenant:${existing.tenantId}` : 'global';
+  broadcast(channel, 'exception:updated', {
+    id: exception.id,
+    status: exception.status,
+    severity: exception.severity,
+    updatedAt: exception.updatedAt.toISOString(),
+  });
+  broadcast(channel, 'control-tower:update', { type: 'exception' });
+
   return NextResponse.json(exception);
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guard } from '@/lib/api-guard';
+import { broadcast } from '@/lib/sse-bus';
 
 export async function GET(req: NextRequest) {
   const { session, error } = await guard();
@@ -57,6 +58,16 @@ export async function POST(req: NextRequest) {
       createdBy: session?.id || null,
     },
   });
+
+  const channel = session?.tenantId ? `tenant:${session.tenantId}` : 'global';
+  broadcast(channel, 'exception:created', {
+    id: exception.id,
+    type: exception.type,
+    severity: exception.severity,
+    title: exception.title,
+    createdAt: exception.createdAt.toISOString(),
+  });
+  broadcast(channel, 'control-tower:update', { type: 'exception' });
 
   return NextResponse.json(exception, { status: 201 });
 }

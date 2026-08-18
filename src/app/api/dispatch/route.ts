@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guard } from '@/lib/api-guard';
+import { broadcast } from '@/lib/sse-bus';
 
 export async function GET() {
   const { session, error } = await guard('SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER');
@@ -78,6 +79,11 @@ export async function POST(req: NextRequest) {
       driverId,
       vehicleId: vehicleId || null,
     },
+    include: {
+      shipment: { select: { trackingNumber: true } },
+      driver: { select: { name: true } },
+      vehicle: { select: { vehicleNumber: true } },
+    },
   });
 
   await prisma.shipment.update({ where: { id: shipmentId }, data: { status: 'DISPATCHED' } });
@@ -85,6 +91,17 @@ export async function POST(req: NextRequest) {
   if (vehicleId) {
     await prisma.vehicle.update({ where: { id: vehicleId }, data: { status: 'IN_USE' } });
   }
+
+  // Broadcast dispatch event
+  const channel = session?.tenantId ? `tenant:${session.tenantId}` : 'global';
+  broadcast(channel, 'dispatch:created', {
+    assignmentId: assignment.id,
+    trackingNumber: assignment.shipment?.trackingNumber,
+    driverName: assignment.driver?.name,
+    vehicleNumber: assignment.vehicle?.vehicleNumber,
+    createdAt: new Date().toISOString(),
+  });
+  broadcast(channel, 'control-tower:update', { type: 'dispatch' });
 
   return NextResponse.json(assignment, { status: 201 });
 }

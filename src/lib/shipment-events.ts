@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { broadcast } from './sse-bus';
 import type { ShipmentEventType, ShipmentStatus } from '@prisma/client';
 
 type LogShipmentEventParams = {
@@ -36,6 +37,29 @@ export async function logShipmentEvent(params: LogShipmentEventParams) {
       ? [prisma.shipment.update({ where: { id: shipmentId }, data: { status: newStatus } })]
       : []),
   ]);
+
+  // Broadcast to SSE subscribers
+  const channel = tenantId ? `tenant:${tenantId}` : 'global';
+  const shipment = await prisma.shipment.findUnique({
+    where: { id: shipmentId },
+    select: { trackingNumber: true },
+  });
+
+  broadcast(channel, 'shipment:event', {
+    id: event.id,
+    eventType,
+    shipmentId,
+    trackingNumber: shipment?.trackingNumber || '-',
+    previousStatus: previousStatus || null,
+    newStatus: newStatus || null,
+    occurredAt: event.occurredAt.toISOString(),
+  });
+
+  broadcast(channel, 'control-tower:update', {
+    type: 'shipment_event',
+    eventType,
+    trackingNumber: shipment?.trackingNumber || '-',
+  });
 
   return event;
 }

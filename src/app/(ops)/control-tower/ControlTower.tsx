@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useSSE } from '@/hooks/use-sse';
 
 type Kpi = {
   totalShipments: number; activeShipments: number; deliveredToday: number; failedToday: number;
@@ -29,10 +30,9 @@ export default function ControlTower() {
   const [alerts, setAlerts] = useState<Alerts | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const { connected, subscribe } = useSSE();
 
-  useEffect(() => { fetchData(); const interval = setInterval(fetchData, 30000); return () => clearInterval(interval); }, []);
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     const res = await fetch('/api/control-tower');
     if (res.ok) {
       const data = await res.json();
@@ -42,12 +42,37 @@ export default function ControlTower() {
       setEvents(data.recentEvents);
     }
     setLoading(false);
-  }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    // Poll every 60s as fallback
+    const interval = setInterval(fetchData, 60000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  // Real-time: re-fetch KPI when any control-tower:update comes in
+  useEffect(() => {
+    const unsub = subscribe('control-tower:update', () => {
+      fetchData();
+    });
+    const unsub2 = subscribe('shipment:event', (data: unknown) => {
+      const evt = data as Event;
+      setEvents((prev) => [evt, ...prev].slice(0, 20));
+    });
+    return () => { unsub(); unsub2(); };
+  }, [subscribe, fetchData]);
 
   if (loading) return <div className="text-center py-8 text-[#667085]">Memuat Control Tower...</div>;
 
   return (
     <div className="space-y-6">
+      {/* Real-time indicator */}
+      <div className="flex items-center justify-end gap-2">
+        <span className={`h-2 w-2 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
+        <span className="text-xs text-[#667085]">{connected ? 'Live' : 'Offline'}</span>
+      </div>
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard label="Active Deliveries" value={kpi?.activeShipments || 0} color="text-blue-600" />
         <KpiCard label="Delivered Today" value={kpi?.deliveredToday || 0} color="text-green-600" />
