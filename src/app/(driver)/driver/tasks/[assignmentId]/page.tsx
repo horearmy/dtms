@@ -61,15 +61,21 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
     if (retBusy) return;
     setRetBusy(true);
     setMsg('');
-    const res = await fetch('/api/driver/return', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
-    });
-    if (!res.ok) setMsg((await res.json()).error || 'Gagal menyimpan status kembali');
-    else {
-      setMsg(action === 'start' ? 'Berhasil! Perjalanan kembali ke gudang dimulai.' : 'Berhasil! Driver sudah kembali ke gudang.');
-      await loadDriverStatus();
+    try {
+      const res = await fetch('/api/driver/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Gagal menyimpan status kembali' }));
+        setMsg(data.error || 'Gagal menyimpan status kembali');
+      } else {
+        setMsg(action === 'start' ? 'Berhasil! Perjalanan kembali ke gudang dimulai.' : 'Berhasil! Driver sudah kembali ke gudang.');
+        await loadDriverStatus();
+      }
+    } catch {
+      setMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
     setRetBusy(false);
   }

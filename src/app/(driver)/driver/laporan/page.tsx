@@ -242,15 +242,21 @@ export default function DriverLaporanPage() {
     if (retBusy) return;
     setRetBusy(true);
     setRetMsg('');
-    const res = await fetch('/api/driver/return', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
-    });
-    if (!res.ok) setRetMsg((await res.json()).error || 'Gagal menyimpan laporan kembali');
-    else {
-      setRetMsg(action === 'start' ? 'Berhasil! Laporan kembali ke gudang terkirim.' : 'Berhasil! Driver sudah kembali ke gudang.');
-      await loadStatus();
+    try {
+      const res = await fetch('/api/driver/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Gagal menyimpan laporan kembali' }));
+        setRetMsg(data.error || 'Gagal menyimpan laporan kembali');
+      } else {
+        setRetMsg(action === 'start' ? 'Berhasil! Laporan kembali ke gudang terkirim.' : 'Berhasil! Driver sudah kembali ke gudang.');
+        await loadStatus();
+      }
+    } catch {
+      setRetMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
     setRetBusy(false);
   }
