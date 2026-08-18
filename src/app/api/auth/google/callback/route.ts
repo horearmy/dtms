@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
     }
 
     const email = payload.email.toLowerCase();
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findFirst({ where: { email } });
     if (!user) {
       await logAudit(null, 'SSO_GOOGLE_UNLINKED', 'AUTH', { newData: { email } }, req);
       return redirectLogin(origin, `Tidak ada akun DTMS dengan email ${email}. Hubungi admin untuk menghubungkan akun Anda.`);

@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     try {
       let userId: string | undefined;
       if (username) {
-        const existing = await prisma.user.findUnique({ where: { username } });
+        const existing = await prisma.user.findFirst({ where: { username, tenantId: session?.tenantId ?? null } });
         if (existing) {
           return NextResponse.json(
             { error: `Username "${username}" sudah terdaftar. Pilih username lain.` },

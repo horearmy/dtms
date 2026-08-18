@@ -134,7 +134,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           if (!username) {
             return NextResponse.json({ error: 'Username wajib diisi untuk membuat akun login' }, { status: 400 });
           }
-          const existing = await prisma.user.findUnique({ where: { username } });
+          const existing = await prisma.user.findFirst({ where: { username, tenantId: session?.tenantId ?? null } });
           if (existing) {
             return NextResponse.json({ error: `Username "${username}" sudah terdaftar. Pilih username lain.` }, { status: 400 });
           }
