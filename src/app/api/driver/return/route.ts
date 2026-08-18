@@ -46,18 +46,68 @@ export async function POST(req: NextRequest) {
         orderBy: { assignedAt: 'desc' },
         select: { vehicleId: true },
       });
+
       const updated = await prisma.driver.update({
         where: { id: driver.id },
-        data: { returning: false, returnedAt: now },
+        data: { returning: false, returnedAt: now, status: 'ACTIVE' },
       });
+
       if (latest?.vehicleId) {
         await prisma.vehicle.update({
           where: { id: latest.vehicleId },
-          data: { returning: false, returnedAt: now },
+          data: { returning: false, returnedAt: now, status: 'AVAILABLE' },
         });
       }
-      await logAudit(session, 'DRIVER_RETURN_COMPLETE', 'DRIVER', { newData: { returning: false, returnedAt: now.toISOString() } }, req);
-      return NextResponse.json({ driver: updated });
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(today);
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const todayDelivered = await prisma.deliveryAssignment.count({
+        where: {
+          driverId: driver.id,
+          shipment: { status: 'DELIVERED' },
+          assignedAt: { gte: today, lte: todayEnd },
+        },
+      });
+
+      const todayFailed = await prisma.deliveryAssignment.count({
+        where: {
+          driverId: driver.id,
+          shipment: { status: 'DELIVERY_FAILED' },
+          assignedAt: { gte: today, lte: todayEnd },
+        },
+      });
+
+      const todayRescheduled = await prisma.deliveryAssignment.count({
+        where: {
+          driverId: driver.id,
+          shipment: { status: 'RESCHEDULED' },
+          assignedAt: { gte: today, lte: todayEnd },
+        },
+      });
+
+      await prisma.dailyReport.upsert({
+        where: {
+          driverId_reportDate: { driverId: driver.id, reportDate: today },
+        },
+        create: {
+          driverId: driver.id,
+          reportDate: now,
+          deliveredCount: todayDelivered,
+          failedCount: todayFailed,
+          rescheduledCount: todayRescheduled,
+        },
+        update: {
+          deliveredCount: todayDelivered,
+          failedCount: todayFailed,
+          rescheduledCount: todayRescheduled,
+        },
+      });
+
+      await logAudit(session, 'DRIVER_RETURN_COMPLETE', 'DRIVER', { newData: { returning: false, returnedAt: now.toISOString(), driverStatus: 'ACTIVE', vehicleStatus: 'AVAILABLE' } }, req);
+      return NextResponse.json({ driver: updated, deliveredCount: todayDelivered });
     }
 
     return NextResponse.json({ error: 'Aksi tidak dikenal (start/complete)' }, { status: 400 });

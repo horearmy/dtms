@@ -109,22 +109,24 @@ export default function DriverHomePage() {
   if (loading) return <div className="py-20 text-center text-[#667085]">Memuat tugas...</div>;
   if (err) return <div className="py-20 text-center text-[#667085]">{err}</div>;
 
+  const activeTasks = tasks.filter((t) => !['DELIVERED', 'RETURNED', 'RETURN_TO_SENDER'].includes(t.shipment.status));
+  const completedTasks = tasks.filter((t) => ['DELIVERED', 'RETURNED', 'RETURN_TO_SENDER'].includes(t.shipment.status));
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-[#101828]">Tugas Hari Ini</h1>
-        <p className="text-sm text-[#667085]">{tasks.length} penugasan</p>
+        <p className="text-sm text-[#667085]">{activeTasks.length} tugas aktif · {completedTasks.length} selesai</p>
       </div>
 
       <DriverStatusCard />
 
       <div className="space-y-3">
-        {tasks.map((t) => {
+        {activeTasks.map((t) => {
           const shipment = t.shipment;
           const lastEvent = shipment.events[0];
           const isDispatched = shipment.status === 'DISPATCHED';
           const deliverable = shipment.status === 'OUT_FOR_DELIVERY';
-          const done = shipment.status === 'DELIVERED' || shipment.status === 'RETURNED';
           return (
             <div key={t.id} className="rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
               <div className="flex items-start justify-between gap-3">
@@ -155,19 +157,45 @@ export default function DriverHomePage() {
 
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Link href={`/driver/tasks/${t.id}`} className={btnPrimary}>
-                  {isDispatched ? 'Mulai Pengiriman' : deliverable ? 'Proses Delivery & POD' : done ? 'Lihat Laporan' : 'Lihat Detail'}
+                  {isDispatched ? 'Mulai Pengiriman' : deliverable ? 'Proses Delivery & POD' : 'Lihat Detail'}
                 </Link>
                 <span className="text-xs text-[#667085]">Ditugaskan {formatDateTime(t.assignedAt)}</span>
               </div>
             </div>
           );
         })}
-        {tasks.length === 0 && (
+        {activeTasks.length === 0 && (
           <div className="rounded-xl border border-dashed border-[#E4E7EC] bg-white p-10 text-center text-sm text-[#667085]">
-            Tidak ada penugasan saat ini
+            Tidak ada penugasan aktif saat ini. {completedTasks.length > 0 && `${completedTasks.length} tugas sudah selesai.`}
           </div>
         )}
       </div>
+
+      {completedTasks.length > 0 && (
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h2 className="text-sm font-bold text-[#101828]">Tugas Selesai ({completedTasks.length})</h2>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#E4E7EC] text-[11px] uppercase text-[#667085]">
+                  <th className="py-2 pr-4">Resi</th>
+                  <th className="py-2 pr-4">Penerima</th>
+                  <th className="py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {completedTasks.map((t) => (
+                  <tr key={t.id} className="border-b border-[#F7F9FC]">
+                    <td className="py-2 pr-4 font-mono text-xs font-semibold text-[#0D6EFD]">{t.shipment.trackingNumber}</td>
+                    <td className="py-2 pr-4 text-[#101828]">{t.shipment.receiver.name}</td>
+                    <td className="py-2"><StatusBadge status={t.shipment.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <h2 className="text-sm font-bold text-[#101828]">Laporan Harian</h2>
