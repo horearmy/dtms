@@ -33,6 +33,11 @@ export async function GET() {
             take: 1,
             select: { status: true, createdAt: true },
           },
+          pods: {
+            orderBy: { deliveredAt: 'desc' },
+            take: 1,
+            select: { receiverName: true, deliveredAt: true, signature: true, photo: true, notes: true },
+          },
         },
       },
       vehicle: { select: { vehicleNumber: true } },
