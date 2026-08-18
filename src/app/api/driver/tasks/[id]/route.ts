@@ -19,14 +19,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           id: true,
           trackingNumber: true,
           destination: true,
-          destAddress: true,
           destLat: true,
           destLng: true,
-          receiverName: true,
-          receiverPhone: true,
+          origin: true,
+          originLat: true,
+          originLng: true,
           status: true,
-          assignedAt: true,
-          originAddress: true,
+          sender: { select: { name: true, phone: true, address: true } },
+          receiver: { select: { name: true, phone: true, address: true } },
         },
       },
       vehicle: { select: { vehicleNumber: true } },
@@ -39,23 +39,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const items = await prisma.shipmentItem.findMany({
     where: { shipmentId: id },
-    select: { name: true, quantity: true, weight: true },
+    select: { itemName: true, quantity: true, weight: true },
   });
 
   return NextResponse.json({
     id: assignment.shipment.id,
     trackingNumber: assignment.shipment.trackingNumber,
     destination: assignment.shipment.destination,
-    destAddress: assignment.shipment.destAddress,
+    destAddress: assignment.shipment.receiver?.address || assignment.shipment.destination,
     destLat: assignment.shipment.destLat,
     destLng: assignment.shipment.destLng,
-    receiverName: assignment.shipment.receiverName,
-    receiverPhone: assignment.shipment.receiverPhone,
+    receiverName: assignment.shipment.receiver?.name || null,
+    receiverPhone: assignment.shipment.receiver?.phone || null,
     status: assignment.shipment.status,
     assignedAt: assignment.assignedAt.toISOString(),
     vehicleNumber: assignment.vehicle?.vehicleNumber || null,
     items,
-    originAddress: assignment.shipment.originAddress,
+    originAddress: assignment.shipment.sender?.address || assignment.shipment.origin,
   });
 }
 
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await prisma.proofOfDelivery.create({
         data: {
           shipmentId: id,
-          recipientName: body.recipientName || 'Unknown',
+          receiverName: body.recipientName || 'Unknown',
           notes: body.notes || null,
         },
       });

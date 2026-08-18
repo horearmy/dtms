@@ -100,7 +100,7 @@ export async function importCustomers(tenantId: string, rows: Record<string, str
         data: {
           tenantId,
           name: row.name,
-          phone: row.phone || null,
+          phone: row.phone || '',
           email: row.email || null,
           address: row.address || null,
           city: row.city || null,
@@ -130,7 +130,7 @@ export async function importDrivers(tenantId: string, rows: Record<string, strin
           tenantId,
           employeeId: row.employeeId || `EMP-${Date.now()}-${i}`,
           name: row.name,
-          phone: row.phone || null,
+          phone: row.phone || '',
           status: 'ACTIVE',
         },
       });
@@ -159,9 +159,8 @@ export async function exportShipments(tenantId: string, filters?: { status?: str
     select: {
       trackingNumber: true,
       destination: true,
-      originAddress: true,
-      receiverName: true,
-      receiverPhone: true,
+      origin: true,
+      receiver: { select: { name: true, phone: true } },
       status: true,
       serviceType: true,
       createdAt: true,
@@ -174,9 +173,9 @@ export async function exportShipments(tenantId: string, filters?: { status?: str
   return toCsv(shipments.map((s) => ({
     trackingNumber: s.trackingNumber,
     destination: s.destination,
-    origin: s.originAddress,
-    receiverName: s.receiverName || '',
-    receiverPhone: s.receiverPhone || '',
+    origin: s.origin,
+    receiverName: s.receiver?.name || '',
+    receiverPhone: s.receiver?.phone || '',
     status: s.status,
     serviceType: s.serviceType,
     createdAt: s.createdAt.toISOString(),
@@ -185,16 +184,15 @@ export async function exportShipments(tenantId: string, filters?: { status?: str
 }
 
 // ─── Integration Logging ─────────────────────────────────
-async function logIntegrationEvent(tenantId: string, type: string, entity: string, result: CsvImportResult) {
-  await prisma.integrationLog.create({
-    data: {
-      tenantId,
-      integrationType: 'CSV_IMPORT',
-      entityType: entity,
-      status: result.failed > 0 ? 'PARTIAL' : 'SUCCESS',
-      requestPayload: JSON.stringify({ type, entity, total: result.total }),
-      responsePayload: JSON.stringify({ success: result.success, failed: result.failed, errors: result.errors.slice(0, 10) }),
-    },
+async function logIntegrationEvent(_tenantId: string, type: string, entity: string, result: CsvImportResult) {
+  const logger = (await import('./logger')).logger;
+  logger.info(`CSV import: ${entity}`, {
+    context: 'integration-hub',
+    type,
+    entity,
+    total: result.total,
+    success: result.success,
+    failed: result.failed,
   });
 }
 

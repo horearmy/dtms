@@ -24,9 +24,7 @@ export async function GET() {
           id: true,
           trackingNumber: true,
           destination: true,
-          destAddress: true,
           status: true,
-          assignedAt: true,
         },
       },
       vehicle: { select: { vehicleNumber: true } },
@@ -87,7 +85,7 @@ export async function POST(req: NextRequest) {
       await prisma.proofOfDelivery.create({
         data: {
           shipmentId,
-          recipientName: recipientName || 'Unknown',
+          receiverName: recipientName || 'Unknown',
           notes: notes || null,
         },
       });

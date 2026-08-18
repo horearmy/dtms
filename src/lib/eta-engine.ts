@@ -45,7 +45,7 @@ export async function calculateEta(
     select: {
       destLat: true,
       destLng: true,
-      destAddress: true,
+      destination: true,
       slaDeadline: true,
       status: true,
       originLat: true,
@@ -59,8 +59,8 @@ export async function calculateEta(
 
   // Get remaining stops
   const stops = await prisma.shipmentStop.findMany({
-    where: { shipmentId, completed: false },
-    orderBy: { sequence: 'asc' },
+    where: { shipmentId },
+    orderBy: { seq: 'asc' },
   });
 
   const now = new Date();
@@ -77,7 +77,7 @@ export async function calculateEta(
     if (stop.latitude && stop.longitude) {
       const dist = haversine(lastLat, lastLng, stop.latitude, stop.longitude) * ROAD_FACTOR;
       totalDistance += dist;
-      stopDetails.push({ name: stop.label || `Stop ${stop.sequence}`, distance: Math.round(dist * 100) / 100 });
+      stopDetails.push({ name: stop.label || `Stop ${stop.seq}`, distance: Math.round(dist * 100) / 100 });
       lastLat = stop.latitude;
       lastLng = stop.longitude;
     }

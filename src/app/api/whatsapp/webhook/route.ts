@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ status: 'ok' });
   } catch (err) {
-    logger.error('whatsapp', 'Webhook processing error', { error: String(err) });
+    logger.error('Webhook processing error', { context: 'whatsapp', error: String(err) });
     return NextResponse.json({ status: 'ok' });
   }
 }

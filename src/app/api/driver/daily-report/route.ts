@@ -14,9 +14,8 @@ export async function POST(req: NextRequest) {
 
   const report = await prisma.dailyReport.create({
     data: {
-      tenantId: session?.tenantId || '',
       driverId: driver.id,
-      date: new Date(),
+      reportDate: new Date(),
       deliveredCount: deliveredCount || 0,
       failedCount: failedCount || 0,
       rescheduledCount: rescheduledCount || 0,
@@ -37,7 +36,7 @@ export async function GET() {
 
   const reports = await prisma.dailyReport.findMany({
     where: { driverId: driver.id },
-    orderBy: { date: 'desc' },
+    orderBy: { reportDate: 'desc' },
     take: 30,
   });
 

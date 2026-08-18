@@ -63,6 +63,10 @@ model Tenant {
   apiKeys         ApiKey[]
   webhooks        WebhookSubscription[]
   files           UploadedFile[]
+  subscription    Subscription?
+  invoices        Invoice[]
+  payments        Payment[]
+  usageRecords    UsageRecord[]
 
   @@index([slug])
   @@index([domain])
@@ -940,16 +944,16 @@ model IntegrationLog {
 model Plan {
   id              String   @id @default(cuid())
   name            String
-  code            String   @unique // FREE, STARTER, PRO, ENTERPRISE
+  code            String   @unique
   description     String?
   priceMonthly    Float    @default(0)
   priceYearly     Float    @default(0)
-  currency        String   @default('IDR')
+  currency        String   @default("IDR")
   maxUsers        Int      @default(5)
   maxDrivers      Int      @default(10)
   maxShipments    Int      @default(100)
   maxStorageMb    Int      @default(100)
-  features        Json?    // ["dispatch", "sla", "eta", "api"]
+  features        Json?
   active          Boolean  @default(true)
   sortOrder       Int      @default(0)
   createdAt       DateTime @default(now())
@@ -964,8 +968,8 @@ model Subscription {
   tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   planId          String
   plan            Plan     @relation(fields: [planId], references: [id])
-  status          String   @default('ACTIVE') // ACTIVE, PAST_DUE, CANCELLED, TRIALING
-  billingCycle    String   @default('MONTHLY') // MONTHLY, YEARLY
+  status          String   @default("ACTIVE")
+  billingCycle    String   @default("MONTHLY")
   startDate       DateTime @default(now())
   currentPeriodStart DateTime @default(now())
   currentPeriodEnd   DateTime
@@ -983,14 +987,15 @@ model Subscription {
 model Invoice {
   id              String   @id @default(cuid())
   tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   subscriptionId  String
   subscription    Subscription @relation(fields: [subscriptionId], references: [id])
   invoiceNumber   String   @unique
-  status          String   @default('DRAFT') // DRAFT, OPEN, PAID, VOID, OVERDUE
+  status          String   @default("DRAFT")
   subtotal        Float    @default(0)
   tax             Float    @default(0)
   total           Float    @default(0)
-  currency        String   @default('IDR')
+  currency        String   @default("IDR")
   dueDate         DateTime
   paidAt          DateTime?
   billingPeriodStart DateTime
@@ -1008,13 +1013,14 @@ model Invoice {
 model Payment {
   id              String   @id @default(cuid())
   tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoiceId       String
   invoice         Invoice  @relation(fields: [invoiceId], references: [id])
   amount          Float
-  currency        String   @default('IDR')
-  method          String?  // BANK_TRANSFER, CREDIT_CARD, E_WALLET
-  reference       String?  // payment gateway reference
-  status          String   @default('PENDING') // PENDING, COMPLETED, FAILED, REFUNDED
+  currency        String   @default("IDR")
+  method          String?
+  reference       String?
+  status          String   @default("PENDING")
   paidAt          DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1025,9 +1031,10 @@ model Payment {
 model UsageRecord {
   id              String   @id @default(cuid())
   tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   subscriptionId  String
   subscription    Subscription @relation(fields: [subscriptionId], references: [id])
-  metric          String   // users, drivers, shipments, storage_mb, api_calls
+  metric          String
   quantity        Int      @default(0)
   recordedAt      DateTime @default(now())
   periodStart     DateTime

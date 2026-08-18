@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
     await logAudit(null, 'SSO_GOOGLE_LOGIN', 'AUTH', { newData: { email, username: user.username } }, req);
     return response;
   } catch (e) {
-    logger.error('google_callback', 'Google OAuth callback error', { error: String(e) });
+    logger.error('Google OAuth callback error', { context: 'google_callback', error: String(e) });
     const r = redirectLogin(origin, 'Terjadi kesalahan saat login Google');
     r.cookies.delete('oauth_state');
     return r;

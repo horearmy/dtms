@@ -6,7 +6,12 @@ export async function GET() {
   const { session, error } = await guard();
   if (error) return error;
 
-  const customer = await prisma.customer.findFirst({ where: { userId: session?.id } });
+  const user = await prisma.user.findUnique({ where: { id: session?.id || '' } });
+  if (!user?.email) return NextResponse.json({ orders: [] });
+
+  const customer = await prisma.customer.findFirst({
+    where: { tenantId: session?.tenantId || '', email: user.email },
+  });
   if (!customer) return NextResponse.json({ orders: [] });
 
   const orders = await prisma.order.findMany({
@@ -20,7 +25,7 @@ export async function GET() {
     orders: orders.map((o) => ({
       id: o.id,
       orderNumber: o.orderNumber,
-      destination: o.destination,
+      destination: o.destAddress,
       status: o.status,
       serviceType: o.serviceType,
       createdAt: o.createdAt.toISOString(),
@@ -33,7 +38,12 @@ export async function POST(req: NextRequest) {
   const { session, error } = await guard();
   if (error) return error;
 
-  const customer = await prisma.customer.findFirst({ where: { userId: session?.id } });
+  const user2 = await prisma.user.findUnique({ where: { id: session?.id || '' } });
+  if (!user2?.email) return NextResponse.json({ error: 'Customer tidak terdaftar' }, { status: 403 });
+
+  const customer = await prisma.customer.findFirst({
+    where: { tenantId: session?.tenantId || '', email: user2.email },
+  });
   if (!customer) return NextResponse.json({ error: 'Customer tidak terdaftar' }, { status: 403 });
 
   const body = await req.json();
@@ -46,7 +56,6 @@ export async function POST(req: NextRequest) {
   const tenant = await prisma.tenant.findUnique({ where: { id: session?.tenantId || '' } });
   const tenantCode = tenant?.code || 'TENANT';
 
-  // Generate order number
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
   const count = await prisma.order.count({ where: { tenantId: session?.tenantId || '' } });
@@ -58,12 +67,15 @@ export async function POST(req: NextRequest) {
       customerId: customer.id,
       orderNumber,
       source: 'MANUAL',
-      destination,
-      receiverName,
-      receiverPhone: receiverPhone || null,
+      customerName: receiverName,
+      customerPhone: receiverPhone || customer.phone,
+      destName: receiverName,
+      destAddress: destination,
+      destPhone: receiverPhone || null,
       serviceType: serviceType || 'REGULAR',
       notes: notes || null,
       status: 'DRAFT',
+      weight: 1,
     },
   });
 

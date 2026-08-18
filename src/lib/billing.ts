@@ -98,7 +98,7 @@ export async function recordUsage(tenantId: string, metric: string, quantity: nu
 }
 
 export async function getUsageSummary(tenantId: string) {
-  const sub = await prisma.subscription.findUnique({ where: { tenantId } });
+  const sub = await prisma.subscription.findUnique({ where: { tenantId }, include: { plan: true } });
   if (!sub) return null;
 
   const records = await prisma.usageRecord.findMany({

@@ -95,6 +95,15 @@ const slaDeadlineFor = (service, createdAt) =>
 async function main() {
   console.log('Seeding database DTMS...');
 
+  await prisma.usageRecord.deleteMany();
+  await prisma.payment.deleteMany();
+  await prisma.invoice.deleteMany();
+  await prisma.subscription.deleteMany();
+  await prisma.plan.deleteMany();
+  await prisma.integrationLog.deleteMany();
+  await prisma.integrationConfig.deleteMany();
+  await prisma.webhookSubscription.deleteMany();
+  await prisma.apiKey.deleteMany();
   await prisma.rolePermission.deleteMany();
   await prisma.permission.deleteMany();
   await prisma.demoRequest.deleteMany();
@@ -119,6 +128,18 @@ async function main() {
   await prisma.branch.deleteMany();
   await prisma.company.deleteMany();
   await prisma.tenant.deleteMany();
+
+  // --- Plans ---
+  const planData = [
+    { name: 'Free', code: 'FREE', description: 'Coba gratis selamanya', priceMonthly: 0, priceYearly: 0, maxUsers: 2, maxDrivers: 5, maxShipments: 50, maxStorageMb: 50, features: ['basic_tracking', 'dispatch'], sortOrder: 0 },
+    { name: 'Starter', code: 'STARTER', description: 'Untuk bisnis kecil', priceMonthly: 199000, priceYearly: 1990000, maxUsers: 5, maxDrivers: 15, maxShipments: 500, maxStorageMb: 500, features: ['basic_tracking', 'dispatch', 'reports'], sortOrder: 1 },
+    { name: 'Professional', code: 'PRO', description: 'Untuk tim operasional', priceMonthly: 499000, priceYearly: 4990000, maxUsers: 20, maxDrivers: 50, maxShipments: 5000, maxStorageMb: 2000, features: ['basic_tracking', 'dispatch', 'reports', 'sla', 'eta', 'control_tower', 'api', 'webhooks'], sortOrder: 2 },
+    { name: 'Enterprise', code: 'ENTERPRISE', description: 'Untuk perusahaan besar', priceMonthly: 1499000, priceYearly: 14990000, maxUsers: -1, maxDrivers: -1, maxShipments: -1, maxStorageMb: -1, features: ['basic_tracking', 'dispatch', 'reports', 'sla', 'eta', 'control_tower', 'api', 'webhooks', 'integrations', 'priority_support'], sortOrder: 3 },
+  ];
+  for (const p of planData) {
+    await prisma.plan.upsert({ where: { code: p.code }, update: p, create: p });
+  }
+  console.log('Plans seeded');
 
   const tenant = await prisma.tenant.create({
     data: {

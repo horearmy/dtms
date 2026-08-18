@@ -47,7 +47,7 @@ async function run(req: Request) {
       elapsedMs,
     });
   } catch (e) {
-    logger.error('alerts', 'Alert scan error', { error: String(e) });
+    logger.error('Alert scan error', { context: 'alerts', error: String(e) });
     return NextResponse.json({ error: 'Terjadi kesalahan saat memindai alert' }, { status: 500 });
   }
 }

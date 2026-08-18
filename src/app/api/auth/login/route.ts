@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     await logAudit(null, 'LOGIN_SUCCESS', 'AUTH', { newData: { username: user.username, tenantId: user.tenantId } }, req);
     return response;
   } catch (e) {
-    logger.error('login', 'Login error', { error: String(e) });
+    logger.error('Login error', { context: 'login', error: String(e) });
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
   }
 }

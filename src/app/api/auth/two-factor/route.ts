@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       mustChangePassword: user.mustChangePassword,
     });
   } catch (e) {
-    logger.error('two_factor', 'Two-factor auth error', { error: String(e) });
+    logger.error('Two-factor auth error', { context: 'two_factor', error: String(e) });
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
   }
 }

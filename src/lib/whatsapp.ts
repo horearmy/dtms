@@ -63,14 +63,14 @@ export async function sendTextMessage(to: string, text: string): Promise<SendRes
     const data = await res.json();
 
     if (!res.ok) {
-      logger.error('whatsapp', 'Send failed', { data });
+      logger.error('Send failed', { context: 'whatsapp', data });
       return { success: false, error: data?.error?.message || 'Unknown error' };
     }
 
     const msgId = data?.messages?.[0]?.id;
     return { success: true, messageId: msgId };
   } catch (err) {
-    logger.error('whatsapp', 'Send error', { error: String(err) });
+    logger.error('Send error', { context: 'whatsapp', error: String(err) });
     return { success: false, error: String(err) };
   }
 }
@@ -118,14 +118,14 @@ export async function sendTemplateMessage(
     const data = await res.json();
 
     if (!res.ok) {
-      logger.error('whatsapp', 'Template send failed', { data });
+      logger.error('Template send failed', { context: 'whatsapp', data });
       return { success: false, error: data?.error?.message || 'Unknown error' };
     }
 
     const msgId = data?.messages?.[0]?.id;
     return { success: true, messageId: msgId };
   } catch (err) {
-    logger.error('whatsapp', 'Template send error', { error: String(err) });
+    logger.error('Template send error', { context: 'whatsapp', error: String(err) });
     return { success: false, error: String(err) };
   }
 }
