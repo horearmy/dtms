@@ -3,10 +3,13 @@
 import { NextResponse } from 'next/server';
 import { collectMetrics, collectSystemMetrics } from '@/lib/metrics';
 import { getStats } from '@/lib/job-queue';
+import { guard } from '@/lib/api-guard';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const { session, error } = await guard('SUPER_ADMIN');
+  if (error) return error;
   collectSystemMetrics();
 
   // Add job queue metrics

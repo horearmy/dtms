@@ -50,7 +50,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await guard();
+  const { session, error } = await guard('DRIVER', 'SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER');
   if (error) return error;
 
   const body = await req.json();

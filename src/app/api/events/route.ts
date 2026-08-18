@@ -1,29 +1,23 @@
 // src/app/api/events/route.ts
 // Server-Sent Events endpoint for real-time dashboard updates.
 import { subscribe } from '@/lib/sse-bus';
-import { verifyToken } from '@/lib/auth';
+import { getSession, COOKIE_NAME } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  let channel = url.searchParams.get('tenantId') || 'global';
+  const session = await getSession();
 
-  // Try to authenticate via cookie/token for tenant scoping
-  const cookieHeader = req.headers.get('cookie') || '';
-  const tokenMatch = cookieHeader.match(/session_token=([^;]+)/);
-  if (tokenMatch) {
-    try {
-      const session = await verifyToken(tokenMatch[1]);
-      if (session?.tenantId) {
-        channel = `tenant:${session.tenantId}`;
-      }
-    } catch {
-      // unauthenticated — use provided tenantId or global
-    }
-  } else if (channel !== 'global') {
-    channel = `tenant:${channel}`;
+  let channel: string;
+  if (session?.tenantId) {
+    channel = `tenant:${session.tenantId}`;
+  } else if (session?.role === 'SUPER_ADMIN') {
+    const url = new URL(req.url);
+    const requestedTenant = url.searchParams.get('tenantId');
+    channel = requestedTenant ? `tenant:${requestedTenant}` : 'global';
+  } else {
+    return new Response(JSON.stringify({ error: 'Tidak terautentikasi' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
 
   const encoder = new TextEncoder();

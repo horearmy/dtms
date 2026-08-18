@@ -23,11 +23,17 @@ export async function POST(req: NextRequest) {
     const signature = req.headers.get('x-hub-signature-256');
     const WHATSAPP_SECRET = process.env.WHATSAPP_SECRET;
 
-    if (WHATSAPP_SECRET && signature) {
-      const expected = 'sha256=' + crypto.createHmac('sha256', WHATSAPP_SECRET).update(body).digest('hex');
-      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-      }
+    if (!WHATSAPP_SECRET) {
+      return NextResponse.json({ error: 'WhatsApp webhook tidak dikonfigurasi' }, { status: 503 });
+    }
+
+    if (!signature) {
+      return NextResponse.json({ error: 'Signature tidak ditemukan' }, { status: 401 });
+    }
+
+    const expected = 'sha256=' + crypto.createHmac('sha256', WHATSAPP_SECRET).update(body).digest('hex');
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
     const data = JSON.parse(body);

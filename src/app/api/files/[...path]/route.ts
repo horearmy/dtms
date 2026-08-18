@@ -1,14 +1,27 @@
 // src/app/api/files/[...path]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getFile } from '@/lib/storage';
+import { getSession } from '@/lib/auth';
 
 const MIME: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf',
 };
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
+  }
+
   const { path: parts } = await params;
   if (!parts.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  if (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN_OPERASIONAL') {
+    const fileTenant = parts[0];
+    if (session.tenantId && fileTenant !== session.tenantId) {
+      return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
+    }
+  }
 
   const key = parts.join('/');
   const result = await getFile(key);

@@ -240,7 +240,7 @@ function LoginFormInner() {
         )}
       </div>
 
-      {process.env.NEXT_PUBLIC_SHOW_DEMO_ACCOUNTS === 'true' || process.env.NODE_ENV === 'development' ? (
+      {process.env.NODE_ENV === 'development' ? (
         <div className="mt-4 rounded-xl border border-[#E4E7EC] bg-white px-4 py-3 text-xs text-[#667085]">
           <b className="text-[#101828]">Akun demo:</b> superadmin/admin123 · admin/admin123 · dispatcher/admin123 ·
           warehouse/admin123 · driver1/driver123

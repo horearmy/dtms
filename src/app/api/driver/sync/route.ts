@@ -78,6 +78,13 @@ export async function POST(req: NextRequest) {
         case 'STATUS_UPDATE': {
           const p = action.payload;
           if (p.shipmentId && p.status) {
+            const assignment = await prisma.deliveryAssignment.findFirst({
+              where: { shipmentId: p.shipmentId as string, driverId },
+            });
+            if (!assignment) {
+              results.push({ localEventId: action.localEventId, status: 'error', error: 'Shipment bukan tugas Anda' });
+              break;
+            }
             await prisma.shipment.update({
               where: { id: p.shipmentId as string },
               data: { status: p.status as ShipmentStatus },
