@@ -5,7 +5,10 @@ import { logWhatsAppMessage } from '@/lib/whatsapp';
 import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
-  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || '';
+  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+  if (!verifyToken) {
+    return NextResponse.json({ error: 'Webhook tidak dikonfigurasi' }, { status: 503 });
+  }
   const mode = req.nextUrl.searchParams.get('hub.mode');
   const token = req.nextUrl.searchParams.get('hub.verify_token');
   const challenge = req.nextUrl.searchParams.get('hub.challenge');

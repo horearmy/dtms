@@ -55,7 +55,12 @@ function verifyCsrf(req: NextRequest): boolean {
   const token = req.headers.get('x-csrf-token');
   const cookie = req.cookies.get(CSRF_COOKIE)?.value;
   if (!token || !cookie) return false;
-  return token === cookie;
+  try {
+    const { timingSafeEqual } = require('crypto');
+    return timingSafeEqual(Buffer.from(token, 'utf8'), Buffer.from(cookie, 'utf8'));
+  } catch {
+    return false;
+  }
 }
 
 function addSecurityHeaders(res: NextResponse): NextResponse {
@@ -112,10 +117,11 @@ export async function middleware(req: NextRequest) {
       ));
     }
 
-    if (isMutationMethod(req.method) && !pathname.startsWith('/api/auth/')) {
+    if (isMutationMethod(req.method)) {
+      const isPublicAuth = pathname === '/api/auth/login' || pathname.startsWith('/api/auth/two-factor') || pathname === '/api/auth/forgot-password' || pathname === '/api/auth/reset-password';
       const authHeader = req.headers.get('authorization');
       const isApiKeyRequest = authHeader && authHeader.toLowerCase().startsWith('bearer dtms_');
-      if (!isApiKeyRequest && !verifyCsrf(req)) {
+      if (!isPublicAuth && !isApiKeyRequest && !verifyCsrf(req)) {
         return addSecurityHeaders(NextResponse.json(
           { error: 'CSRF token tidak valid' },
           { status: 403 }

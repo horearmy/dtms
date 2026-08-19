@@ -85,7 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       });
     } catch (txErr) {
       console.error('[POD] Transaction error:', txErr);
-      return NextResponse.json({ error: 'Gagal menyimpan POD', detail: txErr instanceof Error ? txErr.message : 'Unknown error' }, { status: 500 });
+      return NextResponse.json({ error: 'Gagal menyimpan POD' }, { status: 500 });
     }
 
     try {

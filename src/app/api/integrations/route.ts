@@ -25,13 +25,22 @@ export async function POST(req: NextRequest) {
 
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
+    const name = body.name?.toString().trim().slice(0, 100);
+    if (!name) {
+      return NextResponse.json({ error: 'Nama integrasi wajib diisi' }, { status: 400 });
+    }
+    const baseUrl = body.baseUrl?.toString().trim().slice(0, 500) || null;
+    if (baseUrl && !/^https?:\/\//.test(baseUrl)) {
+      return NextResponse.json({ error: 'URL harus menggunakan http:// atau https://' }, { status: 400 });
+    }
+    const config = body.config && typeof body.config === 'object' ? JSON.parse(JSON.stringify(body.config)) : undefined;
     const integration = await prisma.integrationConfig.create({
       data: {
         tenantId: session!.tenantId!,
-        name: body.name,
-        type: body.type || 'REST_API',
-        baseUrl: body.baseUrl || null,
-        config: body.config || undefined,
+        name,
+        type: body.type?.toString().trim() || 'REST_API',
+        baseUrl,
+        config,
       },
     });
 

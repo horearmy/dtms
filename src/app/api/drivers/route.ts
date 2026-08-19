@@ -22,15 +22,25 @@ export async function GET(req: NextRequest) {
       take: pageSize,
       include: { user: { select: { username: true } }, _count: { select: { assignments: true } } },
     });
-    const scored = [];
-    for (const d of drivers) {
-      const stat = await driverScore(d.id);
-      const trip = await prisma.deliveryAssignment.findFirst({
-        where: { driverId: d.id, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
-        select: { shipment: { select: { trackingNumber: true } } },
-      });
-      scored.push({ ...d, stat, busy: !!trip || d.returning, activeTracking: trip?.shipment.trackingNumber || null });
-    }
+
+    const driverIds = drivers.map(d => d.id);
+    const [scores, activeTrips] = await Promise.all([
+      Promise.all(driverIds.map(id => driverScore(id))),
+      prisma.deliveryAssignment.findMany({
+        where: { driverId: { in: driverIds }, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
+        select: { driverId: true, shipment: { select: { trackingNumber: true } } },
+      }),
+    ]);
+
+    const tripMap = new Map<string, string>();
+    for (const t of activeTrips) tripMap.set(t.driverId, t.shipment.trackingNumber);
+
+    const scored = drivers.map((d, i) => ({
+      ...d,
+      stat: scores[i],
+      busy: !!tripMap.get(d.id) || d.returning,
+      activeTracking: tripMap.get(d.id) || null,
+    }));
     return NextResponse.json({ items: scored, total, page, pageSize });
   });
 }

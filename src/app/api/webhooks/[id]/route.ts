@@ -12,12 +12,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params;
     const body = await req.json();
 
-    await prisma.webhookSubscription.updateMany({
+    const existing = await prisma.webhookSubscription.findFirst({ where: { id } });
+    if (!existing) return NextResponse.json({ error: 'Webhook tidak ditemukan' }, { status: 404 });
+
+    const updated = await prisma.webhookSubscription.update({
       where: { id },
       data: { url: body.url, events: body.events, active: body.active },
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(updated);
   });
 }
 
@@ -28,9 +31,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   return runWithTenant(session?.tenantId ?? null, async () => {
     const { id } = await params;
 
-    await prisma.webhookSubscription.deleteMany({
-      where: { id },
-    });
+    const existing = await prisma.webhookSubscription.findFirst({ where: { id } });
+    if (!existing) return NextResponse.json({ error: 'Webhook tidak ditemukan' }, { status: 404 });
+
+    await prisma.webhookSubscription.delete({ where: { id } });
 
     return NextResponse.json({ ok: true });
   });

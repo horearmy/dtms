@@ -113,7 +113,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
 
-    const driver = await prisma.driver.findUnique({ where: { id }, include: { user: true } });
+    const driver = await prisma.driver.findUnique({ where: { id }, include: { user: { select: { id: true, username: true, tenantId: true, role: true } } } });
     if (!driver) return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });
 
     const username = body.username?.toString().trim().toLowerCase() || '';
@@ -164,7 +164,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           ...(newUserId ? { userId: newUserId } : {}),
         },
       });
-      await logAudit(session, 'UPDATE_DRIVER', 'DRIVER', { oldData: driver, newData: updated }, req);
+      await logAudit(session, 'UPDATE_DRIVER', 'DRIVER', {
+        oldData: { id: driver.id, name: driver.name, phone: driver.phone, status: driver.status, userId: driver.userId },
+        newData: { id: updated.id, name: updated.name, phone: updated.phone, status: updated.status },
+      }, req);
       return NextResponse.json(updated);
     } catch {
       return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });

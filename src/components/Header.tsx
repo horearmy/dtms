@@ -116,9 +116,6 @@ export default function Header({ name, role, onMenuClick }: { name: string; role
           {/* Message Badge */}
           <button className="relative rounded-lg p-2 text-[#667085] hover:bg-gray-100">
             <MessageSquare size={18} />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#0D6EFD] px-1 text-[9px] font-bold text-white">
-              3
-            </span>
           </button>
 
           {/* Fullscreen */}

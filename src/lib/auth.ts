@@ -114,7 +114,10 @@ export async function getSession(): Promise<SessionUser | null> {
   if (token) {
     const payload = await verifyToken(token);
     if (!payload) return null;
-    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+      select: { id: true, name: true, username: true, role: true, tenantId: true, branchId: true, status: true, pwdVersion: true },
+    });
     if (!user || user.status !== 'ACTIVE') return null;
     if (user.pwdVersion !== payload.pwd) return null;
     return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan: payload.plan, planFeatures: payload.planFeatures };

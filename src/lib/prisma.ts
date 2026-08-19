@@ -15,7 +15,7 @@ type AnyArgs = Record<string, any>;
 // Only models that ACTUALLY have a tenantId column in the schema
 const TENANT_SCOPED = new Set([
   'user', 'customer', 'shipment', 'shipmentStop', 'shipmentItem',
-  'driver', 'vehicle', 'vehicleMaintenance', 'dailyReport',
+  'driver', 'vehicle', 'vehicleMaintenance',
   'company', 'branch', 'department', 'warehouse', 'hub',
   'shipmentEvent', 'geofence',
   'exception', 'slaPolicy', 'slaEvent',
@@ -111,7 +111,6 @@ export const prisma = basePrisma.$extends({
     driver: modelExtension('driver'),
     vehicle: modelExtension('vehicle'),
     vehicleMaintenance: modelExtension('vehicleMaintenance'),
-    dailyReport: modelExtension('dailyReport'),
     company: modelExtension('company'),
     branch: modelExtension('branch'),
     department: modelExtension('department'),

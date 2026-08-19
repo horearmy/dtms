@@ -19,14 +19,20 @@ export async function GET(req: NextRequest) {
       take: pageSize,
       include: { _count: { select: { assignments: true } } },
     });
-    const result = [];
-    for (const v of vehicles) {
-      const trip = await prisma.deliveryAssignment.findFirst({
-        where: { vehicleId: v.id, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
-        select: { shipment: { select: { trackingNumber: true } } },
-      });
-      result.push({ ...v, busy: !!trip || v.returning, activeTracking: trip?.shipment.trackingNumber || null });
-    }
+
+    const vehicleIds = vehicles.map(v => v.id);
+    const activeTrips = await prisma.deliveryAssignment.findMany({
+      where: { vehicleId: { in: vehicleIds }, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
+      select: { vehicleId: true, shipment: { select: { trackingNumber: true } } },
+    });
+    const tripMap = new Map<string, string>();
+    for (const t of activeTrips) if (t.vehicleId) tripMap.set(t.vehicleId, t.shipment.trackingNumber);
+
+    const result = vehicles.map(v => ({
+      ...v,
+      busy: !!tripMap.get(v.id || '') || v.returning,
+      activeTracking: tripMap.get(v.id || '') || null,
+    }));
     return NextResponse.json({ items: result, total, page, pageSize });
   });
 }

@@ -5,7 +5,7 @@ import { getSession } from '@/lib/auth';
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session || !['SUPER_ADMIN', 'ADMIN_OPERASIONAL'].includes(session.role)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
   }
 
   const status = req.nextUrl.searchParams.get('status') || '';
@@ -32,28 +32,51 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== 'SUPER_ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
   }
 
-  const body = await req.json();
-  const { name, slug, code, status, primaryColor, secondaryColor, accentColor, domain, plan, timezone, locale, currency, contactName, contactEmail, contactPhone, maxUsers, maxDrivers, maxShipments } = body;
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Body tidak valid' }, { status: 400 });
+  }
+  const { name, slug } = body;
+  const code = body.code as string | undefined;
+  const status = body.status as string | undefined;
+  const primaryColor = body.primaryColor as string | undefined;
+  const secondaryColor = body.secondaryColor as string | undefined;
+  const accentColor = body.accentColor as string | undefined;
+  const domain = body.domain as string | undefined;
+  const plan = body.plan as string | undefined;
+  const timezone = body.timezone as string | undefined;
+  const locale = body.locale as string | undefined;
+  const currency = body.currency as string | undefined;
+  const contactName = body.contactName as string | undefined;
+  const contactEmail = body.contactEmail as string | undefined;
+  const contactPhone = body.contactPhone as string | undefined;
+  const maxUsers = body.maxUsers as number | undefined;
+  const maxDrivers = body.maxDrivers as number | undefined;
+  const maxShipments = body.maxShipments as number | undefined;
 
   if (!name || !slug) {
     return NextResponse.json({ error: 'Nama dan slug wajib diisi' }, { status: 400 });
   }
 
+  const slugStr = String(slug);
   const slugRegex = /^[a-z0-9-]+$/;
-  if (!slugRegex.test(slug)) {
+  if (!slugRegex.test(slugStr)) {
     return NextResponse.json({ error: 'Slug hanya boleh huruf kecil, angka, dan strip' }, { status: 400 });
   }
 
-  const existing = await prisma.tenant.findUnique({ where: { slug } });
+  const existing = await prisma.tenant.findUnique({ where: { slug: slugStr } });
   if (existing) {
     return NextResponse.json({ error: 'Slug sudah digunakan' }, { status: 409 });
   }
 
-  if (code) {
-    const existingCode = await prisma.tenant.findUnique({ where: { code } });
+  const codeStr = code ? String(code) : null;
+  if (codeStr) {
+    const existingCode = await prisma.tenant.findUnique({ where: { code: codeStr } });
     if (existingCode) {
       return NextResponse.json({ error: 'Kode tenant sudah digunakan' }, { status: 409 });
     }
@@ -62,9 +85,9 @@ export async function POST(req: NextRequest) {
   const tenant = await prisma.tenant.create({
     data: {
       name: String(name).slice(0, 100),
-      slug: String(slug).slice(0, 50),
-      code: code ? String(code).slice(0, 20) : null,
-      status: status || 'ACTIVE',
+      slug: slugStr.slice(0, 50),
+      code: codeStr ? codeStr.slice(0, 20) : null,
+      status: (status as 'ACTIVE' | 'SUSPENDED') || 'ACTIVE',
       primaryColor: primaryColor || '#2563eb',
       secondaryColor: secondaryColor || '#1e40af',
       accentColor: accentColor || '#3b82f6',

@@ -14,7 +14,12 @@ function generateToken(): string {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Body tidak valid' }, { status: 400 });
+  }
   const identifier = body.identifier?.toString().trim().toLowerCase();
 
   if (!identifier) {

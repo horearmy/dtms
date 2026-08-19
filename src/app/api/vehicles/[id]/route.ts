@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
     try {
-      const before = await prisma.vehicle.findUnique({ where: { id } });
+      const before = await prisma.vehicle.findUnique({ where: { id }, select: { id: true, vehicleNumber: true, type: true, status: true, capacity: true } });
       const vehicle = await prisma.vehicle.update({
         where: { id },
         data: {
@@ -64,7 +64,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         session,
         'UPDATE_VEHICLE',
         'VEHICLE',
-        { oldData: before, newData: vehicle },
+        { oldData: before, newData: { id: vehicle.id, vehicleNumber: vehicle.vehicleNumber, type: vehicle.type, status: vehicle.status } },
         req
       );
       return NextResponse.json(vehicle);

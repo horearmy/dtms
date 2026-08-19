@@ -92,7 +92,6 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         user,
-        plainPassword,
         waSent,
         waError: waSent ? undefined : waError,
         message: waSent

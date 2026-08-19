@@ -7,6 +7,13 @@ import { prisma } from '@/lib/prisma';
 import { ingestGps } from '@/lib/gps-processor';
 import { ShipmentStatus } from '@prisma/client';
 
+const DRIVER_FLOW: Record<string, string[]> = {
+  DISPATCHED: ['IN_TRANSIT', 'CANCELLED'],
+  IN_TRANSIT: ['ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY', 'CANCELLED'],
+  ARRIVED_AT_HUB: ['OUT_FOR_DELIVERY', 'CANCELLED'],
+  OUT_FOR_DELIVERY: ['DELIVERED', 'FAILED', 'CANCELLED'],
+};
+
 interface OfflineAction {
   localEventId: string;
   deviceId: string;
@@ -80,6 +87,24 @@ export async function POST(req: NextRequest) {
           case 'STATUS_UPDATE': {
             const p = action.payload;
             if (p.shipmentId && p.status) {
+              const newStatus = p.status as string;
+              const allowedNext = DRIVER_FLOW[newStatus];
+              if (!allowedNext) {
+                results.push({ localEventId: action.localEventId, status: 'error', error: `Status ${newStatus} tidak valid` });
+                break;
+              }
+              const shipment = await prisma.shipment.findUnique({
+                where: { id: p.shipmentId as string },
+                select: { status: true },
+              });
+              if (!shipment) {
+                results.push({ localEventId: action.localEventId, status: 'error', error: 'Shipment tidak ditemukan' });
+                break;
+              }
+              if (!allowedNext.includes(shipment.status)) {
+                results.push({ localEventId: action.localEventId, status: 'error', error: `Tidak dapatubah dari ${shipment.status} ke ${newStatus}` });
+                break;
+              }
               const assignment = await prisma.deliveryAssignment.findFirst({
                 where: { shipmentId: p.shipmentId as string, driverId },
               });
@@ -89,7 +114,7 @@ export async function POST(req: NextRequest) {
               }
               await prisma.shipment.update({
                 where: { id: p.shipmentId as string },
-                data: { status: p.status as ShipmentStatus },
+                data: { status: newStatus as ShipmentStatus },
               });
             }
             results.push({ localEventId: action.localEventId, status: 'committed' });
