@@ -4,7 +4,7 @@ import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.AUDIT.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.AUDIT.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));

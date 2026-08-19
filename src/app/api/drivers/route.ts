@@ -9,7 +9,7 @@ import { ON_ROAD_STATUSES } from '@/lib/constants';
 import { validatePassword } from '@/lib/security';
 
 export async function GET(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DRIVER.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.DRIVER.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DRIVER.CREATE);
+  const { session, error } = await guardPermission(PERMISSIONS.DRIVER.CREATE);
   if (error) return error;
   const limitError = await guardPlanLimit(session, 'drivers');
   if (limitError) return limitError;

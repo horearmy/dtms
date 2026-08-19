@@ -7,7 +7,7 @@ import { ShipmentStatus } from '@prisma/client';
 const ACTIVE_STATUS: ShipmentStatus[] = ['DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY'];
 
 export async function GET() {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DELIVERY.START);
+  const { session, error } = await guardPermission(PERMISSIONS.DELIVERY.START);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

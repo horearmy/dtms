@@ -4,7 +4,7 @@ import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DELIVERY.COMPLETE);
+  const { session, error } = await guardPermission(PERMISSIONS.DELIVERY.COMPLETE);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { timingSafeEqual } from 'crypto';
 import { ROUTE_FEATURE_MAP } from '@/lib/billing';
 
 const COOKIE_NAME = 'dtms_token';
@@ -56,7 +57,6 @@ function verifyCsrf(req: NextRequest): boolean {
   const cookie = req.cookies.get(CSRF_COOKIE)?.value;
   if (!token || !cookie) return false;
   try {
-    const { timingSafeEqual } = require('crypto');
     return timingSafeEqual(Buffer.from(token, 'utf8'), Buffer.from(cookie, 'utf8'));
   } catch {
     return false;

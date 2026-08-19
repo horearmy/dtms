@@ -5,7 +5,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 import { broadcast } from '@/lib/sse-bus';
 
 export async function GET() {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DISPATCH.VIEW);
+  const { session, error } = await guardPermission(PERMISSIONS.DISPATCH.VIEW);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
@@ -49,7 +49,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DISPATCH.ASSIGN);
+  const { session, error } = await guardPermission(PERMISSIONS.DISPATCH.ASSIGN);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

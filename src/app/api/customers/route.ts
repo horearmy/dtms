@@ -4,7 +4,7 @@ import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.CUSTOMER.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.CUSTOMER.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const q = req.nextUrl.searchParams.get('q') || '';
@@ -32,7 +32,7 @@ function toNum(v: unknown): number | null {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.CUSTOMER.CREATE);
+  const { session, error } = await guardPermission(PERMISSIONS.CUSTOMER.CREATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();

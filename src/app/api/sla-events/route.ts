@@ -5,7 +5,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 import { evaluateSlaStatus } from '@/lib/sla';
 
 export async function GET(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.SLA.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.SLA.READ);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST() {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.SLA.CREATE);
+  const { session, error } = await guardPermission(PERMISSIONS.SLA.CREATE);
   if (error) return error;
 
   if (!session?.tenantId) {

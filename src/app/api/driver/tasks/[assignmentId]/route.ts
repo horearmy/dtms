@@ -4,7 +4,7 @@ import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ assignmentId: string }> }) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

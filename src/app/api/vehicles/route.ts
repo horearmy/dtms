@@ -6,7 +6,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 import { ON_ROAD_STATUSES } from '@/lib/constants';
 
 export async function GET(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.VEHICLE.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.VEHICLE.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.VEHICLE.CREATE);
+  const { session, error } = await guardPermission(PERMISSIONS.VEHICLE.CREATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();

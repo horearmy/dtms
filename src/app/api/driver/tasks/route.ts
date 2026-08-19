@@ -6,7 +6,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 const VALID_ACTIONS = ['START', 'ARRIVE', 'POD', 'FAIL'] as const;
 
 export async function GET() {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
@@ -55,7 +55,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DELIVERY.START);
+  const { session, error } = await guardPermission(PERMISSIONS.DELIVERY.START);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

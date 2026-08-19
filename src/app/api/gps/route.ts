@@ -7,7 +7,7 @@ import { haversineKm } from '@/lib/eta';
 import { MAINTENANCE_DISTANCE_KM } from '@/lib/constants';
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.GPS.SEND);
+  const { session, error } = await guardPermission(PERMISSIONS.GPS.SEND);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

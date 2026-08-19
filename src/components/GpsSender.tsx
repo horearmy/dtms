@@ -25,14 +25,14 @@ export default function GpsSender() {
 
   async function send() {
     setStatus('Mencari lokasi...');
-    const useMock = () => {
+    const mockGPS = () => {
       const lat = -6.2 + (Math.random() - 0.5) * 0.05;
       const lng = 106.816 + (Math.random() - 0.5) * 0.05;
       return postGPS(lat, lng);
     };
 
     if (!navigator.geolocation) {
-      await useMock();
+      await mockGPS();
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -40,7 +40,7 @@ export default function GpsSender() {
         await postGPS(pos.coords.latitude, pos.coords.longitude, pos.coords.speed, pos.coords.accuracy);
       },
       async () => {
-        await useMock();
+        await mockGPS();
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );

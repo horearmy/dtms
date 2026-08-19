@@ -18,7 +18,7 @@ const ASSIGNABLE_ROLES: string[] = [
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, scope, error } = await guardPermission(PERMISSIONS.USER.UPDATE);
+  const { session, error } = await guardPermission(PERMISSIONS.USER.UPDATE);
   if (error) return error;
 
   const isSuperAdmin = session.role === 'SUPER_ADMIN';
@@ -95,7 +95,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, scope, error } = await guardPermission(PERMISSIONS.USER.DELETE);
+  const { session, error } = await guardPermission(PERMISSIONS.USER.DELETE);
   if (error) return error;
 
   const isSuperAdmin = session.role === 'SUPER_ADMIN';

@@ -11,7 +11,7 @@ function toNum(v: unknown): number | null {
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, scope, error } = await guardPermission(PERMISSIONS.CUSTOMER.UPDATE);
+  const { session, error } = await guardPermission(PERMISSIONS.CUSTOMER.UPDATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, scope, error } = await guardPermission(PERMISSIONS.CUSTOMER.DELETE);
+  const { session, error } = await guardPermission(PERMISSIONS.CUSTOMER.DELETE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     try {

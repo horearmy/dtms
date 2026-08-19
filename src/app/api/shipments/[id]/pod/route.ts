@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { sendShipmentStatusUpdate } from '@/lib/whatsapp';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         });
       });
     } catch (txErr) {
-      console.error('[POD] Transaction error:', txErr);
+      logger.error('[POD] Transaction error', { context: 'api', data: { shipmentId: id, error: txErr instanceof Error ? txErr.message : 'Unknown error' } });
       return NextResponse.json({ error: 'Gagal menyimpan POD' }, { status: 500 });
     }
 

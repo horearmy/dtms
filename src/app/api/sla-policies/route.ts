@@ -6,7 +6,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 const VALID_SERVICE_TYPES = ['SAME_DAY', 'NEXT_DAY', 'REGULAR'] as const;
 
 export async function GET() {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.SLA.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.SLA.READ);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
@@ -19,7 +19,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.SLA.CREATE);
+  const { session, error } = await guardPermission(PERMISSIONS.SLA.CREATE);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

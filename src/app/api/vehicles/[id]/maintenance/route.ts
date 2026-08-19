@@ -5,7 +5,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, scope, error } = await guardPermission(PERMISSIONS.VEHICLE.UPDATE);
+  const { session, error } = await guardPermission(PERMISSIONS.VEHICLE.UPDATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();

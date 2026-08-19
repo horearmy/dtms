@@ -17,7 +17,7 @@ const ASSIGNABLE_ROLES: string[] = [
 ];
 
 export async function GET(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.USER.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.USER.READ);
   if (error) return error;
 
   const isSuperAdmin = session.role === 'SUPER_ADMIN';
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.USER.CREATE);
+  const { session, error } = await guardPermission(PERMISSIONS.USER.CREATE);
   if (error) return error;
   const limitError = await guardPlanLimit(session, 'users');
   if (limitError) return limitError;

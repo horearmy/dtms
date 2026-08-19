@@ -4,7 +4,7 @@ import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.SHIPMENT.READ);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.SHIPMENT.UPDATE);
+  const { session, error } = await guardPermission(PERMISSIONS.SHIPMENT.UPDATE);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

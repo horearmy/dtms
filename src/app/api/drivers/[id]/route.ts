@@ -9,7 +9,7 @@ import { validatePassword } from '@/lib/security';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DRIVER.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.DRIVER.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const driver = await prisma.driver.findUnique({
@@ -108,7 +108,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DRIVER.UPDATE);
+  const { session, error } = await guardPermission(PERMISSIONS.DRIVER.UPDATE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
@@ -177,7 +177,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DRIVER.DELETE);
+  const { session, error } = await guardPermission(PERMISSIONS.DRIVER.DELETE);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
     try {

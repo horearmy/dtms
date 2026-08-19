@@ -13,7 +13,7 @@ const VALID_EXCEPTION_TYPES = [
 const VALID_EXCEPTION_SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 
 export async function GET(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.EXCEPTION.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.EXCEPTION.READ);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.EXCEPTION.CREATE);
+  const { session, error } = await guardPermission(PERMISSIONS.EXCEPTION.CREATE);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

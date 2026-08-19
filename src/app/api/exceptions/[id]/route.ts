@@ -5,7 +5,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 import { broadcast } from '@/lib/sse-bus';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.EXCEPTION.UPDATE);
+  const { session, error } = await guardPermission(PERMISSIONS.EXCEPTION.UPDATE);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

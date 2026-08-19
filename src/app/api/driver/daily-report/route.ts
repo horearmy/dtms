@@ -4,7 +4,7 @@ import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DAILY_REPORT.CREATE);
+  const { session, error } = await guardPermission(PERMISSIONS.DAILY_REPORT.CREATE);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.DAILY_REPORT.READ);
+  const { session, error } = await guardPermission(PERMISSIONS.DAILY_REPORT.READ);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

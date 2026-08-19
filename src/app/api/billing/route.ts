@@ -21,7 +21,7 @@ export async function GET() {
 
 // POST — subscribe to plan
 export async function POST(req: NextRequest) {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.BILLING.MANAGE);
+  const { session, error } = await guardPermission(PERMISSIONS.BILLING.MANAGE);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {

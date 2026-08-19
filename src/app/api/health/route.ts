@@ -11,7 +11,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { session, scope, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
+  const { session, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
   if (error) return error;
   const checks: Record<string, string> = {};
   let healthy = true;

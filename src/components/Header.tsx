@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Menu,
   Search,
-  Bell,
   MessageSquare,
   Maximize2,
   Minimize2,
@@ -17,7 +16,6 @@ import {
 } from 'lucide-react';
 import { ROLE_LABELS } from '@/lib/constants';
 import NotificationsBell from './NotificationsBell';
-import { cn } from '@/lib/utils';
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
