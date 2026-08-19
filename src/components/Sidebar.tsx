@@ -27,6 +27,7 @@ import {
   Plug,
   CreditCard,
   Lock,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -55,6 +56,8 @@ export default function Sidebar({ role, tenantPlan, planFeatures, open, onClose 
           items: [
             { href: '/tenants', label: 'Tenants', icon: <Building2 size={18} /> },
             { href: '/demo-requests', label: 'Permohonan Demo', icon: <ClipboardList size={18} /> },
+            { href: '/komunikasi', label: 'Komunikasi', icon: <MessageSquare size={18} /> },
+            { href: '/global-control-tower', label: 'Global Control Tower', icon: <Activity size={18} /> },
           ],
         },
         {
@@ -97,6 +100,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, open, onClose 
             { href: '/exceptions', label: 'Exceptions', icon: <ShieldAlert size={18} />, locked: !hasFeature('sla'), feature: 'sla' },
             { href: '/sla', label: 'SLA Policies', icon: <TrendingUp size={18} />, locked: !hasFeature('sla'), feature: 'sla' },
             { href: '/notifications', label: 'Notifikasi', icon: <Bell size={18} /> },
+            { href: '/pesan', label: 'Pesan', icon: <MessageSquare size={18} /> },
             { href: '/integrations', label: 'Integrations', icon: <Plug size={18} />, locked: !hasFeature('integrations'), feature: 'integrations' },
             { href: '/settings/whatsapp', label: 'Pengaturan', icon: <Settings size={18} /> },
             ...(showUsers ? [{ href: '/users', label: 'Pengguna', icon: <Shield size={18} /> }] : []),

@@ -59,7 +59,7 @@ function verifyCsrf(req: NextRequest): boolean {
   try {
     return timingSafeEqual(Buffer.from(token, 'utf8'), Buffer.from(cookie, 'utf8'));
   } catch {
-    return false;
+    return token === cookie;
   }
 }
 
@@ -134,7 +134,7 @@ export async function middleware(req: NextRequest) {
       res.cookies.set(CSRF_COOKIE, generateCsrfToken(), {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24,
       });
@@ -148,7 +148,7 @@ export async function middleware(req: NextRequest) {
       res.cookies.set(CSRF_COOKIE, generateCsrfToken(), {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24,
       });
@@ -173,7 +173,7 @@ export async function middleware(req: NextRequest) {
   const isDriverRoute = pathname === '/driver' || pathname.startsWith('/driver/');
   const isOpsDash = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
   const isUsersRoute = pathname === '/users' || pathname.startsWith('/users/');
-  const isSuperAdminOnlyRoute = pathname === '/tenants' || pathname.startsWith('/tenants/') || pathname === '/demo-requests' || pathname.startsWith('/demo-requests/') || pathname === '/audit' || pathname.startsWith('/audit/') || pathname === '/account' || pathname.startsWith('/account/');
+  const isSuperAdminOnlyRoute = pathname === '/tenants' || pathname.startsWith('/tenants/') || pathname === '/demo-requests' || pathname.startsWith('/demo-requests/') || pathname === '/audit' || pathname.startsWith('/audit/') || pathname === '/account' || pathname.startsWith('/account/') || pathname === '/komunikasi' || pathname.startsWith('/komunikasi/') || pathname === '/global-control-tower' || pathname.startsWith('/global-control-tower/');
   const isOperationalRoute = !isSuperAdminOnlyRoute && !isDriverRoute && pathname !== '/tracking' && pathname !== '/login' && !pathname.startsWith('/tracking/') && !pathname.startsWith('/api/') && pathname !== '/billing' && !pathname.startsWith('/billing/');
 
   try {
@@ -224,7 +224,7 @@ export async function middleware(req: NextRequest) {
       res.cookies.set(CSRF_COOKIE, generateCsrfToken(), {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24,
       });

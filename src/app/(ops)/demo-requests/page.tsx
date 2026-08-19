@@ -51,6 +51,8 @@ export default function DemoRequestsPage() {
   const [provisionResult, setProvisionResult] = useState<ProvisionResult | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sendingCredentials, setSendingCredentials] = useState(false);
+  const [credentialsSent, setCredentialsSent] = useState(false);
   const pageSize = 20;
 
   const load = useCallback(async () => {
@@ -84,6 +86,9 @@ export default function DemoRequestsPage() {
       if (data.provisioning) {
         setProvisionResult(data.provisioning);
       }
+      if (data.tenant) {
+        setDetail(data);
+      }
       await load();
     } catch {
       alert('Terjadi kesalahan jaringan');
@@ -109,6 +114,28 @@ export default function DemoRequestsPage() {
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function sendCredentials() {
+    if (!provisionResult || !detail?.tenant) return;
+    setSendingCredentials(true);
+    try {
+      const body = `Halo ${detail.name},\n\nAkun DTMS untuk ${detail.company} telah berhasil dibuat.\n\nDetail Akun:\nURL: ${window.location.origin}/login\nUsername: ${provisionResult.adminUsername}\nPassword: ${provisionResult.adminPassword}\n\nSilakan login dan segera ganti password Anda.\n\nTerima kasih.`;
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId: detail.tenant.id,
+          subject: 'Akun DTMS Anda Telah Aktif',
+          body,
+          direction: 'OUTBOUND',
+        }),
+      });
+      if (res.ok) {
+        setCredentialsSent(true);
+      }
+    } catch {}
+    setSendingCredentials(false);
   }
 
   return (
@@ -230,6 +257,14 @@ export default function DemoRequestsPage() {
                 <div className="text-xs font-semibold text-emerald-700 mb-1">Tenant Aktif</div>
                 <div className="text-sm text-emerald-800">{detail.tenant.name}</div>
                 <div className="text-xs text-emerald-600">Slug: {detail.tenant.slug} · /login</div>
+                {!provisionResult && (
+                  <a
+                    href={`/komunikasi`}
+                    className="mt-2 inline-block text-xs font-semibold text-emerald-700 hover:underline"
+                  >
+                    Kirim pesan via Komunikasi →
+                  </a>
+                )}
               </div>
             )}
 
@@ -247,12 +282,23 @@ export default function DemoRequestsPage() {
                   </div>
                 </div>
                 <div className="text-xs text-blue-600">Slug: {provisionResult.slug}</div>
-                <button
-                  onClick={copyCredentials}
-                  className="rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                >
-                  {copied ? 'Tersalin!' : 'Salin Kredensial'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={copyCredentials}
+                    className="rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                  >
+                    {copied ? 'Tersalin!' : 'Salin Kredensial'}
+                  </button>
+                  {detail.tenant && (
+                    <button
+                      onClick={sendCredentials}
+                      disabled={sendingCredentials || credentialsSent}
+                      className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {credentialsSent ? 'Terkirim!' : sendingCredentials ? 'Mengirim...' : 'Kirim ke Tenant'}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

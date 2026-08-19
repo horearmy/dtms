@@ -156,6 +156,12 @@ function LoginFormInner() {
                 autoComplete="username"
                 className="w-full rounded-lg border border-[#E4E7EC] bg-white px-3 py-2.5 text-sm text-[#101828] placeholder:text-[#667085] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
                 placeholder="Masukkan username"
+                onBlur={(e) => {
+                  if (e.target.value.toLowerCase() === 'superadmin' && !superAdminMode) {
+                    setSuperAdminMode(true);
+                    setSelectedTenant('');
+                  }
+                }}
               />
             </div>
 

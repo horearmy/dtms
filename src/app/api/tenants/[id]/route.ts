@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { logAudit } from '@/lib/api-guard';
+import { runWithTenant } from '@/lib/api-guard';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session || !['SUPER_ADMIN', 'ADMIN_OPERASIONAL'].includes(session.role)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
   }
 
   const { id } = await params;
@@ -13,118 +15,92 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     where: { id },
     include: {
       _count: { select: { users: true, drivers: true, shipments: true, vehicles: true, customers: true, geofences: true } },
-      users: {
-        select: { id: true, name: true, username: true, role: true, status: true, email: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-      },
-      drivers: {
-        select: { id: true, employeeId: true, name: true, phone: true, status: true },
-        orderBy: { name: 'asc' },
-        take: 50,
-      },
-      shipments: {
-        select: { id: true, trackingNumber: true, origin: true, destination: true, status: true, serviceType: true, weight: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-      },
-      vehicles: {
-        select: { id: true, vehicleNumber: true, type: true, status: true, capacity: true },
-        orderBy: { vehicleNumber: 'asc' },
-        take: 50,
-      },
+      subscription: { include: { plan: true } },
     },
   });
 
-  if (!tenant) {
-    return NextResponse.json({ error: 'Tenant tidak ditemukan' }, { status: 404 });
-  }
-
-  const [shipmentStats] = await prisma.$queryRaw<{ total: bigint; delivered: bigint; intransit: bigint }[]>`
-    SELECT
-      COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE status = 'DELIVERED')::int AS delivered,
-      COUNT(*) FILTER (WHERE status IN ('IN_TRANSIT','OUT_FOR_DELIVERY','ARRIVED_AT_HUB'))::int AS intransit
-    FROM "Shipment"
-    WHERE "tenantId" = ${id}
-  `;
-
-  return NextResponse.json({ ...tenant, shipmentStats });
+  if (!tenant) return NextResponse.json({ error: 'Tenant tidak ditemukan' }, { status: 404 });
+  return NextResponse.json(tenant);
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session || session.role !== 'SUPER_ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
   }
 
   const { id } = await params;
   const body = await req.json();
-  const { name, code, status, primaryColor, secondaryColor, accentColor, domain, plan, timezone, locale, currency, contactName, contactEmail, contactPhone, maxUsers, maxDrivers, maxShipments, active } = body;
 
-  const existing = await prisma.tenant.findUnique({ where: { id } });
-  if (!existing) {
-    return NextResponse.json({ error: 'Tenant tidak ditemukan' }, { status: 404 });
+  const tenant = await prisma.tenant.findUnique({ where: { id } });
+  if (!tenant) return NextResponse.json({ error: 'Tenant tidak ditemukan' }, { status: 404 });
+
+  const data: Record<string, unknown> = {};
+  if (body.name !== undefined) data.name = String(body.name).slice(0, 100);
+  if (body.status !== undefined) data.status = body.status;
+  if (body.active !== undefined) data.active = body.active;
+  if (body.plan !== undefined) data.plan = body.plan;
+  if (body.primaryColor !== undefined) data.primaryColor = body.primaryColor;
+  if (body.secondaryColor !== undefined) data.secondaryColor = body.secondaryColor;
+  if (body.accentColor !== undefined) data.accentColor = body.accentColor;
+  if (body.domain !== undefined) data.domain = body.domain || null;
+  if (body.timezone !== undefined) data.timezone = body.timezone;
+  if (body.locale !== undefined) data.locale = body.locale;
+  if (body.currency !== undefined) data.currency = body.currency;
+  if (body.contactName !== undefined) data.contactName = body.contactName || null;
+  if (body.contactEmail !== undefined) data.contactEmail = body.contactEmail || null;
+  if (body.contactPhone !== undefined) data.contactPhone = body.contactPhone || null;
+  if (body.maxUsers !== undefined) data.maxUsers = Number(body.maxUsers);
+  if (body.maxDrivers !== undefined) data.maxDrivers = Number(body.maxDrivers);
+  if (body.maxShipments !== undefined) data.maxShipments = Number(body.maxShipments);
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: 'Tidak ada data yang diubah' }, { status: 400 });
   }
 
-  if (domain && domain !== existing.domain) {
-    const domainTaken = await prisma.tenant.findUnique({ where: { domain } });
-    if (domainTaken) {
-      return NextResponse.json({ error: 'Domain sudah digunakan' }, { status: 409 });
-    }
-  }
+  const updated = await prisma.tenant.update({ where: { id }, data });
 
-  if (code && code !== existing.code) {
-    const codeTaken = await prisma.tenant.findUnique({ where: { code } });
-    if (codeTaken) {
-      return NextResponse.json({ error: 'Kode tenant sudah digunakan' }, { status: 409 });
-    }
-  }
+  await logAudit(session, 'UPDATE_TENANT', 'TENANT', {
+    oldData: { id: tenant.id, name: tenant.name, status: tenant.status, active: tenant.active, plan: tenant.plan },
+    newData: { id: updated.id, name: updated.name, status: updated.status, active: updated.active, plan: updated.plan },
+  }, req);
 
-  const tenant = await prisma.tenant.update({
-    where: { id },
-    data: {
-      ...(name !== undefined && { name: String(name).slice(0, 100) }),
-      ...(code !== undefined && { code: code ? String(code).slice(0, 20) : null }),
-      ...(status !== undefined && { status }),
-      ...(primaryColor !== undefined && { primaryColor }),
-      ...(secondaryColor !== undefined && { secondaryColor }),
-      ...(accentColor !== undefined && { accentColor }),
-      ...(domain !== undefined && { domain: domain ? String(domain).slice(0, 100) : null }),
-      ...(plan !== undefined && { plan }),
-      ...(timezone !== undefined && { timezone: timezone || 'Asia/Jakarta' }),
-      ...(locale !== undefined && { locale: locale || 'id-ID' }),
-      ...(currency !== undefined && { currency: currency || 'IDR' }),
-      ...(contactName !== undefined && { contactName: contactName ? String(contactName).slice(0, 100) : null }),
-      ...(contactEmail !== undefined && { contactEmail: contactEmail ? String(contactEmail).slice(0, 150) : null }),
-      ...(contactPhone !== undefined && { contactPhone: contactPhone ? String(contactPhone).slice(0, 20) : null }),
-      ...(maxUsers !== undefined && { maxUsers }),
-      ...(maxDrivers !== undefined && { maxDrivers }),
-      ...(maxShipments !== undefined && { maxShipments }),
-      ...(active !== undefined && { active }),
-    },
-  });
-
-  return NextResponse.json(tenant);
+  return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session || session.role !== 'SUPER_ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
   }
 
   const { id } = await params;
+  let body: Record<string, unknown> = {};
+  try { body = await req.json(); } catch {}
 
-  const existing = await prisma.tenant.findUnique({ where: { id } });
-  if (!existing) {
-    return NextResponse.json({ error: 'Tenant tidak ditemukan' }, { status: 404 });
+  const action = body.action as string || 'archive';
+  const tenant = await prisma.tenant.findUnique({ where: { id } });
+  if (!tenant) return NextResponse.json({ error: 'Tenant tidak ditemukan' }, { status: 404 });
+
+  if (action === 'delete') {
+    await runWithTenant(tenant.id, async () => {
+      await logAudit(session, 'DELETE_TENANT', 'TENANT', {
+        oldData: { id: tenant.id, name: tenant.name, slug: tenant.slug },
+      }, req);
+    });
+    await prisma.tenant.delete({ where: { id } });
+    return NextResponse.json({ ok: true, message: 'Tenant dan semua data terkait berhasil dihapus permanen' });
   }
 
-  if (existing.slug === 'default') {
-    return NextResponse.json({ error: 'Tidak dapat menghapus tenant default' }, { status: 400 });
-  }
+  const updated = await prisma.tenant.update({
+    where: { id },
+    data: { status: 'ARCHIVED', active: false },
+  });
 
-  await prisma.tenant.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+  await logAudit(session, 'ARCHIVE_TENANT', 'TENANT', {
+    oldData: { id: tenant.id, name: tenant.name, status: tenant.status, active: tenant.active },
+    newData: { id: updated.id, status: 'ARCHIVED', active: false },
+  }, req);
+
+  return NextResponse.json({ ok: true, message: 'Tenant berhasil diarsipkan', tenant: updated });
 }

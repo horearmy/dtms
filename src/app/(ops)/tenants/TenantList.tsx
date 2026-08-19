@@ -50,6 +50,9 @@ export default function TenantList() {
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [success, setSuccess] = useState('');
 
   useEffect(() => { fetchTenants(); }, [statusFilter]);
 
@@ -125,10 +128,38 @@ export default function TenantList() {
     fetchTenants();
   }
 
-  async function remove(id: string) {
-    if (!confirm('Yakin hapus tenant ini?')) return;
-    await fetch(`/api/tenants/${id}`, { method: 'DELETE' });
-    fetchTenants();
+  async function archiveTenant(id: string, name: string) {
+    setConfirmDelete(null);
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/tenants/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'archive' }),
+      });
+      if (res.ok) {
+        setSuccess(`Tenant "${name}" berhasil diarsipkan.`);
+        fetchTenants();
+      }
+    } catch {}
+    setDeleting(false);
+  }
+
+  async function deleteTenant(id: string, name: string) {
+    setConfirmDelete(null);
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/tenants/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete' }),
+      });
+      if (res.ok) {
+        setSuccess(`Tenant "${name}" dan semua data terkait berhasil dihapus permanen.`);
+        fetchTenants();
+      }
+    } catch {}
+    setDeleting(false);
   }
 
   const planBadge = (plan: string) => {
@@ -142,21 +173,28 @@ export default function TenantList() {
   const statusBadge = (s: string) => {
     const c: Record<string, string> = {
       ACTIVE: 'bg-emerald-100 text-emerald-700', SUSPENDED: 'bg-amber-100 text-amber-700',
-      INACTIVE: 'bg-gray-100 text-gray-600', PENDING: 'bg-blue-100 text-blue-700',
+      INACTIVE: 'bg-gray-100 text-gray-600', PENDING_APPROVAL: 'bg-blue-100 text-blue-700',
+      ARCHIVED: 'bg-gray-200 text-gray-500',
     };
     return c[s] || c.ACTIVE;
   };
 
   return (
     <div>
+      {success && (
+        <div className="mb-4 flex items-center justify-between rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <span>{success}</span>
+          <button onClick={() => setSuccess('')} className="ml-3 text-emerald-500 hover:text-emerald-700">&times;</button>
+        </div>
+      )}
       <div className="mb-4 flex items-center gap-3 justify-end">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
           className="rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
           <option value="">Semua Status</option>
           <option value="ACTIVE">Active</option>
-          <option value="PENDING">Pending</option>
+          <option value="PENDING_APPROVAL">Pending</option>
           <option value="SUSPENDED">Suspended</option>
-          <option value="INACTIVE">Inactive</option>
+          <option value="ARCHIVED">Diarsipkan</option>
         </select>
         <button onClick={openCreate} className="rounded-lg bg-[#0D6EFD] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0B5FD5]">
           + Tenant Baru
@@ -346,7 +384,7 @@ export default function TenantList() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <button onClick={() => openEdit(t)} className="text-xs font-medium text-[#0D6EFD] hover:underline">Edit</button>
-                    <button onClick={() => remove(t.id)} className="text-xs font-medium text-red-600 hover:underline">Hapus</button>
+                    <button onClick={() => setConfirmDelete({ id: t.id, name: t.name })} disabled={deleting} className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50">Hapus</button>
                   </div>
                 </td>
               </tr>
@@ -354,6 +392,35 @@ export default function TenantList() {
           </tbody>
         </table>
       </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+            <h2 className="mb-2 text-lg font-bold text-[#101828]">Kelola Tenant</h2>
+            <p className="mb-1 text-sm text-[#667085]">Pilih aksi untuk tenant <b>{confirmDelete.name}</b>:</p>
+            <div className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              Arsipkan akan menonaktifkan tenant tanpa menghapus data. Tenant dapat diaktifkan kembali.
+            </div>
+            <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+              Hapus permanen akan menghapus tenant dan <b>SEMUA data terkirim, user, driver, kendaraan</b>. Tidak dapat dibatalkan.
+            </div>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setConfirmDelete(null)} disabled={deleting}
+                className="rounded-lg border border-[#E4E7EC] px-4 py-2 text-sm font-medium text-[#667085] hover:bg-[#F7F9FC] disabled:opacity-50">
+                Batal
+              </button>
+              <button onClick={() => archiveTenant(confirmDelete.id, confirmDelete.name)} disabled={deleting}
+                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50">
+                {deleting ? 'Memproses...' : 'Arsipkan'}
+              </button>
+              <button onClick={() => deleteTenant(confirmDelete.id, confirmDelete.name)} disabled={deleting}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+                {deleting ? 'Memproses...' : 'Hapus Permanen'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

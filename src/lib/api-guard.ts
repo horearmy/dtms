@@ -4,6 +4,57 @@ import { tenantStore } from './prisma';
 import { resolveAccessScope, hasPermission, type AccessScope } from './access-scope';
 import { checkPlanLimit } from './billing';
 
+const tenantBuckets = new Map<string, { count: number; windowStart: number }>();
+const TENANT_RATE_WINDOW_MS = 60_000;
+
+function checkTenantRateLimit(tenantId: string, maxRequests: number): { allowed: boolean; retryAfterSec: number } {
+  const now = Date.now();
+  const bucket = tenantBuckets.get(tenantId);
+  if (!bucket || now - bucket.windowStart > TENANT_RATE_WINDOW_MS) {
+    tenantBuckets.set(tenantId, { count: 1, windowStart: now });
+    return { allowed: true, retryAfterSec: 0 };
+  }
+  bucket.count++;
+  if (bucket.count > maxRequests) {
+    const retryAfterSec = Math.ceil((bucket.windowStart + TENANT_RATE_WINDOW_MS - now) / 1000);
+    return { allowed: false, retryAfterSec };
+  }
+  return { allowed: true, retryAfterSec: 0 };
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of tenantBuckets) {
+    if (now - bucket.windowStart > TENANT_RATE_WINDOW_MS * 2) {
+      tenantBuckets.delete(key);
+    }
+  }
+}, 120_000);
+
+export async function checkTenantThrottle(tenantId: string | null | undefined, isGps = false): Promise<NextResponse | null> {
+  if (!tenantId) return null;
+  try {
+    const { prisma } = await import('./prisma');
+    const rl = await prisma.tenantRateLimit.findUnique({ where: { tenantId } });
+    if (!rl) return null;
+    if (rl.blocked) {
+      return NextResponse.json({ error: 'Tenant ini diblokir dari mengakses API' }, { status: 429 });
+    }
+    if (!rl.active) return null;
+    const max = isGps ? rl.gpsMaxRequests : rl.apiMaxRequests;
+    const result = checkTenantRateLimit(tenantId, max);
+    if (!result.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit terlampaui. Maks ${max} request/menit. Silakan coba lagi nanti.` },
+        { status: 429, headers: { 'Retry-After': String(result.retryAfterSec) } }
+      );
+    }
+  } catch {
+    // don't block on rate limit check failure
+  }
+  return null;
+}
+
 export async function guard(
   ...roles: string[]
 ): Promise<{ session: SessionUser | null; error: NextResponse | null }> {
@@ -13,6 +64,10 @@ export async function guard(
   }
   if (roles.length > 0 && !roles.includes(session.role)) {
     return { session, error: NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 }) };
+  }
+  if (session.role !== 'SUPER_ADMIN' && session.tenantId) {
+    const throttleError = await checkTenantThrottle(session.tenantId);
+    if (throttleError) return { session, error: throttleError };
   }
   return { session, error: null };
 }
@@ -27,6 +82,10 @@ export async function guardPermission(
   }
   if (roles.length > 0 && !roles.includes(session.role)) {
     return { session, scope: null as unknown as AccessScope, error: NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 }) };
+  }
+  if (session.role !== 'SUPER_ADMIN' && session.tenantId) {
+    const throttleError = await checkTenantThrottle(session.tenantId);
+    if (throttleError) return { session, scope: null as unknown as AccessScope, error: throttleError };
   }
   const scope = await resolveAccessScope(session);
   if (!hasPermission(scope, permission)) {

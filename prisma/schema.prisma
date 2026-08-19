@@ -67,6 +67,8 @@ model Tenant {
   payments        Payment[]
   usageRecords    UsageRecord[]
   demoRequests    DemoRequest[]
+  messages        Message[]
+  rateLimit       TenantRateLimit?
 
   @@index([slug])
   @@index([domain])
@@ -975,4 +977,35 @@ model UsageRecord {
   periodEnd       DateTime
 
   @@index([tenantId, metric])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  threadId   String?
+  subject    String
+  body       String
+  senderId   String?
+  senderName String   @default("System")
+  direction  String   @default("OUTBOUND") // OUTBOUND = super admin -> tenant, INBOUND = tenant -> super admin
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([threadId])
+}
+
+model TenantRateLimit {
+  id             String   @id @default(cuid())
+  tenantId       String   @unique
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  apiMaxRequests Int      @default(300)
+  apiWindowMs    Int      @default(60000)
+  gpsMaxRequests Int      @default(60)
+  gpsWindowMs    Int      @default(60000)
+  active         Boolean  @default(true)
+  blocked        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
