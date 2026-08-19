@@ -151,26 +151,4 @@ export const SLA_HOURS: Record<string, number> = {
   REGULAR: 96,
 };
 
-export const WHATSAPP_STATUS_TEMPLATE: Record<string, string> = {
-  ORDER_CREATED: 'Pesanan Anda telah diterima dan sedang diproses.',
-  PICKUP_SCHEDULED: 'Penjemputan barang Anda dijadwalkan.',
-  PICKED_UP: 'Barang Anda telah diambil oleh kurir.',
-  WAREHOUSE_RECEIVED: 'Barang telah diterima di gudang dan sedang diverifikasi.',
-  SORTING: 'Barang sedang disortir untuk pengiriman.',
-  DISPATCHED: 'Barang telah diberangkatkan dari gudang.',
-  IN_TRANSIT: 'Barang sedang dalam perjalanan ke kota tujuan.',
-  ARRIVED_AT_HUB: 'Barang telah tiba di hub tujuan.',
-  OUT_FOR_DELIVERY: 'Barang sedang dalam perjalanan menuju alamat Anda.',
-  DELIVERED: 'Barang telah berhasil diterima. Terima kasih!',
-  DELIVERY_FAILED: 'Pengiriman gagal. Silakan hubungi customer service.',
-  RESCHEDULED: 'Pengiriman dijadwalkan ulang.',
-  RETURN_TO_SENDER: 'Barang akan dikembalikan ke pengirim.',
-  RETURNED: 'Barang telah dikembalikan ke pengirim.',
-};
-
 export const MAINTENANCE_DISTANCE_KM = 2000;
-
-export function formatKm(km: number) {
-  if (km < 1) return `${Math.round(km * 1000)} m`;
-  return `${km.toFixed(1)} km`;
-}

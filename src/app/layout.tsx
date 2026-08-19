@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import CsrfProvider from '@/components/CsrfProvider';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -36,7 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id" className={cn('font-sans antialiased', jakarta.variable)}>
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
+        <CsrfProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </CsrfProvider>
       </body>
     </html>
   );

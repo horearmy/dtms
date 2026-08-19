@@ -80,17 +80,6 @@
   --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #0D6EFD;
-
-  --dt-primary: #0D6EFD;
-  --dt-secondary: #061B41;
-  --dt-accent: #0B2A5B;
-  --dt-success: #16B364;
-  --dt-warning: #FF8A00;
-  --dt-danger: #F5222D;
-  --dt-bg: #F7F9FC;
-  --dt-text: #101828;
-  --dt-text-secondary: #667085;
-  --dt-border: #E4E7EC;
 }
 
 @theme inline {

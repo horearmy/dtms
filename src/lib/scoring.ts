@@ -30,12 +30,3 @@ export async function driverScore(driverId: string) {
 
   return { score, total, delivered, onTime, failed };
 }
-
-export async function addScoresToDrivers(drivers: Awaited<ReturnType<typeof prisma.driver.findMany>>) {
-  const scored = [];
-  for (const d of drivers) {
-    const stat = await driverScore(d.id);
-    scored.push({ ...d, stat });
-  }
-  return scored;
-}

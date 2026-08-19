@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Package, Eye, EyeOff } from 'lucide-react';
 
 type Tenant = { id: string; name: string; slug: string; primaryColor: string };
@@ -11,6 +12,7 @@ function LoginFormInner() {
   const search = useSearchParams();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenant, setSelectedTenant] = useState('');
+  const [superAdminMode, setSuperAdminMode] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -109,7 +111,7 @@ function LoginFormInner() {
 
         {!twoFactorToken ? (
           <form onSubmit={submit} className="space-y-4">
-            {tenants.length > 1 && (
+            {tenants.length > 1 && !superAdminMode && (
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[#101828]">Perusahaan</label>
                 <select
@@ -125,7 +127,24 @@ function LoginFormInner() {
                 </select>
               </div>
             )}
-            {tenants.length === 1 && <input type="hidden" value={tenants[0].id} />}
+            {tenants.length === 1 && !superAdminMode && <input type="hidden" value={tenants[0].id} />}
+            {!superAdminMode && (
+              <label className="flex items-center gap-2 text-xs text-[#667085]">
+                <input
+                  type="checkbox"
+                  checked={superAdminMode}
+                  onChange={(e) => { setSuperAdminMode(e.target.checked); if (e.target.checked) setSelectedTenant(''); }}
+                  className="h-3.5 w-3.5 rounded border-[#D0D5DD] text-[#0D6EFD] focus:ring-[#0D6EFD]"
+                />
+                Login sebagai Super Admin
+              </label>
+            )}
+            {superAdminMode && (
+              <div className="rounded-lg bg-purple-50 px-3 py-2 text-xs text-purple-700">
+                Mode Super Admin — tanpa perusahaan
+                <button type="button" onClick={() => setSuperAdminMode(false)} className="ml-2 font-semibold text-purple-900 underline">Batal</button>
+              </div>
+            )}
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-[#101828]">Username</label>
@@ -170,11 +189,15 @@ function LoginFormInner() {
 
             <button
               type="submit"
-              disabled={loading || (tenants.length > 1 && !selectedTenant)}
+              disabled={loading || (!superAdminMode && tenants.length > 1 && !selectedTenant)}
               className="w-full rounded-lg bg-[#0D6EFD] py-2.5 text-sm font-semibold text-white transition hover:bg-[#0B5FD5] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? 'Memproses...' : 'Masuk'}
             </button>
+
+            <Link href="/forgot-password" className="block w-full text-center text-xs font-semibold text-[#667085] underline hover:text-[#101828]">
+              Lupa password?
+            </Link>
 
             {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
               <>

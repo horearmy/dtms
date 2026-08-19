@@ -5,8 +5,17 @@ import { logger } from './logger';
 
 const log = logger.child('billing');
 
+let plansSeeded = false;
+
+async function ensurePlans() {
+  if (plansSeeded) return;
+  await seedPlans();
+  plansSeeded = true;
+}
+
 // ─── Plan Management ─────────────────────────────────────
 export async function getPlans() {
+  await ensurePlans();
   return prisma.plan.findMany({
     where: { active: true },
     orderBy: { sortOrder: 'asc' },
@@ -14,17 +23,66 @@ export async function getPlans() {
 }
 
 export async function getTenantSubscription(tenantId: string) {
+  await ensurePlans();
   return prisma.subscription.findUnique({
     where: { tenantId },
     include: {
       plan: true,
-      invoices: { orderBy: { createdAt: 'desc' }, take: 5 },
+      invoices: { orderBy: { createdAt: 'desc' }, take: 10 },
     },
   });
 }
 
+// ─── Feature & Limit Enforcement ─────────────────────────
+export async function getTenantFeatures(tenantId: string): Promise<string[]> {
+  await ensurePlans();
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { plan: true } });
+  const planCode = tenant?.plan || 'FREE';
+  const plan = await prisma.plan.findUnique({ where: { code: planCode }, select: { features: true } });
+  if (!plan?.features) return ['basic_tracking'];
+  try {
+    return Array.isArray(plan.features) ? plan.features as string[] : JSON.parse(plan.features as string);
+  } catch {
+    return ['basic_tracking'];
+  }
+}
+
+type ResourceKey = 'users' | 'drivers' | 'shipments';
+
+const RESOURCE_COUNT_FN: Record<ResourceKey, (tenantId: string) => Promise<number>> = {
+  users: (tid) => prisma.user.count({ where: { tenantId: tid } }),
+  drivers: (tid) => prisma.driver.count({ where: { tenantId: tid } }),
+  shipments: (tid) => prisma.shipment.count({ where: { tenantId: tid } }),
+};
+
+const RESOURCE_LIMIT_FIELD: Record<ResourceKey, string> = {
+  users: 'maxUsers',
+  drivers: 'maxDrivers',
+  shipments: 'maxShipments',
+};
+
+export async function checkPlanLimit(
+  tenantId: string,
+  resource: ResourceKey
+): Promise<{ allowed: boolean; current: number; max: number }> {
+  await ensurePlans();
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { plan: true, maxUsers: true, maxDrivers: true, maxShipments: true },
+  });
+  if (!tenant) return { allowed: false, current: 0, max: 0 };
+
+  const max = tenant[RESOURCE_LIMIT_FIELD[resource] as keyof typeof tenant] as number;
+  const current = await RESOURCE_COUNT_FN[resource](tenantId);
+
+  // -1 means unlimited
+  if (max < 0) return { allowed: true, current, max: -1 };
+  return { allowed: current < max, current, max };
+}
+
 // ─── Subscription Lifecycle ───────────────────────────────
 export async function createSubscription(tenantId: string, planCode: string, billingCycle: 'MONTHLY' | 'YEARLY' = 'MONTHLY') {
+  await ensurePlans();
   const plan = await prisma.plan.findUnique({ where: { code: planCode } });
   if (!plan) throw new Error(`Plan ${planCode} not found`);
 
@@ -41,6 +99,7 @@ export async function createSubscription(tenantId: string, planCode: string, bil
       billingCycle,
       currentPeriodStart: now,
       currentPeriodEnd: periodEnd,
+      cancelledAt: null,
     },
     create: {
       tenantId,
@@ -64,20 +123,54 @@ export async function createSubscription(tenantId: string, planCode: string, bil
     },
   });
 
+  // Auto-generate invoice for paid plans
+  if (plan.priceMonthly > 0) {
+    try {
+      await generateInvoice(tenantId);
+    } catch (e) {
+      log.warn('Failed to auto-generate invoice', { tenantId, error: e });
+    }
+  }
+
   log.info('Subscription created/updated', { tenantId, plan: plan.code, cycle: billingCycle });
   return subscription;
 }
 
 export async function cancelSubscription(tenantId: string) {
+  await ensurePlans();
   const sub = await prisma.subscription.findUnique({ where: { tenantId } });
   if (!sub) throw new Error('No subscription found');
 
-  await prisma.subscription.update({
-    where: { tenantId },
-    data: { status: 'CANCELLED', cancelledAt: new Date() },
-  });
+  // Downgrade to FREE
+  const freePlan = await prisma.plan.findUnique({ where: { code: 'FREE' } });
+  if (freePlan) {
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        plan: 'FREE',
+        maxUsers: freePlan.maxUsers,
+        maxDrivers: freePlan.maxDrivers,
+        maxShipments: freePlan.maxShipments,
+      },
+    });
 
-  log.info('Subscription cancelled', { tenantId });
+    // Set subscription to FREE plan
+    await prisma.subscription.update({
+      where: { tenantId },
+      data: {
+        planId: freePlan.id,
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+      },
+    });
+  } else {
+    await prisma.subscription.update({
+      where: { tenantId },
+      data: { status: 'CANCELLED', cancelledAt: new Date() },
+    });
+  }
+
+  log.info('Subscription cancelled & downgraded to FREE', { tenantId });
 }
 
 // ─── Usage Tracking ──────────────────────────────────────
@@ -98,6 +191,7 @@ export async function recordUsage(tenantId: string, metric: string, quantity: nu
 }
 
 export async function getUsageSummary(tenantId: string) {
+  await ensurePlans();
   const sub = await prisma.subscription.findUnique({ where: { tenantId }, include: { plan: true } });
   if (!sub) return null;
 
@@ -141,11 +235,14 @@ export async function generateInvoice(tenantId: string) {
   });
   if (!sub || !sub.plan) throw new Error('No active subscription');
 
+  // Skip if plan is free
+  const amount = sub.billingCycle === 'MONTHLY' ? sub.plan.priceMonthly : sub.plan.priceYearly;
+  if (amount <= 0) throw new Error('Free plan does not generate invoices');
+
   const now = new Date();
   const count = await prisma.invoice.count({ where: { tenantId } });
   const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-${String(count + 1).padStart(4, '0')}`;
 
-  const amount = sub.billingCycle === 'MONTHLY' ? sub.plan.priceMonthly : sub.plan.priceYearly;
   const tax = Math.round(amount * 0.11); // PPN 11%
 
   const invoice = await prisma.invoice.create({
@@ -170,7 +267,7 @@ export async function generateInvoice(tenantId: string) {
 }
 
 // ─── Seed Plans ──────────────────────────────────────────
-export async function seedPlans() {
+async function seedPlans() {
   const plans = [
     { code: 'FREE', name: 'Free', priceMonthly: 0, priceYearly: 0, maxUsers: 3, maxDrivers: 5, maxShipments: 50, maxStorageMb: 100, sortOrder: 0, features: JSON.stringify(['basic_tracking']) },
     { code: 'STARTER', name: 'Starter', priceMonthly: 299000, priceYearly: 2990000, maxUsers: 5, maxDrivers: 15, maxShipments: 200, maxStorageMb: 500, sortOrder: 1, features: JSON.stringify(['basic_tracking', 'dispatch', 'reports']) },
@@ -188,3 +285,14 @@ export async function seedPlans() {
 
   log.info('Plans seeded', { count: plans.length });
 }
+
+// ─── Route → Feature Mapping ─────────────────────────────
+export const ROUTE_FEATURE_MAP: Record<string, string> = {
+  '/control-tower': 'control_tower',
+  '/dispatch': 'dispatch',
+  '/reports': 'reports',
+  '/analytics': 'reports',
+  '/sla': 'sla',
+  '/exceptions': 'sla',
+  '/integrations': 'integrations',
+};

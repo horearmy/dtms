@@ -14,6 +14,11 @@ export async function GET(req: NextRequest) {
     const driver = await prisma.driver.findUnique({ where: { id: driverId } });
     if (!driver) return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });
 
+    // Verify driver belongs to current tenant
+    if (session?.tenantId && driver.tenantId !== session.tenantId) {
+      return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });
+    }
+
     const points: any[] = [];
     if (driver.returnStartedAt) {
       const startedAt = driver.returnStartedAt;

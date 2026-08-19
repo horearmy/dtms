@@ -35,6 +35,16 @@ type TenantData = {
   shipments: { id: string; trackingNumber: string; origin: string; destination: string; status: string; serviceType: string; weight: number; createdAt: string }[];
   vehicles: { id: string; vehicleNumber: string; type: string; status: string; capacity: number }[];
   shipmentStats: { total: number; delivered: number; intransit: number };
+  subscription: {
+    id: string;
+    status: string;
+    billingCycle: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+    cancelledAt: string | null;
+    plan: { code: string; name: string };
+  } | null;
+  invoices: { id: string; invoiceNumber: string; subtotal: number; tax: number; total: number; status: string; dueDate: string; createdAt: string }[];
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -64,7 +74,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const PLAN_COLORS: Record<string, string> = {
   FREE: 'bg-[#F7F9FC] text-[#667085]', STARTER: 'bg-[#0D6EFD]/10 text-[#0D6EFD]',
-  BUSINESS: 'bg-purple-100 text-purple-700', ENTERPRISE: 'bg-amber-100 text-amber-700',
+  PRO: 'bg-purple-100 text-purple-700', ENTERPRISE: 'bg-amber-100 text-amber-700',
 };
 
 const TENANT_STATUS_COLORS: Record<string, string> = {
@@ -90,7 +100,7 @@ function UsageBar({ used, max, label }: { used: number; max: number; label: stri
 
 export default function TenantDetail({ tenant }: { tenant: TenantData }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'drivers' | 'shipments' | 'vehicles'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'drivers' | 'shipments' | 'vehicles' | 'billing'>('overview');
 
   async function toggleActive() {
     await fetch(`/api/tenants/${tenant.id}`, {
@@ -107,6 +117,7 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
     { key: 'drivers', label: `Drivers (${tenant._count.drivers})` },
     { key: 'shipments', label: `Shipments (${tenant._count.shipments})` },
     { key: 'vehicles', label: `Vehicles (${tenant._count.vehicles})` },
+    { key: 'billing', label: 'Billing' },
   ] as const;
 
   return (
@@ -360,6 +371,68 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+      {activeTab === 'billing' && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-[#E4E7EC] bg-white p-6">
+            <h3 className="mb-4 text-sm font-semibold text-[#101828]">Subscription</h3>
+            {tenant.subscription ? (
+              <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+                <div>
+                  <div className="text-xs text-[#667085]">Plan</div>
+                  <span className={`mt-0.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${PLAN_COLORS[tenant.subscription.plan.code] || PLAN_COLORS.FREE}`}>
+                    {tenant.subscription.plan.name}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-xs text-[#667085]">Status</div>
+                  <div className="mt-0.5 font-semibold text-[#101828]">{tenant.subscription.status}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-[#667085]">Siklus</div>
+                  <div className="mt-0.5 font-semibold text-[#101828]">{tenant.subscription.billingCycle === 'YEARLY' ? 'Tahunan' : 'Bulanan'}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-[#667085]">Berlaku s/d</div>
+                  <div className="mt-0.5 font-semibold text-[#101828]">{new Date(tenant.subscription.currentPeriodEnd).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-[#667085]">Belum ada subscription aktif.</div>
+            )}
+          </div>
+          <div className="rounded-xl border border-[#E4E7EC] bg-white p-6">
+            <h3 className="mb-4 text-sm font-semibold text-[#101828]">Invoice Terakhir</h3>
+            {tenant.invoices.length > 0 ? (
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-[11px] uppercase text-[#667085]">
+                    <th className="pb-2">Nomor</th>
+                    <th className="pb-2">Total</th>
+                    <th className="pb-2">Status</th>
+                    <th className="pb-2">Jatuh Tempo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tenant.invoices.map((inv) => (
+                    <tr key={inv.id} className="border-t border-[#E4E7EC]">
+                      <td className="py-2 font-mono text-xs">{inv.invoiceNumber}</td>
+                      <td className="py-2">Rp {inv.total.toLocaleString('id-ID')}</td>
+                      <td className="py-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : inv.status === 'OVERDUE' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {inv.status}
+                        </span>
+                      </td>
+                      <td className="py-2 text-xs text-[#667085]">{new Date(inv.dueDate).toLocaleDateString('id-ID')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="text-sm text-[#667085]">Belum ada invoice.</div>
+            )}
+          </div>
         </div>
       )}
     </div>

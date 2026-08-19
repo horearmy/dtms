@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
     await cleanupLoginAttempts();
     const body = await req.json();
     const { username, password, tenantId } = body || {};
-    if (!username || !password || !tenantId) {
-      return NextResponse.json({ error: 'Username, password, dan perusahaan wajib diisi' }, { status: 400 });
+    if (!username || !password) {
+      return NextResponse.json({ error: 'Username dan password wajib diisi' }, { status: 400 });
     }
 
     const key = String(username).trim().toLowerCase();
@@ -26,12 +26,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const tenant = await prisma.tenant.findUnique({ where: { id: String(tenantId) } });
-    if (!tenant || !tenant.active) {
-      return NextResponse.json({ error: 'Perusahaan tidak valid atau tidak aktif' }, { status: 400 });
+    let user;
+    if (tenantId) {
+      const tenant = await prisma.tenant.findUnique({ where: { id: String(tenantId) } });
+      if (!tenant || !tenant.active) {
+        return NextResponse.json({ error: 'Perusahaan tidak valid atau tidak aktif' }, { status: 400 });
+      }
+      user = await prisma.user.findFirst({ where: { username: key, tenantId: String(tenantId) } });
+    } else {
+      user = await prisma.user.findFirst({ where: { username: key, tenantId: null } });
+      if (user && user.role !== 'SUPER_ADMIN') {
+        user = null;
+      }
     }
-
-    const user = await prisma.user.findFirst({ where: { username: key, tenantId: String(tenantId) } });
     if (!user) {
       await recordLoginAttempt(key, ip, false);
       await prisma.auditLog.create({

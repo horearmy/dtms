@@ -88,6 +88,31 @@ export function validatePassword(pw: string): { valid: boolean; error?: string }
   return { valid: true };
 }
 
+export function generateRandomPassword(length = 12): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const all = upper + lower + digits;
+
+  const pick = (chars: string, count: number) => {
+    let result = '';
+    const bytes = crypto.getRandomValues(new Uint8Array(count));
+    for (let i = 0; i < count; i++) result += chars[bytes[i] % chars.length];
+    return result;
+  };
+
+  const mandatory = pick(upper, 1) + pick(lower, 1) + pick(digits, 1);
+  const rest = pick(all, length - 3);
+  const combined = (mandatory + rest).split('');
+
+  const shuffle = crypto.getRandomValues(new Uint8Array(combined.length));
+  for (let i = combined.length - 1; i > 0; i--) {
+    const j = shuffle[i] % (i + 1);
+    [combined[i], combined[j]] = [combined[j], combined[i]];
+  }
+  return combined.join('');
+}
+
 // Rate limiting — uses Redis if UPSTASH_REDIS_REST_URL is set, otherwise in-memory
 type RateLimitEntry = { count: number; resetAt: number };
 const rateLimitStore = new Map<string, RateLimitEntry>();

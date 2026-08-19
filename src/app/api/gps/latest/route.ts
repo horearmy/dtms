@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
     });
 
     const gpsLogs = await prisma.gpsLog.findMany({
-      where: { createdAt: { gte: since } },
+      where: {
+        createdAt: { gte: since },
+        ...(session?.tenantId ? { driver: { tenantId: session.tenantId } } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       include: { driver: true, vehicle: true },
     });

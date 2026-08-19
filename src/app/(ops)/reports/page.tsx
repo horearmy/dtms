@@ -1,4 +1,6 @@
 import { prisma } from '@/lib/prisma';
+import { getSession } from '@/lib/auth';
+import { runWithTenant } from '@/lib/api-guard';
 import { driverScore } from '@/lib/scoring';
 import CsvExport from '@/components/CsvExport';
 import StatusBadge from '@/components/StatusBadge';
@@ -7,24 +9,38 @@ import { STATUS_LABELS } from '@/lib/constants';
 export const dynamic = 'force-dynamic';
 
 export default async function ReportsPage() {
-  const [statusGroups, deliveries, returned, failed, drivers, totalCount, orderEvents, deliveredEvents, lastShipments, trendShipments] = await Promise.all([
-    prisma.shipment.groupBy({ by: ['status'], _count: { id: true } }),
-    prisma.shipment.count({ where: { status: 'DELIVERED' } }),
-    prisma.shipment.count({ where: { status: 'RETURNED' } }),
-    prisma.shipment.count({ where: { status: 'DELIVERY_FAILED' } }),
-    prisma.driver.findMany({ include: { _count: { select: { assignments: true } } } }),
-    prisma.shipment.count(),
-    prisma.trackingEvent.findMany({
-      where: { status: 'ORDER_CREATED' },
-      select: { shipmentId: true, createdAt: true },
-    }),
-    prisma.trackingEvent.findMany({
-      where: { status: 'DELIVERED' },
-      select: { shipmentId: true, createdAt: true },
-    }),
-    prisma.shipment.findMany({ orderBy: { createdAt: 'desc' }, take: 50, include: { sender: true, receiver: true, assignments: { include: { driver: true } } } }),
-    prisma.shipment.findMany({ where: { createdAt: { gte: new Date(Date.now() - 7 * 86400000) } }, select: { destination: true, createdAt: true } }),
-  ]);
+  const session = await getSession();
+
+  const data = await runWithTenant(session?.tenantId ?? null, async () => {
+    const [statusGroups, deliveries, returned, failed, drivers, totalCount, orderEvents, deliveredEvents, lastShipments, trendShipments] = await Promise.all([
+      prisma.shipment.groupBy({ by: ['status'], _count: { id: true } }),
+      prisma.shipment.count({ where: { status: 'DELIVERED' } }),
+      prisma.shipment.count({ where: { status: 'RETURNED' } }),
+      prisma.shipment.count({ where: { status: 'DELIVERY_FAILED' } }),
+      prisma.driver.findMany({ include: { _count: { select: { assignments: true } } } }),
+      prisma.shipment.count(),
+      prisma.trackingEvent.findMany({
+        where: {
+          status: 'ORDER_CREATED',
+          ...(session?.tenantId ? { shipment: { tenantId: session.tenantId } } : {}),
+        },
+        select: { shipmentId: true, createdAt: true },
+      }),
+      prisma.trackingEvent.findMany({
+        where: {
+          status: 'DELIVERED',
+          ...(session?.tenantId ? { shipment: { tenantId: session.tenantId } } : {}),
+        },
+        select: { shipmentId: true, createdAt: true },
+      }),
+      prisma.shipment.findMany({ orderBy: { createdAt: 'desc' }, take: 50, include: { sender: true, receiver: true, assignments: { include: { driver: true } } } }),
+      prisma.shipment.findMany({ where: { createdAt: { gte: new Date(Date.now() - 7 * 86400000) } }, select: { destination: true, createdAt: true } }),
+    ]);
+
+    return { statusGroups, deliveries, returned, failed, drivers, totalCount, orderEvents, deliveredEvents, lastShipments, trendShipments };
+  });
+
+  const { statusGroups, deliveries, returned, failed, drivers, totalCount, orderEvents, deliveredEvents, lastShipments, trendShipments } = data;
 
   const trend: { date: string; count: number }[] = [];
   const dayMap = new Map<string, number>();

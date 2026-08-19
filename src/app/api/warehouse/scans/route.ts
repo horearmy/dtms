@@ -9,6 +9,7 @@ export async function GET() {
 
   return runWithTenant(session?.tenantId ?? null, async () => {
     const scans = await prisma.warehouseScan.findMany({
+      where: session?.tenantId ? { shipment: { tenantId: session.tenantId } } : {},
       orderBy: { createdAt: 'desc' },
       take: 50,
       include: { shipment: { select: { trackingNumber: true, destination: true } } },

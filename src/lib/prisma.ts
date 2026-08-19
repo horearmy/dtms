@@ -12,13 +12,19 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = basePrisma;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyArgs = Record<string, any>;
 
-// Only apply tenant filtering to these models
+// Only models that ACTUALLY have a tenantId column in the schema
 const TENANT_SCOPED = new Set([
   'user', 'customer', 'shipment', 'shipmentStop', 'shipmentItem',
   'driver', 'vehicle', 'vehicleMaintenance', 'dailyReport',
+  'company', 'branch', 'department', 'warehouse', 'hub',
+  'shipmentEvent', 'geofence',
+  'exception', 'slaPolicy', 'slaEvent',
+  'subscription', 'invoice', 'payment', 'usageRecord',
+  'integrationConfig', 'apiKey', 'webhookSubscription',
+  'uploadedFile', 'demoRequest', 'rolePermission',
 ]);
 
-function addTenantFilter(args: AnyArgs, tenantId: string | null): AnyArgs {
+function addTenantFilter(args: AnyArgs, tenantId: string): AnyArgs {
   if (!tenantId) return args;
   const existingWhere = args.where ?? {};
   if (existingWhere.tenantId !== undefined) return args;
@@ -32,22 +38,32 @@ function injectTenantId(data: AnyArgs, tenantId: string): AnyArgs {
   return data;
 }
 
-// Per-model extensions to avoid $allModels issues with models lacking tenantId
 function modelExtension(modelName: string) {
   return {
+    // findUnique: run query, then verify tenant ownership on result
+    async findUnique({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
+      const result = await query(args);
+      if (!result) return null;
+      const tenantId = tenantStore.getStore() ?? null;
+      if (!tenantId || !TENANT_SCOPED.has(modelName)) return result;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const r = result as any;
+      if ('tenantId' in r && r.tenantId !== null && r.tenantId !== tenantId) return null;
+      return result;
+    },
     async findMany({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!TENANT_SCOPED.has(modelName)) return query(args);
+      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
       return query(addTenantFilter(args, tenantId));
     },
     async findFirst({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!TENANT_SCOPED.has(modelName)) return query(args);
+      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
       return query(addTenantFilter(args, tenantId));
     },
     async count({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!TENANT_SCOPED.has(modelName)) return query(args);
+      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
       return query(addTenantFilter(args, tenantId));
     },
     async create({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
@@ -63,27 +79,28 @@ function modelExtension(modelName: string) {
     },
     async update({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!TENANT_SCOPED.has(modelName)) return query(args);
+      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
       return query(addTenantFilter(args, tenantId));
     },
     async updateMany({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!TENANT_SCOPED.has(modelName)) return query(args);
+      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
       return query(addTenantFilter(args, tenantId));
     },
     async delete({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!TENANT_SCOPED.has(modelName)) return query(args);
+      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
       return query(addTenantFilter(args, tenantId));
     },
     async deleteMany({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!TENANT_SCOPED.has(modelName)) return query(args);
+      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
       return query(addTenantFilter(args, tenantId));
     },
   };
 }
 
+// Explicitly list each model for TypeScript compatibility
 export const prisma = basePrisma.$extends({
   query: {
     user: modelExtension('user'),
@@ -95,5 +112,25 @@ export const prisma = basePrisma.$extends({
     vehicle: modelExtension('vehicle'),
     vehicleMaintenance: modelExtension('vehicleMaintenance'),
     dailyReport: modelExtension('dailyReport'),
+    company: modelExtension('company'),
+    branch: modelExtension('branch'),
+    department: modelExtension('department'),
+    warehouse: modelExtension('warehouse'),
+    hub: modelExtension('hub'),
+    shipmentEvent: modelExtension('shipmentEvent'),
+    geofence: modelExtension('geofence'),
+    exception: modelExtension('exception'),
+    slaPolicy: modelExtension('slaPolicy'),
+    slaEvent: modelExtension('slaEvent'),
+    subscription: modelExtension('subscription'),
+    invoice: modelExtension('invoice'),
+    payment: modelExtension('payment'),
+    usageRecord: modelExtension('usageRecord'),
+    integrationConfig: modelExtension('integrationConfig'),
+    apiKey: modelExtension('apiKey'),
+    webhookSubscription: modelExtension('webhookSubscription'),
+    uploadedFile: modelExtension('uploadedFile'),
+    demoRequest: modelExtension('demoRequest'),
+    rolePermission: modelExtension('rolePermission'),
   },
 });

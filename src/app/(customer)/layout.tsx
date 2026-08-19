@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 
 const nav = [
   { href: '/customer', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
-  { href: '/customer/orders', label: 'Pesanan', icon: <Package size={18} /> },
   { href: '/customer/shipments', label: 'Pengiriman', icon: <MapPin size={18} /> },
   { href: '/customer/profile', label: 'Profil', icon: <User size={18} /> },
 ];

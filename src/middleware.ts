@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { ROUTE_FEATURE_MAP } from '@/lib/billing';
 
 const COOKIE_NAME = 'dtms_token';
 const CSRF_COOKIE = 'dtms_csrf';
@@ -123,6 +124,15 @@ export async function middleware(req: NextRequest) {
     }
 
     const res = NextResponse.next();
+    if (!req.cookies.get(CSRF_COOKIE)) {
+      res.cookies.set(CSRF_COOKIE, generateCsrfToken(), {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 60 * 24,
+      });
+    }
     return addSecurityHeaders(res);
   }
 
@@ -158,7 +168,7 @@ export async function middleware(req: NextRequest) {
   const isOpsDash = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
   const isUsersRoute = pathname === '/users' || pathname.startsWith('/users/');
   const isSuperAdminOnlyRoute = pathname === '/tenants' || pathname.startsWith('/tenants/') || pathname === '/demo-requests' || pathname.startsWith('/demo-requests/') || pathname === '/audit' || pathname.startsWith('/audit/') || pathname === '/account' || pathname.startsWith('/account/');
-  const isOperationalRoute = !isSuperAdminOnlyRoute && !isDriverRoute && pathname !== '/tracking' && pathname !== '/login' && !pathname.startsWith('/tracking/') && !pathname.startsWith('/api/');
+  const isOperationalRoute = !isSuperAdminOnlyRoute && !isDriverRoute && pathname !== '/tracking' && pathname !== '/login' && !pathname.startsWith('/tracking/') && !pathname.startsWith('/api/') && pathname !== '/billing' && !pathname.startsWith('/billing/');
 
   try {
     const { payload } = await jwtVerify(token!, secret);
@@ -184,6 +194,25 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(url);
     }
 
+    // Feature gating — check if plan includes the feature for this route
+    if (role !== 'SUPER_ADMIN' && !isDriverRoute && !pathname.startsWith('/api/')) {
+      const planFeatures = payload.planFeatures as string[] | undefined;
+      const tenantPlan = payload.plan as string | undefined;
+      if (planFeatures && tenantPlan && tenantPlan !== 'ENTERPRISE') {
+        for (const [routePrefix, featureCode] of Object.entries(ROUTE_FEATURE_MAP)) {
+          if (pathname === routePrefix || pathname.startsWith(routePrefix + '/')) {
+            if (!planFeatures.includes(featureCode)) {
+              const url = req.nextUrl.clone();
+              url.pathname = '/billing';
+              url.searchParams.set('upgrade', featureCode);
+              return NextResponse.redirect(url);
+            }
+            break;
+          }
+        }
+      }
+    }
+
     const res = NextResponse.next();
     if (!req.cookies.get(CSRF_COOKIE)) {
       res.cookies.set(CSRF_COOKIE, generateCsrfToken(), {
@@ -194,6 +223,9 @@ export async function middleware(req: NextRequest) {
         maxAge: 60 * 60 * 24,
       });
     }
+    // Pass plan info to client
+    if (payload.plan) res.headers.set('X-Tenant-Plan', payload.plan as string);
+    if (payload.planFeatures) res.headers.set('X-Plan-Features', JSON.stringify(payload.planFeatures));
     return addSecurityHeaders(res);
   } catch {
     return NextResponse.redirect(loginUrl);
@@ -220,7 +252,6 @@ export const config = {
     '/settings/:path*',
     '/tenants/:path*',
     '/warehouse/:path*',
-    '/orders/:path*',
     '/dispatch/:path*',
     '/exceptions/:path*',
     '/sla/:path*',

@@ -16,32 +16,37 @@ import {
   Shield,
   FileText,
   Building2,
-  Warehouse,
   ChevronDown,
   ChevronRight,
   Zap,
   TrendingUp,
-  Download,
-  MessageSquare,
   Radar,
   ClipboardList,
   ShieldAlert,
   Activity,
   Plug,
   CreditCard,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type NavItem = { href: string; label: string; icon: React.ReactNode };
+type NavItem = { href: string; label: string; icon: React.ReactNode; locked?: boolean; feature?: string };
 type NavGroup = { title: string; items: NavItem[] };
 
-export default function Sidebar({ role, tenantPlan, open, onClose }: { role: string; tenantPlan: string | null; open?: boolean; onClose?: () => void }) {
+export default function Sidebar({ role, tenantPlan, planFeatures, open, onClose }: { role: string; tenantPlan: string | null; planFeatures?: string[]; open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const showUsers = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'].includes(role);
   const isSuperAdmin = role === 'SUPER_ADMIN';
-  const showPremium = !isSuperAdmin && tenantPlan !== 'PREMIUM';
+  const showPremium = !isSuperAdmin && tenantPlan !== 'ENTERPRISE';
+  const features = planFeatures || [];
+  const isFreePlan = !isSuperAdmin && (!tenantPlan || tenantPlan === 'FREE');
+
+  function hasFeature(featureCode: string) {
+    if (isSuperAdmin) return true;
+    return features.includes(featureCode);
+  }
 
   const groups: NavGroup[] = isSuperAdmin
     ? [
@@ -64,14 +69,13 @@ export default function Sidebar({ role, tenantPlan, open, onClose }: { role: str
           title: 'DASHBOARD',
           items: [
             { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
-            { href: '/control-tower', label: 'Control Tower', icon: <Activity size={18} /> },
+            { href: '/control-tower', label: 'Control Tower', icon: <Activity size={18} />, locked: !hasFeature('control_tower'), feature: 'control_tower' },
           ],
         },
         {
           title: 'OPERATIONS',
           items: [
-            { href: '/orders', label: 'Orders', icon: <ClipboardList size={18} /> },
-            { href: '/dispatch', label: 'Dispatch Board', icon: <Zap size={18} /> },
+            { href: '/dispatch', label: 'Dispatch Board', icon: <Zap size={18} />, locked: !hasFeature('dispatch'), feature: 'dispatch' },
             { href: '/shipments', label: 'Pengiriman', icon: <Package size={18} /> },
             { href: '/tracking', label: 'Lacak Pengiriman', icon: <MapPin size={18} /> },
             { href: '/customers', label: 'Pelanggan', icon: <Users size={18} /> },
@@ -83,21 +87,21 @@ export default function Sidebar({ role, tenantPlan, open, onClose }: { role: str
         {
           title: 'DATA & REPORTING',
           items: [
-            { href: '/reports', label: 'Laporan', icon: <FileText size={18} /> },
-            { href: '/analytics', label: 'Analitik', icon: <BarChart3 size={18} /> },
+            { href: '/reports', label: 'Laporan', icon: <FileText size={18} />, locked: !hasFeature('reports'), feature: 'reports' },
+            { href: '/analytics', label: 'Analitik', icon: <BarChart3 size={18} />, locked: !hasFeature('reports'), feature: 'reports' },
           ],
         },
         {
           title: 'SYSTEM',
           items: [
-            { href: '/exceptions', label: 'Exceptions', icon: <ShieldAlert size={18} /> },
-            { href: '/sla', label: 'SLA Policies', icon: <TrendingUp size={18} /> },
+            { href: '/exceptions', label: 'Exceptions', icon: <ShieldAlert size={18} />, locked: !hasFeature('sla'), feature: 'sla' },
+            { href: '/sla', label: 'SLA Policies', icon: <TrendingUp size={18} />, locked: !hasFeature('sla'), feature: 'sla' },
             { href: '/notifications', label: 'Notifikasi', icon: <Bell size={18} /> },
-            { href: '/integrations', label: 'Integrations', icon: <Plug size={18} /> },
+            { href: '/integrations', label: 'Integrations', icon: <Plug size={18} />, locked: !hasFeature('integrations'), feature: 'integrations' },
             { href: '/settings/whatsapp', label: 'Pengaturan', icon: <Settings size={18} /> },
             ...(showUsers ? [{ href: '/users', label: 'Pengguna', icon: <Shield size={18} /> }] : []),
             { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
-            ...(showUsers ? [] : [{ href: '/billing', label: 'Billing', icon: <CreditCard size={18} /> }]),
+            { href: '/billing', label: 'Billing', icon: <CreditCard size={18} /> },
           ],
         },
       ];
@@ -150,20 +154,24 @@ export default function Sidebar({ role, tenantPlan, open, onClose }: { role: str
                 <div className="mt-0.5 space-y-0.5">
                   {group.items.map((item) => {
                       const active = isActive(item.href);
+                      const href = item.locked ? `/billing?upgrade=${item.feature}` : item.href;
                       return (
                         <Link
                           key={item.href}
-                          href={item.href}
+                          href={href}
                           onClick={onClose}
                           className={cn(
                             'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                            active
+                            active && !item.locked
                               ? 'bg-[#0D6EFD] text-white'
-                              : 'text-white/60 hover:bg-white/5 hover:text-white'
+                              : item.locked
+                                ? 'text-white/30 hover:bg-white/5 hover:text-white/50'
+                                : 'text-white/60 hover:bg-white/5 hover:text-white'
                           )}
                         >
                           {item.icon}
-                          {item.label}
+                          <span className="flex-1">{item.label}</span>
+                          {item.locked && <Lock size={12} className="text-white/30" />}
                         </Link>
                       );
                     })}
@@ -179,13 +187,17 @@ export default function Sidebar({ role, tenantPlan, open, onClose }: { role: str
             <div className="rounded-xl border border-white/10 bg-white/5 p-4">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp size={16} className="text-[#0D6EFD]" />
-                <span className="text-xs font-semibold text-white">Premium</span>
+                <span className="text-xs font-semibold text-white">
+                  {isFreePlan ? 'Upgrade Plan' : 'Premium Features'}
+                </span>
               </div>
               <p className="text-[11px] leading-relaxed text-white/50 mb-3">
-                Tingkatkan pengalaman Anda dengan fitur premium
+                {isFreePlan
+                  ? 'Buka semua fitur dengan upgrade plan Anda'
+                  : 'Akses lebih banyak fitur premium untuk bisnis Anda'}
               </p>
               <Link href="/billing" className="block w-full rounded-lg bg-[#0D6EFD] px-3 py-1.5 text-center text-xs font-semibold text-white transition hover:bg-[#0B5FD5]">
-                Upgrade Sekarang
+                {isFreePlan ? 'Lihat Plan' : 'Upgrade Sekarang'}
               </Link>
             </div>
           </div>

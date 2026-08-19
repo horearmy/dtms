@@ -32,10 +32,6 @@ export function incrementCounter(name: string, labels: Record<string, string> = 
   counter(name, '', labels, 1);
 }
 
-export function setGauge(name: string, value: number, labels: Record<string, string> = {}) {
-  gauge(name, '', labels, value);
-}
-
 export function observeHistogram(name: string, value: number, labels: Record<string, string> = {}) {
   histogram(name, '', labels, value);
 }

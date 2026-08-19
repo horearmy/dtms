@@ -8,17 +8,36 @@ export async function GET() {
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
-    const where = session!.role === 'DRIVER' ? { userId: session!.id } : {};
-    const items = await prisma.notification.findMany({
-      where: session!.role === 'DRIVER' ? { OR: [{ shipment: { assignments: { some: { driver: { userId: session!.id } } } } }, { userId: session!.id }] } : {},
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    });
-    const unread = await prisma.notification.count({
-      where: session!.role === 'DRIVER'
-        ? { OR: [{ shipment: { assignments: { some: { driver: { userId: session!.id } } } } }, { userId: session!.id }], status: 'UNREAD' }
-        : { status: 'UNREAD' },
-    });
+    let items;
+    let unread;
+
+    if (session!.role === 'DRIVER') {
+      const driverFilter = { OR: [{ shipment: { assignments: { some: { driver: { userId: session!.id } } } } }, { userId: session!.id }] };
+      items = await prisma.notification.findMany({
+        where: driverFilter,
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+      unread = await prisma.notification.count({
+        where: { ...driverFilter, status: 'UNREAD' },
+      });
+    } else {
+      // Scope notifications to current tenant via shipment relation
+      const tenantFilter = session?.tenantId
+        ? { OR: [
+            { shipment: { tenantId: session.tenantId } },
+            { userId: { not: null } },
+          ] }
+        : {};
+      items = await prisma.notification.findMany({
+        where: tenantFilter,
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+      unread = await prisma.notification.count({
+        where: { ...tenantFilter, status: 'UNREAD' },
+      });
+    }
 
     return NextResponse.json({ items, unread });
   });

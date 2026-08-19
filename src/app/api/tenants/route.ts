@@ -15,7 +15,15 @@ export async function GET(req: NextRequest) {
   const tenants = await prisma.tenant.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { users: true, drivers: true, shipments: true } } },
+    include: {
+      _count: { select: { users: true, drivers: true, shipments: true } },
+      subscription: {
+        select: {
+          id: true, status: true, billingCycle: true, currentPeriodStart: true, currentPeriodEnd: true, cancelledAt: true,
+          plan: { select: { code: true, name: true } },
+        },
+      },
+    },
   });
 
   return NextResponse.json(tenants);

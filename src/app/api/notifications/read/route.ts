@@ -14,7 +14,14 @@ export async function POST(req: NextRequest) {
         data: { status: 'READ' },
       });
     } else {
-      await prisma.notification.updateMany({ where: { status: 'UNREAD' }, data: { status: 'READ' } });
+      // Scope to current tenant via shipment relation
+      const tenantFilter = session?.tenantId
+        ? { OR: [
+            { shipment: { tenantId: session.tenantId } },
+            { userId: { not: null } },
+          ] }
+        : {};
+      await prisma.notification.updateMany({ where: { ...tenantFilter, status: 'UNREAD' }, data: { status: 'READ' } });
     }
 
     await logAudit(session, 'READ_NOTIFICATIONS', 'NOTIFICATION', undefined, req);

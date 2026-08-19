@@ -1,6 +1,6 @@
 // src/app/api/webhooks/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { guardPermission } from '@/lib/api-guard';
+import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { prisma } from '@/lib/prisma';
 import { PERMISSIONS } from '@/lib/permissions';
 import crypto from 'crypto';
@@ -9,32 +9,35 @@ export async function GET() {
   const { session, error } = await guardPermission(PERMISSIONS.WEBHOOK.READ);
   if (error) return error;
 
-  const webhooks = await prisma.webhookSubscription.findMany({
-    where: session?.tenantId ? { tenantId: session.tenantId } : {},
-    orderBy: { createdAt: 'desc' },
-  });
+  return runWithTenant(session?.tenantId ?? null, async () => {
+    const webhooks = await prisma.webhookSubscription.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
 
-  return NextResponse.json(webhooks.map((w) => ({
-    id: w.id, url: w.url, events: w.events, active: w.active, createdAt: w.createdAt,
-  })));
+    return NextResponse.json(webhooks.map((w) => ({
+      id: w.id, url: w.url, events: w.events, active: w.active, createdAt: w.createdAt,
+    })));
+  });
 }
 
 export async function POST(req: NextRequest) {
   const { session, error } = await guardPermission(PERMISSIONS.WEBHOOK.CREATE);
   if (error) return error;
 
-  const body = await req.json();
-  const secret = body.secret || crypto.randomBytes(32).toString('hex');
+  return runWithTenant(session?.tenantId ?? null, async () => {
+    const body = await req.json();
+    const secret = body.secret || crypto.randomBytes(32).toString('hex');
 
-  const webhook = await prisma.webhookSubscription.create({
-    data: {
-      tenantId: session!.tenantId!,
-      url: body.url,
-      events: body.events || ['*'],
-      secret,
-      active: true,
-    },
+    const webhook = await prisma.webhookSubscription.create({
+      data: {
+        tenantId: session!.tenantId!,
+        url: body.url,
+        events: body.events || ['*'],
+        secret,
+        active: true,
+      },
+    });
+
+    return NextResponse.json({ ...webhook, secret }, { status: 201 });
   });
-
-  return NextResponse.json({ ...webhook, secret }, { status: 201 });
 }

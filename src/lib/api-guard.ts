@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession, type SessionUser } from './auth';
 import { tenantStore } from './prisma';
 import { resolveAccessScope, hasPermission, type AccessScope } from './access-scope';
+import { checkPlanLimit } from './billing';
 
 export async function guard(
   ...roles: string[]
@@ -110,6 +111,24 @@ export function requirePermissionParams(permission: string, ...roles: string[]) 
 }
 
 type AuditData = string | { oldData?: unknown; newData?: unknown };
+
+export async function guardPlanLimit(
+  session: SessionUser | null,
+  resource: 'users' | 'drivers' | 'shipments',
+): Promise<NextResponse | null> {
+  if (!session?.tenantId || session.role === 'SUPER_ADMIN') return null;
+  const result = await checkPlanLimit(session.tenantId, resource);
+  if (result.allowed) return null;
+  return NextResponse.json(
+    {
+      error: `Batas ${resource} tercapai (${result.current}/${result.max}). Upgrade plan untuk menambah.`,
+      upgrade_required: true,
+      current: result.current,
+      max: result.max,
+    },
+    { status: 403 },
+  );
+}
 
 function json(v: unknown): string | undefined {
   if (v === undefined || v === null) return undefined;

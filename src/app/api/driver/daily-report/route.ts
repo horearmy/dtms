@@ -1,45 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guardPermission } from '@/lib/api-guard';
+import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function POST(req: NextRequest) {
   const { session, scope, error } = await guardPermission(PERMISSIONS.DAILY_REPORT.CREATE);
   if (error) return error;
 
-  const driver = await prisma.driver.findFirst({ where: { userId: session?.id } });
-  if (!driver) return NextResponse.json({ error: 'Driver tidak terdaftar' }, { status: 403 });
+  return runWithTenant(session?.tenantId ?? null, async () => {
+    const driver = await prisma.driver.findFirst({ where: { userId: session?.id } });
+    if (!driver) return NextResponse.json({ error: 'Driver tidak terdaftar' }, { status: 403 });
 
-  const body = await req.json();
-  const { deliveredCount, failedCount, rescheduledCount, fuelLiter, notes } = body;
+    const body = await req.json();
+    const { deliveredCount, failedCount, rescheduledCount, fuelLiter, notes } = body;
 
-  const report = await prisma.dailyReport.create({
-    data: {
-      driverId: driver.id,
-      reportDate: new Date(),
-      deliveredCount: deliveredCount || 0,
-      failedCount: failedCount || 0,
-      rescheduledCount: rescheduledCount || 0,
-      fuelLiter: fuelLiter || 0,
-      notes: notes || null,
-    },
+    const report = await prisma.dailyReport.create({
+      data: {
+        driverId: driver.id,
+        reportDate: new Date(),
+        deliveredCount: deliveredCount || 0,
+        failedCount: failedCount || 0,
+        rescheduledCount: rescheduledCount || 0,
+        fuelLiter: fuelLiter || 0,
+        notes: notes || null,
+      },
+    });
+
+    return NextResponse.json(report, { status: 201 });
   });
-
-  return NextResponse.json(report, { status: 201 });
 }
 
 export async function GET() {
   const { session, scope, error } = await guardPermission(PERMISSIONS.DAILY_REPORT.READ);
   if (error) return error;
 
-  const driver = await prisma.driver.findFirst({ where: { userId: session?.id } });
-  if (!driver) return NextResponse.json({ reports: [] });
+  return runWithTenant(session?.tenantId ?? null, async () => {
+    const driver = await prisma.driver.findFirst({ where: { userId: session?.id } });
+    if (!driver) return NextResponse.json({ reports: [] });
 
-  const reports = await prisma.dailyReport.findMany({
-    where: { driverId: driver.id },
-    orderBy: { reportDate: 'desc' },
-    take: 30,
+    const reports = await prisma.dailyReport.findMany({
+      where: { driverId: driver.id },
+      orderBy: { reportDate: 'desc' },
+      take: 30,
+    });
+
+    return NextResponse.json({ reports });
   });
-
-  return NextResponse.json({ reports });
 }

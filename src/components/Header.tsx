@@ -11,7 +11,6 @@ import {
   Maximize2,
   Minimize2,
   ChevronDown,
-  User,
   Shield,
   KeyRound,
   LogOut,

@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies, headers } from 'next/headers';
 import { prisma } from './prisma';
+import { getTenantFeatures } from './billing';
 import crypto from 'crypto';
 
 export const COOKIE_NAME = 'dtms_token';
@@ -17,9 +18,22 @@ export type SessionUser = {
   role: string;
   tenantId: string | null;
   branchId: string | null;
+  plan?: string;
+  planFeatures?: string[];
 };
 
 export async function signToken(user: SessionUser & { pwdVersion?: number }) {
+  // Fetch plan features for tenant
+  let planFeatures: string[] = [];
+  let plan = 'FREE';
+  if (user.tenantId) {
+    try {
+      const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { plan: true } });
+      plan = tenant?.plan || 'FREE';
+      planFeatures = await getTenantFeatures(user.tenantId);
+    } catch { /* ignore */ }
+  }
+
   return new SignJWT({
     id: user.id,
     name: user.name,
@@ -28,6 +42,8 @@ export async function signToken(user: SessionUser & { pwdVersion?: number }) {
     tenantId: user.tenantId,
     branchId: user.branchId,
     pwd: user.pwdVersion ?? 1,
+    plan,
+    planFeatures,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -46,6 +62,8 @@ export async function verifyToken(token: string): Promise<SessionUser & { pwd: n
       tenantId: (payload.tenantId as string) ?? null,
       branchId: (payload.branchId as string) ?? null,
       pwd: (payload.pwd as number) ?? 1,
+      plan: (payload.plan as string) ?? 'FREE',
+      planFeatures: (payload.planFeatures as string[]) ?? [],
     };
   } catch {
     return null;
@@ -99,7 +117,7 @@ export async function getSession(): Promise<SessionUser | null> {
     const user = await prisma.user.findUnique({ where: { id: payload.id } });
     if (!user || user.status !== 'ACTIVE') return null;
     if (user.pwdVersion !== payload.pwd) return null;
-    return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId };
+    return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan: payload.plan, planFeatures: payload.planFeatures };
   }
 
   const hdrs = await headers();
@@ -144,8 +162,4 @@ export async function verifyTwoFactorToken(token: string): Promise<string | null
   } catch {
     return null;
   }
-}
-
-export function can(role: string, ...roles: string[]) {
-  return roles.includes(role);
 }

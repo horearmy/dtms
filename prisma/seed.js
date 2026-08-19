@@ -8,7 +8,6 @@ const P = {
   VEHICLE: { READ: 'vehicle.read', CREATE: 'vehicle.create', UPDATE: 'vehicle.update', DELETE: 'vehicle.delete' },
   CUSTOMER: { READ: 'customer.read', CREATE: 'customer.create', UPDATE: 'customer.update', DELETE: 'customer.delete' },
   SHIPMENT: { READ: 'shipment.read', CREATE: 'shipment.create', UPDATE: 'shipment.update', CANCEL: 'shipment.cancel', ASSIGN: 'shipment.assign', EXPORT: 'shipment.export' },
-  ORDER: { READ: 'order.read', CREATE: 'order.create', UPDATE: 'order.update', CANCEL: 'order.cancel', APPROVE: 'order.approve' },
   DELIVERY: { READ: 'delivery.read', DISPATCH: 'delivery.dispatch', START: 'delivery.start', COMPLETE: 'delivery.complete', FAIL: 'delivery.fail', RESCHEDULE: 'delivery.reschedule' },
   WAREHOUSE: { READ: 'warehouse.read', SCAN: 'warehouse.scan', SORT: 'warehouse.sort', UPDATE: 'warehouse.update' },
   REPORT: { VIEW: 'report.view', EXPORT: 'report.export' },
@@ -16,7 +15,19 @@ const P = {
   GEOFENCE: { READ: 'geofence.read', CREATE: 'geofence.create', UPDATE: 'geofence.update', DELETE: 'geofence.delete' },
   NOTIFICATION: { READ: 'notification.read', SEND: 'notification.send' },
   ORGANIZATION: { READ: 'organization.read', CREATE: 'organization.create', UPDATE: 'organization.update', DELETE: 'organization.delete' },
-  SETTINGS: { READ: 'settings.read', UPDATE: 'settings.update' },
+  SETTINGS: { READ: 'settings.read', UPDATE: 'settings.update', DELETE: 'settings.delete' },
+  SLA: { READ: 'sla.read', CREATE: 'sla.create', UPDATE: 'sla.update', DELETE: 'sla.delete' },
+  EXCEPTION: { READ: 'exception.read', CREATE: 'exception.create', UPDATE: 'exception.update', ASSIGN: 'exception.assign' },
+  ANALYTICS: { VIEW: 'analytics.view' },
+  CONTROL_TOWER: { VIEW: 'control_tower.view' },
+  DISPATCH: { VIEW: 'dispatch.view', ASSIGN: 'dispatch.assign' },
+  INTEGRATION: { READ: 'integration.read', CREATE: 'integration.create', UPDATE: 'integration.update', DELETE: 'integration.delete' },
+  WEBHOOK: { READ: 'webhook.read', CREATE: 'webhook.create', UPDATE: 'webhook.update', DELETE: 'webhook.delete' },
+  API_KEY: { READ: 'api_key.read', CREATE: 'api_key.create', DELETE: 'api_key.delete' },
+  BILLING: { READ: 'billing.read', MANAGE: 'billing.manage' },
+  GPS: { SEND: 'gps.send', READ: 'gps.read' },
+  FILE: { READ: 'file.read', UPLOAD: 'file.upload' },
+  DAILY_REPORT: { READ: 'daily_report.read', CREATE: 'daily_report.create' },
 };
 const allPerms = Object.values(P).flatMap((r) => Object.values(r));
 
@@ -28,14 +39,23 @@ const ROLE_PERMS = {
     P.VEHICLE.READ, P.VEHICLE.CREATE, P.VEHICLE.UPDATE,
     P.CUSTOMER.READ, P.CUSTOMER.CREATE, P.CUSTOMER.UPDATE,
     P.SHIPMENT.READ, P.SHIPMENT.CREATE, P.SHIPMENT.UPDATE, P.SHIPMENT.CANCEL, P.SHIPMENT.ASSIGN, P.SHIPMENT.EXPORT,
-    P.ORDER.READ, P.ORDER.CREATE, P.ORDER.UPDATE, P.ORDER.CANCEL, P.ORDER.APPROVE,
     P.DELIVERY.READ, P.DELIVERY.DISPATCH, P.DELIVERY.START, P.DELIVERY.COMPLETE, P.DELIVERY.FAIL, P.DELIVERY.RESCHEDULE,
     P.WAREHOUSE.READ, P.WAREHOUSE.SCAN, P.WAREHOUSE.SORT,
     P.REPORT.VIEW, P.REPORT.EXPORT,
     P.AUDIT.READ, P.GEOFENCE.READ, P.GEOFENCE.CREATE, P.GEOFENCE.UPDATE,
     P.NOTIFICATION.READ, P.NOTIFICATION.SEND,
     P.ORGANIZATION.READ, P.ORGANIZATION.CREATE, P.ORGANIZATION.UPDATE,
-    P.SETTINGS.READ, P.SETTINGS.UPDATE,
+    P.SETTINGS.READ, P.SETTINGS.UPDATE, P.SETTINGS.DELETE,
+    P.BILLING.READ, P.BILLING.MANAGE,
+    P.SLA.READ, P.SLA.CREATE, P.SLA.UPDATE, P.SLA.DELETE,
+    P.EXCEPTION.READ, P.EXCEPTION.CREATE, P.EXCEPTION.UPDATE, P.EXCEPTION.ASSIGN,
+    P.ANALYTICS.VIEW, P.CONTROL_TOWER.VIEW,
+    P.DISPATCH.VIEW, P.DISPATCH.ASSIGN,
+    P.INTEGRATION.READ, P.INTEGRATION.CREATE,
+    P.WEBHOOK.READ, P.WEBHOOK.CREATE,
+    P.API_KEY.READ, P.API_KEY.CREATE,
+    P.GPS.SEND, P.GPS.READ, P.FILE.READ, P.FILE.UPLOAD,
+    P.DAILY_REPORT.READ, P.DAILY_REPORT.CREATE,
   ],
   DISPATCHER: [
     P.SHIPMENT.READ, P.SHIPMENT.UPDATE,
@@ -58,7 +78,7 @@ const ROLE_PERMS = {
     P.DELIVERY.READ, P.WAREHOUSE.READ, P.REPORT.VIEW, P.REPORT.EXPORT, P.NOTIFICATION.READ,
   ],
   CUSTOMER_SERVICE: [
-    P.SHIPMENT.READ, P.SHIPMENT.UPDATE, P.ORDER.READ, P.ORDER.UPDATE,
+    P.SHIPMENT.READ, P.SHIPMENT.UPDATE,
     P.CUSTOMER.READ, P.CUSTOMER.CREATE, P.CUSTOMER.UPDATE,
     P.DELIVERY.READ, P.DELIVERY.RESCHEDULE, P.NOTIFICATION.READ, P.NOTIFICATION.SEND, P.REPORT.VIEW,
   ],
@@ -171,7 +191,7 @@ async function main() {
       primaryColor: '#059669',
       secondaryColor: '#047857',
       accentColor: '#10b981',
-      plan: 'BUSINESS',
+      plan: 'PRO',
       timezone: 'Asia/Jakarta',
       locale: 'id-ID',
       currency: 'IDR',
@@ -234,7 +254,7 @@ async function main() {
   }
 
   const superAdmin = await prisma.user.create({
-    data: { name: 'Super Admin', username: 'superadmin', passwordHash: hash('admin123'), role: Role.SUPER_ADMIN, email: 'superadmin@dtms.local', tenantId: tenant.id },
+    data: { name: 'Super Admin', username: 'superadmin', passwordHash: hash('admin123'), role: Role.SUPER_ADMIN, email: 'superadmin@dtms.local' },
   });
   await prisma.user.create({
     data: { name: 'Admin Operasional', username: 'admin', passwordHash: hash('admin123'), role: Role.ADMIN_OPERASIONAL, email: 'admin@dtms.local', tenantId: tenant.id },

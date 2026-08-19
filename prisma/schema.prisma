@@ -54,7 +54,6 @@ model Tenant {
   branches        Branch[]
   warehouses      Warehouse[]
   rolePermissions RolePermission[]
-  orders          Order[]
   shipmentEvents  ShipmentEvent[]
   exceptions      Exception[]
   slaPolicies     SlaPolicy[]
@@ -118,7 +117,6 @@ model Branch {
   warehouses  Warehouse[]
   hubs        Hub[]
   users       User[]
-  orders      Order[]
 
   @@index([tenantId])
   @@index([companyId])
@@ -284,28 +282,6 @@ enum GeofenceType {
   DESTINATION
 }
 
-enum OrderStatus {
-  DRAFT
-  RECEIVED
-  VALIDATING
-  VALIDATED
-  REJECTED
-  CONFIRMED
-  CANCELLED
-  FULFILLED
-}
-
-enum OrderSource {
-  MANUAL
-  API
-  ERP
-  WMS
-  CRM
-  CSV
-  EDI
-  MARKETPLACE
-}
-
 enum GeofenceEventType {
   ENTER
   EXIT
@@ -336,10 +312,25 @@ model User {
   notifications      Notification[]
   auditLogs          AuditLog[]
   ownedExceptions    Exception[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([tenantId])
   @@unique([tenantId, username])
   @@index([branchId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@unique([userId, token])
 }
 
 model Customer {
@@ -397,7 +388,6 @@ model Shipment {
   notifications  Notification[]
   stops          ShipmentStop[]
   scans          WarehouseScan[]
-  order          Order?
   shipmentEvents ShipmentEvent[]
   exceptions     Exception[]
   slaEvents      SlaEvent[]
@@ -603,66 +593,6 @@ model AuditLog {
   path      String?
   userAgent String?
   createdAt DateTime @default(now())
-}
-
-model Order {
-  id             String       @id @default(cuid())
-  tenantId       String
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  orderNumber    String       @unique
-  source         OrderSource  @default(MANUAL)
-  status         OrderStatus @default(DRAFT)
-  customerId     String?
-  customerName   String
-  customerPhone  String
-  customerEmail  String?
-  senderName     String?
-  senderPhone    String?
-  senderAddress  String?
-  senderCity     String?
-  senderLat      Float?
-  senderLng      Float?
-  destName       String
-  destPhone      String?
-  destAddress    String
-  destCity       String?
-  destLat        Float?
-  destLng        Float?
-  serviceType    ServiceType  @default(REGULAR)
-  weight         Float
-  volume         Float?
-  itemValue      Float?
-  fragile        Boolean      @default(false)
-  notes          String?
-  slaDeadline    DateTime?
-  confirmedAt    DateTime?
-  cancelledAt    DateTime?
-  cancelReason   String?
-  shipmentId     String?      @unique
-  shipment       Shipment?    @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
-  branchId       String?
-  branch         Branch?      @relation(fields: [branchId], references: [id])
-  createdBy      String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  items          OrderItem[]
-
-  @@index([tenantId])
-  @@index([status])
-  @@index([createdAt])
-  @@index([orderNumber])
-}
-
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  itemName  String
-  quantity  Int     @default(1)
-  weight    Float?
-  dimension String?
-
-  @@index([orderId])
 }
 
 model WarehouseScan {

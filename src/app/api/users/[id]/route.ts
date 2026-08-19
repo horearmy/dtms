@@ -20,11 +20,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const { session, scope, error } = await guardPermission(PERMISSIONS.USER.UPDATE);
   if (error) return error;
+
+  const isSuperAdmin = session.role === 'SUPER_ADMIN';
+
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json();
 
     const target = await prisma.user.findUnique({ where: { id } });
     if (!target) return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 });
+
+    if (!isSuperAdmin && target.tenantId !== session.tenantId) {
+      return NextResponse.json({ error: 'Tidak memiliki akses ke user ini' }, { status: 403 });
+    }
 
     const name = body.name?.toString().trim() || target.name;
     const phone = body.phone === undefined ? target.phone : body.phone?.toString().trim() || null;
@@ -64,15 +71,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         where: { id },
         data,
         select: {
-          id: true,
-          name: true,
-          username: true,
-          role: true,
-          status: true,
-          phone: true,
-          mustChangePassword: true,
-          lastPasswordChange: true,
-          createdAt: true,
+          id: true, name: true, username: true, role: true, status: true, phone: true,
+          mustChangePassword: true, lastPasswordChange: true, createdAt: true, tenantId: true,
           driver: { select: { id: true, employeeId: true, name: true } },
         },
       });
@@ -81,7 +81,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         'UPDATE_USER',
         'USER',
         {
-          oldData: target,
+          oldData: { username: target.username, name: target.name, role: target.role, status: target.status },
           newData: { username: updated.username, name: updated.name, role: updated.role, status: updated.status, resetPassword: !!password },
         },
         req
@@ -97,6 +97,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const { session, scope, error } = await guardPermission(PERMISSIONS.USER.DELETE);
   if (error) return error;
+
+  const isSuperAdmin = session.role === 'SUPER_ADMIN';
+
   return runWithTenant(session?.tenantId ?? null, async () => {
     if (id === session?.id) {
       return NextResponse.json({ error: 'Tidak dapat menghapus akun sendiri' }, { status: 400 });
@@ -106,6 +109,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       include: { _count: { select: { notifications: true } } },
     });
     if (!target) return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 });
+    if (!isSuperAdmin && target.tenantId !== session.tenantId) {
+      return NextResponse.json({ error: 'Tidak memiliki akses ke user ini' }, { status: 403 });
+    }
     if (target.role === 'SUPER_ADMIN' && session?.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Hanya Super Admin yang dapat menghapus akun Super Admin' }, { status: 403 });
     }
@@ -114,7 +120,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     } catch {
       return NextResponse.json({ error: 'Tidak dapat menghapus user' }, { status: 400 });
     }
-    await logAudit(session, 'DELETE_USER', 'USER', { oldData: target }, req);
+    await logAudit(session, 'DELETE_USER', 'USER', { oldData: { username: target.username, name: target.name, tenantId: target.tenantId } }, req);
     return NextResponse.json({ ok: true });
   });
 }

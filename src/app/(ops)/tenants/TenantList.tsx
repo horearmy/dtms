@@ -24,6 +24,15 @@ type Tenant = {
   maxShipments: number;
   createdAt: string;
   _count: { users: number; drivers: number; shipments: number };
+  subscription: {
+    id: string;
+    status: string;
+    billingCycle: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+    cancelledAt: string | null;
+    plan: { code: string; name: string };
+  } | null;
 };
 
 export default function TenantList() {
@@ -125,7 +134,7 @@ export default function TenantList() {
   const planBadge = (plan: string) => {
     const c: Record<string, string> = {
       FREE: 'bg-[#F7F9FC] text-[#667085]', STARTER: 'bg-[#0D6EFD]/10 text-[#0D6EFD]',
-      BUSINESS: 'bg-purple-100 text-purple-700', ENTERPRISE: 'bg-amber-100 text-amber-700',
+      PRO: 'bg-purple-100 text-purple-700', ENTERPRISE: 'bg-amber-100 text-amber-700',
     };
     return c[plan] || c.FREE;
   };
@@ -195,7 +204,7 @@ export default function TenantList() {
                     className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
                     <option value="FREE">Free</option>
                     <option value="STARTER">Starter</option>
-                    <option value="BUSINESS">Business</option>
+                    <option value="PRO">Professional</option>
                     <option value="ENTERPRISE">Enterprise</option>
                   </select>
                 </div>
@@ -309,7 +318,18 @@ export default function TenantList() {
                   </Link>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${planBadge(t.plan)}`}>{t.plan}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className={`inline-block w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold ${planBadge(t.plan)}`}>{t.plan}</span>
+                    {t.subscription && (
+                      <span className="text-[10px] text-[#667085]">
+                        {t.subscription.billingCycle === 'YEARLY' ? 'Tahunan' : 'Bulanan'}
+                        {t.subscription.status === 'CANCELLED' && <span className="text-red-500"> · Dibatalkan</span>}
+                        {t.subscription.status === 'ACTIVE' && t.subscription.currentPeriodEnd && (
+                          <span> · s/d {new Date(t.subscription.currentPeriodEnd).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <button onClick={() => toggleActive(t.id, t.active)}

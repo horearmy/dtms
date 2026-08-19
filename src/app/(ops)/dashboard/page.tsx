@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { runWithTenant } from '@/lib/api-guard';
 import { getSLA } from '@/lib/eta';
 import StatCard from '@/components/StatCard';
 import StatusBadge from '@/components/StatusBadge';
@@ -18,42 +19,63 @@ export default async function DashboardPage() {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts] = await Promise.all([
-    prisma.shipment.count({ where: { createdAt: { gte: todayStart } } }),
-    prisma.shipment.findMany({ 
-      where: { status: { notIn: ['DELIVERED', 'RETURNED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'] } },
-      include: { sender: true, receiver: true, assignments: { include: { driver: true } } } 
-    }),
-    prisma.shipment.count({ where: { status: 'DELIVERED' } }),
-    prisma.shipment.count({ where: { status: { in: ACTIVE_STATUSES as never[] } } }),
-    prisma.shipment.count({ where: { status: 'DELIVERY_FAILED' } }),
-    prisma.shipment.count({ where: { status: 'RETURNED' } }),
-    prisma.driver.count({ where: { status: 'ACTIVE' } }),
-    prisma.vehicle.count({ where: { status: { in: ['AVAILABLE', 'IN_USE'] } } }),
-    prisma.shipment.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 8,
-      include: { sender: true, receiver: true, assignments: { include: { driver: true } } },
-    }),
-    prisma.trackingEvent.findMany({
-      where: { status: 'ORDER_CREATED' },
-      select: { shipmentId: true, createdAt: true },
-    }),
-    prisma.trackingEvent.findMany({
-      where: { status: 'DELIVERED' },
-      select: { shipmentId: true, createdAt: true },
-    }),
-    prisma.geofenceEvent.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 6,
-      include: { geofence: true, driver: true },
-    }),
-    prisma.notification.findMany({
-      where: { message: { startsWith: 'SLA' } },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    }),
-  ]);
+  const data = await runWithTenant(session?.tenantId ?? null, async () => {
+    const tenantFilter = session?.tenantId ? { tenantId: session.tenantId } : {};
+
+    const [totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts] = await Promise.all([
+      prisma.shipment.count({ where: { createdAt: { gte: todayStart } } }),
+      prisma.shipment.findMany({
+        where: { status: { notIn: ['DELIVERED', 'RETURNED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'] } },
+        include: { sender: true, receiver: true, assignments: { include: { driver: true } } }
+      }),
+      prisma.shipment.count({ where: { status: 'DELIVERED' } }),
+      prisma.shipment.count({ where: { status: { in: ACTIVE_STATUSES as never[] } } }),
+      prisma.shipment.count({ where: { status: 'DELIVERY_FAILED' } }),
+      prisma.shipment.count({ where: { status: 'RETURNED' } }),
+      prisma.driver.count({ where: { status: 'ACTIVE' } }),
+      prisma.vehicle.count({ where: { status: { in: ['AVAILABLE', 'IN_USE'] } } }),
+      prisma.shipment.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+        include: { sender: true, receiver: true, assignments: { include: { driver: true } } },
+      }),
+      prisma.trackingEvent.findMany({
+        where: {
+          status: 'ORDER_CREATED',
+          ...(session?.tenantId ? { shipment: { tenantId: session.tenantId } } : {}),
+        },
+        select: { shipmentId: true, createdAt: true },
+      }),
+      prisma.trackingEvent.findMany({
+        where: {
+          status: 'DELIVERED',
+          ...(session?.tenantId ? { shipment: { tenantId: session.tenantId } } : {}),
+        },
+        select: { shipmentId: true, createdAt: true },
+      }),
+      prisma.geofenceEvent.findMany({
+        where: session?.tenantId ? { geofence: { tenantId: session.tenantId } } : {},
+        orderBy: { createdAt: 'desc' },
+        take: 6,
+        include: { geofence: true, driver: true },
+      }),
+      prisma.notification.findMany({
+        where: {
+          message: { startsWith: 'SLA' },
+          ...(session?.tenantId ? { OR: [
+            { shipment: { tenantId: session.tenantId } },
+            { userId: { not: null } },
+          ] } : {}),
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    return { totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts };
+  });
+
+  const { totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts } = data;
 
   // SLA monitoring
   let slaRisk = 0;

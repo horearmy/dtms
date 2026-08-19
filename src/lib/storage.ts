@@ -53,13 +53,6 @@ export async function getFile(key: string): Promise<{ buffer: Buffer; mimeType: 
   return getFromLocal(key);
 }
 
-export async function deleteFile(key: string): Promise<boolean> {
-  if (STORAGE_TYPE === 's3') {
-    return deleteFromS3(key);
-  }
-  return deleteFromLocal(key);
-}
-
 export function getFileUrl(key: string): string {
   if (STORAGE_TYPE === 's3') {
     return `${S3_CONFIG.endpoint}/${S3_CONFIG.bucket}/${key}`;
@@ -94,16 +87,6 @@ async function getFromLocal(key: string): Promise<{ buffer: Buffer; mimeType: st
     return { buffer, mimeType };
   } catch {
     return null;
-  }
-}
-
-async function deleteFromLocal(key: string): Promise<boolean> {
-  try {
-    const fullPath = path.join(UPLOAD_DIR, key);
-    await fs.promises.unlink(fullPath);
-    return true;
-  } catch {
-    return false;
   }
 }
 
@@ -166,27 +149,6 @@ async function getFromS3(key: string): Promise<{ buffer: Buffer; mimeType: strin
     return { buffer, mimeType };
   } catch {
     return null;
-  }
-}
-
-async function deleteFromS3(key: string): Promise<boolean> {
-  try {
-    const { S3Client, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
-
-    const client = new S3Client({
-      endpoint: S3_CONFIG.endpoint,
-      region: S3_CONFIG.region,
-      credentials: {
-        accessKeyId: S3_CONFIG.accessKeyId,
-        secretAccessKey: S3_CONFIG.secretAccessKey,
-      },
-      forcePathStyle: S3_CONFIG.forcePathStyle,
-    });
-
-    await client.send(new DeleteObjectCommand({ Bucket: S3_CONFIG.bucket, Key: key }));
-    return true;
-  } catch {
-    return false;
   }
 }
 

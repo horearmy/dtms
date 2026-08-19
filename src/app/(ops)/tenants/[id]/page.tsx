@@ -16,6 +16,13 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     where: { id },
     include: {
       _count: { select: { users: true, drivers: true, shipments: true, vehicles: true, customers: true, geofences: true } },
+      subscription: {
+        include: { plan: true },
+      },
+      invoices: {
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      },
       users: {
         select: { id: true, name: true, username: true, role: true, status: true, email: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
@@ -76,6 +83,25 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     createdAt: tenant.createdAt.toISOString(),
     updatedAt: tenant.updatedAt.toISOString(),
     _count: tenant._count,
+    subscription: tenant.subscription ? {
+      id: tenant.subscription.id,
+      status: tenant.subscription.status,
+      billingCycle: tenant.subscription.billingCycle,
+      currentPeriodStart: tenant.subscription.currentPeriodStart.toISOString(),
+      currentPeriodEnd: tenant.subscription.currentPeriodEnd.toISOString(),
+      cancelledAt: tenant.subscription.cancelledAt?.toISOString() ?? null,
+      plan: { code: tenant.subscription.plan.code, name: tenant.subscription.plan.name },
+    } : null,
+    invoices: tenant.invoices.map((inv) => ({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      subtotal: inv.subtotal,
+      tax: inv.tax,
+      total: inv.total,
+      status: inv.status,
+      dueDate: inv.dueDate.toISOString(),
+      createdAt: inv.createdAt.toISOString(),
+    })),
     users: tenant.users.map((u) => ({ ...u, createdAt: u.createdAt.toISOString() })),
     drivers: tenant.drivers,
     shipments: tenant.shipments.map((s) => ({ ...s, createdAt: s.createdAt.toISOString() })),
