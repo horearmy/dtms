@@ -101,6 +101,9 @@ function UsageBar({ used, max, label }: { used: number; max: number; label: stri
 export default function TenantDetail({ tenant }: { tenant: TenantData }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'drivers' | 'shipments' | 'vehicles' | 'billing'>('overview');
+  const [resetUser, setResetUser] = useState<{ id: string; name: string; username: string } | null>(null);
+  const [resetResult, setResetResult] = useState<{ password: string; message: string } | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   async function toggleActive() {
     await fetch(`/api/tenants/${tenant.id}`, {
@@ -109,6 +112,23 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
       body: JSON.stringify({ active: !tenant.active }),
     });
     router.refresh();
+  }
+
+  async function resetPassword() {
+    if (!resetUser) return;
+    setResetting(true);
+    try {
+      const res = await fetch('/api/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: resetUser.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResetResult({ password: data.user?.username ? data.message : '', message: data.message || 'Password berhasil direset' });
+      }
+    } catch {}
+    setResetting(false);
   }
 
   const tabs = [
@@ -246,6 +266,7 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -260,10 +281,16 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[#667085]">{u.email || '-'}</td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => { setResetUser({ id: u.id, name: u.name, username: u.username }); setResetResult(null); }}
+                      className="text-xs font-medium text-amber-600 hover:underline">
+                      Reset Password
+                    </button>
+                  </td>
                 </tr>
               ))}
               {tenant.users.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-[#667085]">Belum ada user</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-[#667085]">Belum ada user</td></tr>
               )}
             </tbody>
           </table>
@@ -432,6 +459,39 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
             ) : (
               <div className="text-sm text-[#667085]">Belum ada invoice.</div>
             )}
+          </div>
+        </div>
+      )}
+
+      {resetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+            <h2 className="mb-2 text-lg font-bold text-[#101828]">Reset Password</h2>
+            <p className="mb-4 text-sm text-[#667085]">
+              Reset password untuk <b>{resetUser.name}</b> (@{resetUser.username})?
+            </p>
+            {resetResult ? (
+              <div className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
+                <p className="font-semibold">{resetResult.message}</p>
+                <p className="mt-1 text-xs text-emerald-600">User akan diminta ganti password saat login berikutnya.</p>
+              </div>
+            ) : (
+              <div className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                Password baru akan dibuat secara acak. User akan diminta mengganti password saat login.
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setResetUser(null)} disabled={resetting}
+                className="rounded-lg border border-[#E4E7EC] px-4 py-2 text-sm font-medium text-[#667085] hover:bg-[#F7F9FC] disabled:opacity-50">
+                {resetResult ? 'Tutup' : 'Batal'}
+              </button>
+              {!resetResult && (
+                <button onClick={resetPassword} disabled={resetting}
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50">
+                  {resetting ? 'Memproses...' : 'Reset Sekarang'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

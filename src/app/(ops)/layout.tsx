@@ -11,14 +11,19 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
 
   let tenantPlan: string | null = null;
   let planFeatures: string[] = [];
+  let whiteLabel: { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null = null;
   if (session.tenantId) {
     const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { plan: true } });
     tenantPlan = tenant?.plan ?? null;
     planFeatures = await getTenantFeatures(session.tenantId);
+    whiteLabel = await prisma.whiteLabel.findUnique({
+      where: { tenantId: session.tenantId },
+      select: { appName: true, logoUrl: true, primaryColor: true },
+    });
   }
 
   return (
-    <OpsShell name={session.name} role={session.role} tenantPlan={tenantPlan} planFeatures={planFeatures}>
+    <OpsShell name={session.name} role={session.role} tenantPlan={tenantPlan} planFeatures={planFeatures} whiteLabel={whiteLabel}>
       {children}
     </OpsShell>
   );

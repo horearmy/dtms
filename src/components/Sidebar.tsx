@@ -36,7 +36,9 @@ import { cn } from '@/lib/utils';
 type NavItem = { href: string; label: string; icon: React.ReactNode; locked?: boolean; feature?: string };
 type NavGroup = { title: string; items: NavItem[] };
 
-export default function Sidebar({ role, tenantPlan, planFeatures, open, onClose }: { role: string; tenantPlan: string | null; planFeatures?: string[]; open?: boolean; onClose?: () => void }) {
+type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null;
+
+export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, open, onClose }: { role: string; tenantPlan: string | null; planFeatures?: string[]; whiteLabel?: WhiteLabel; open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -114,6 +116,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, open, onClose 
             { href: '/pesan', label: 'Pesan', icon: <MessageSquare size={18} /> },
             { href: '/integrations', label: 'Integrations', icon: <Plug size={18} />, locked: !hasFeature('integrations'), feature: 'integrations' },
             { href: '/settings/whatsapp', label: 'Pengaturan', icon: <Settings size={18} /> },
+            ...(showUsers ? [{ href: '/settings/profile', label: 'Profil Perusahaan', icon: <Building2 size={18} /> }] : []),
             { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
             { href: '/billing', label: 'Billing', icon: <CreditCard size={18} /> },
           ],
@@ -142,11 +145,15 @@ export default function Sidebar({ role, tenantPlan, planFeatures, open, onClose 
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0D6EFD]">
-            <Package size={20} className="text-white" />
-          </div>
+          {whiteLabel?.logoUrl ? (
+            <img src={whiteLabel.logoUrl} alt="Logo" className="h-10 w-10 rounded-xl object-contain" />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: whiteLabel?.primaryColor || '#0D6EFD' }}>
+              <Package size={20} className="text-white" />
+            </div>
+          )}
           <div>
-            <div className="text-sm font-bold tracking-wide text-white">DTMS</div>
+            <div className="text-sm font-bold tracking-wide text-white">{whiteLabel?.appName || 'DTMS'}</div>
             <div className="text-[10px] font-medium uppercase tracking-widest text-white/50">
               Delivery Management System
             </div>

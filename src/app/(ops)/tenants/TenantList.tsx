@@ -9,6 +9,7 @@ type Tenant = {
   slug: string;
   code: string | null;
   logoUrl: string | null;
+  faviconUrl: string | null;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -18,6 +19,9 @@ type Tenant = {
   timezone: string;
   locale: string;
   currency: string;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
   active: boolean;
   maxUsers: number;
   maxDrivers: number;
@@ -46,6 +50,7 @@ export default function TenantList() {
     primaryColor: '#2563eb', secondaryColor: '#1e40af', accentColor: '#3b82f6',
     domain: '', plan: 'FREE', timezone: 'Asia/Jakarta', locale: 'id-ID', currency: 'IDR',
     contactName: '', contactEmail: '', contactPhone: '',
+    logoUrl: '', faviconUrl: '', appName: '',
     maxUsers: 5, maxDrivers: 10, maxShipments: 100,
   });
   const [error, setError] = useState('');
@@ -71,19 +76,26 @@ export default function TenantList() {
       primaryColor: '#2563eb', secondaryColor: '#1e40af', accentColor: '#3b82f6',
       domain: '', plan: 'FREE', timezone: 'Asia/Jakarta', locale: 'id-ID', currency: 'IDR',
       contactName: '', contactEmail: '', contactPhone: '',
+      logoUrl: '', faviconUrl: '', appName: '',
       maxUsers: 5, maxDrivers: 10, maxShipments: 100,
     });
     setShowForm(true);
     setError('');
   }
 
-  function openEdit(t: Tenant) {
+  async function openEdit(t: Tenant) {
     setEditTenant(t);
+    let appName = '';
+    try {
+      const wlRes = await fetch(`/api/tenants/${t.id}/white-label`);
+      if (wlRes.ok) { const wl = await wlRes.json(); appName = wl.appName || ''; }
+    } catch {}
     setForm({
       name: t.name, slug: t.slug, code: t.code || '', status: t.status,
       primaryColor: t.primaryColor, secondaryColor: t.secondaryColor, accentColor: t.accentColor,
       domain: t.domain || '', plan: t.plan, timezone: t.timezone, locale: t.locale, currency: t.currency,
-      contactName: '', contactEmail: '', contactPhone: '',
+      contactName: t.contactName || '', contactEmail: t.contactEmail || '', contactPhone: t.contactPhone || '',
+      logoUrl: t.logoUrl || '', faviconUrl: t.faviconUrl || '', appName,
       maxUsers: t.maxUsers, maxDrivers: t.maxDrivers, maxShipments: t.maxShipments,
     });
     setShowForm(true);
@@ -101,16 +113,25 @@ export default function TenantList() {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...form,
-          domain: form.domain || null,
-          code: form.code || null,
-          contactName: form.contactName || null,
-          contactEmail: form.contactEmail || null,
-          contactPhone: form.contactPhone || null,
+          name: form.name, slug: form.slug, code: form.code || null, status: form.status,
+          primaryColor: form.primaryColor, secondaryColor: form.secondaryColor, accentColor: form.accentColor,
+          domain: form.domain || null, plan: form.plan, timezone: form.timezone, locale: form.locale, currency: form.currency,
+          contactName: form.contactName || null, contactEmail: form.contactEmail || null, contactPhone: form.contactPhone || null,
+          logoUrl: form.logoUrl || null, faviconUrl: form.faviconUrl || null,
+          maxUsers: form.maxUsers, maxDrivers: form.maxDrivers, maxShipments: form.maxShipments,
         }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Gagal menyimpan'); setSaving(false); return; }
+      if (editTenant && form.appName !== undefined) {
+        try {
+          await fetch(`/api/tenants/${editTenant.id}/white-label`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ appName: form.appName || null }),
+          });
+        } catch {}
+      }
       setShowForm(false);
       fetchTenants();
     } catch {
@@ -280,6 +301,46 @@ export default function TenantList() {
                     <option value="id-ID">Indonesia (id-ID)</option>
                     <option value="en-US">English (en-US)</option>
                   </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Nama Header (Aplikasi)</label>
+                  <input type="text" value={form.appName} onChange={(e) => setForm({ ...form, appName: e.target.value })}
+                    placeholder="DTMS"
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Logo URL</label>
+                  <input type="text" value={form.logoUrl} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
+                    placeholder="https://example.com/logo.png"
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Favicon URL</label>
+                  <input type="text" value={form.faviconUrl} onChange={(e) => setForm({ ...form, faviconUrl: e.target.value })}
+                    placeholder="https://example.com/favicon.ico"
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Kontak Nama</label>
+                  <input type="text" value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+                    placeholder="John Doe"
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Kontak Email</label>
+                  <input type="email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
+                    placeholder="admin@example.com"
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#667085]">Kontak Telepon</label>
+                  <input type="text" value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
+                    placeholder="08123456789"
+                    className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">

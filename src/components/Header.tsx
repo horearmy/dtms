@@ -33,10 +33,13 @@ const PAGE_TITLES: Record<string, string> = {
   '/map': 'Live Tracking',
   '/warehouse/scan': 'Warehouse Scan',
   '/settings/whatsapp': 'Pengaturan WhatsApp',
+  '/settings/profile': 'Profil Perusahaan',
   '/notifications': 'Notifikasi',
 };
 
-export default function Header({ name, role, onMenuClick }: { name: string; role: string; onMenuClick?: () => void }) {
+type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null;
+
+export default function Header({ name, role, whiteLabel, onMenuClick }: { name: string; role: string; whiteLabel?: WhiteLabel; onMenuClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');

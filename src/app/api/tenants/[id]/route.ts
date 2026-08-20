@@ -26,34 +26,43 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
-  if (!session || session.role !== 'SUPER_ADMIN') {
+  if (!session) {
     return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
   }
 
   const { id } = await params;
+  const isSuperAdmin = session.role === 'SUPER_ADMIN';
+  const isTenantAdmin = session.role === 'ADMIN_OPERASIONAL' && session.tenantId === id;
+
+  if (!isSuperAdmin && !isTenantAdmin) {
+    return NextResponse.json({ error: 'Tidak memiliki akses' }, { status: 403 });
+  }
+
   const body = await req.json();
 
   const tenant = await prisma.tenant.findUnique({ where: { id } });
   if (!tenant) return NextResponse.json({ error: 'Tenant tidak ditemukan' }, { status: 404 });
 
+  const PROFILE_FIELDS = ['name', 'contactName', 'contactEmail', 'contactPhone', 'logoUrl', 'faviconUrl', 'primaryColor', 'secondaryColor', 'accentColor', 'domain', 'timezone', 'locale', 'currency'];
+  const ADMIN_ONLY_FIELDS = ['status', 'active', 'plan', 'maxUsers', 'maxDrivers', 'maxShipments'];
+
   const data: Record<string, unknown> = {};
-  if (body.name !== undefined) data.name = String(body.name).slice(0, 100);
-  if (body.status !== undefined) data.status = body.status;
-  if (body.active !== undefined) data.active = body.active;
-  if (body.plan !== undefined) data.plan = body.plan;
-  if (body.primaryColor !== undefined) data.primaryColor = body.primaryColor;
-  if (body.secondaryColor !== undefined) data.secondaryColor = body.secondaryColor;
-  if (body.accentColor !== undefined) data.accentColor = body.accentColor;
-  if (body.domain !== undefined) data.domain = body.domain || null;
-  if (body.timezone !== undefined) data.timezone = body.timezone;
-  if (body.locale !== undefined) data.locale = body.locale;
-  if (body.currency !== undefined) data.currency = body.currency;
-  if (body.contactName !== undefined) data.contactName = body.contactName || null;
-  if (body.contactEmail !== undefined) data.contactEmail = body.contactEmail || null;
-  if (body.contactPhone !== undefined) data.contactPhone = body.contactPhone || null;
-  if (body.maxUsers !== undefined) data.maxUsers = Number(body.maxUsers);
-  if (body.maxDrivers !== undefined) data.maxDrivers = Number(body.maxDrivers);
-  if (body.maxShipments !== undefined) data.maxShipments = Number(body.maxShipments);
+  for (const f of PROFILE_FIELDS) {
+    if (body[f] !== undefined) {
+      if (f === 'name') data[f] = String(body[f]).slice(0, 100);
+      else data[f] = body[f] || null;
+    }
+  }
+
+  if (isSuperAdmin) {
+    for (const f of ADMIN_ONLY_FIELDS) {
+      if (body[f] !== undefined) {
+        if (f === 'maxUsers' || f === 'maxDrivers' || f === 'maxShipments') data[f] = Number(body[f]);
+        else if (f === 'active') data[f] = body[f];
+        else data[f] = body[f];
+      }
+    }
+  }
 
   if (Object.keys(data).length === 0 && body.plan === undefined) {
     return NextResponse.json({ error: 'Tidak ada data yang diubah' }, { status: 400 });
