@@ -59,9 +59,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const org = await prisma.organization.findUnique({ where: { id } });
   if (!org) return NextResponse.json({ error: 'Organization tidak ditemukan' }, { status: 404 });
 
-  const hasBranches = await prisma.branch.count({ where: { organizationId: id } });
-  if (hasBranches > 0) {
-    return NextResponse.json({ error: 'Tidak bisa menghapus organization yang masih memiliki branch' }, { status: 409 });
+  const [hasBranches, hasRegions] = await Promise.all([
+    prisma.branch.count({ where: { organizationId: id } }),
+    prisma.region.count({ where: { organizationId: id } }),
+  ]);
+  if (hasBranches > 0 || hasRegions > 0) {
+    return NextResponse.json({ error: 'Tidak bisa menghapus organization yang masih memiliki branch atau region' }, { status: 409 });
   }
 
   await prisma.organization.delete({ where: { id } });

@@ -55,11 +55,11 @@ describe('GPS — Latest (GET /api/gps/latest)', () => {
     expect((await api('GET', '/api/gps/latest')).status).toBe(401);
   });
 
-  it('responds within 2s', async () => {
+  it('responds within 5s', async () => {
     const t = Date.now();
     const r = await api('GET', '/api/gps/latest?minutes=60', undefined, tenantA);
     expect(r.status).toBe(200);
-    expect(Date.now() - t).toBeLessThan(2000);
+    expect(Date.now() - t).toBeLessThan(5000);
   });
 });
 

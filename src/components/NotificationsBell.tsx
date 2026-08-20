@@ -12,12 +12,14 @@ export default function NotificationsBell() {
   const [unread, setUnread] = useState(0);
 
   async function load() {
-    const res = await fetch('/api/notifications');
-    if (res.ok) {
-      const data = await res.json();
-      setItems(data.items || []);
-      setUnread(data.unread || 0);
-    }
+    try {
+      const res = await fetch('/api/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items || []);
+        setUnread(data.unread || 0);
+      }
+    } catch { /* silent */ }
   }
 
   useEffect(() => {
@@ -27,9 +29,11 @@ export default function NotificationsBell() {
   }, []);
 
   async function markRead() {
-    await fetch('/api/notifications/read', { method: 'POST' });
-    setUnread(0);
-    setItems(items.map((i) => ({ ...i, status: 'READ' })));
+    try {
+      await fetch('/api/notifications/read', { method: 'POST' });
+      setUnread(0);
+      setItems(items.map((i) => ({ ...i, status: 'READ' })));
+    } catch { /* silent */ }
   }
 
   return (
