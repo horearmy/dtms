@@ -34,6 +34,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/warehouse/scan': 'Warehouse Scan',
   '/settings/whatsapp': 'Pengaturan WhatsApp',
   '/settings/profile': 'Profil Perusahaan',
+  '/security': 'Security Dashboard',
   '/notifications': 'Notifikasi',
 };
 

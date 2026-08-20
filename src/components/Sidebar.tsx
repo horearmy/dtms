@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -41,9 +41,29 @@ type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor
 export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, open, onClose }: { role: string; tenantPlan: string | null; planFeatures?: string[]; whiteLabel?: WhiteLabel; open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [securityLevel, setSecurityLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH' | null>(null);
+
+  const isSuperAdmin = role === 'SUPER_ADMIN';
+
+  const fetchSecurityStatus = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    try {
+      const res = await fetch('/api/admin/security/status');
+      if (res.ok) {
+        const data = await res.json();
+        setSecurityLevel(data.level);
+      }
+    } catch {}
+  }, [isSuperAdmin]);
+
+  useEffect(() => {
+    fetchSecurityStatus();
+    if (!isSuperAdmin) return;
+    const t = setInterval(fetchSecurityStatus, 60000);
+    return () => clearInterval(t);
+  }, [fetchSecurityStatus, isSuperAdmin]);
 
   const showUsers = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'].includes(role);
-  const isSuperAdmin = role === 'SUPER_ADMIN';
   const showPremium = !isSuperAdmin && tenantPlan !== 'ENTERPRISE';
   const features = planFeatures || [];
   const isFreePlan = !isSuperAdmin && (!tenantPlan || tenantPlan === 'FREE');
@@ -71,6 +91,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
         {
           title: 'SYSTEM',
           items: [
+            { href: '/security', label: 'Security', icon: <Shield size={18} /> },
             { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
           ],
         },
@@ -192,6 +213,13 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
                         >
                           {item.icon}
                           <span className="flex-1">{item.label}</span>
+                          {item.href === '/security' && securityLevel && (
+                            <span className={`h-2 w-2 rounded-full ${
+                              securityLevel === 'HIGH' ? 'bg-red-500 animate-pulse' :
+                              securityLevel === 'MEDIUM' ? 'bg-amber-400' :
+                              'bg-emerald-400'
+                            }`} title={securityLevel === 'HIGH' ? 'Ancaman Tinggi' : securityLevel === 'MEDIUM' ? 'Ancaman Sedang' : 'Sistem Aman'} />
+                          )}
                           {item.locked && <Lock size={12} className="text-white/30" />}
                         </Link>
                       );

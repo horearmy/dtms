@@ -16,7 +16,12 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: { user: { select: { name: true, username: true } } },
+        select: {
+          id: true, tenantId: true, userId: true, action: true, module: true,
+          oldData: true, newData: true, ip: true, method: true, path: true,
+          userAgent: true, createdAt: true,
+          user: { select: { name: true, username: true } },
+        },
       }),
     ]);
     return NextResponse.json({ items: logs, total, page, pageSize });
