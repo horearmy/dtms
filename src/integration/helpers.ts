@@ -17,10 +17,10 @@ export const TENANT_B_ID = 'f7f63209-f17d-4da5-ac36-65171a291e8b';
 
 export type AuthCtx = { cookie: string; csrf: string };
 
-let cachedTokens: Record<string, AuthCtx> | null = null;
+let cachedTokens: Record<string, AuthCtx> = {};
 
 function loadTokens(): Record<string, AuthCtx> {
-  if (!cachedTokens) {
+  if (Object.keys(cachedTokens).length === 0) {
     try {
       cachedTokens = JSON.parse(readFileSync(TOKEN_FILE, 'utf-8'));
     } catch {

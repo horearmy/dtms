@@ -57,7 +57,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (isSuperAdmin) {
     for (const f of ADMIN_ONLY_FIELDS) {
       if (body[f] !== undefined) {
-        if (f === 'maxUsers' || f === 'maxDrivers' || f === 'maxShipments') data[f] = Number(body[f]);
+        if (f === 'maxUsers' || f === 'maxDrivers' || f === 'maxShipments') {
+          const n = Number(body[f]);
+          if (!Number.isFinite(n) || n < 1) return NextResponse.json({ error: `${f} harus angka >= 1` }, { status: 400 });
+          data[f] = n;
+        }
         else if (f === 'active') data[f] = body[f];
         else data[f] = body[f];
       }
@@ -88,10 +92,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const updated = await prisma.tenant.findUnique({ where: { id }, include: { subscription: { include: { plan: true } } } });
+  if (!updated) return NextResponse.json({ error: 'Gagal memperbarui tenant' }, { status: 500 });
 
   await logAudit(session, 'UPDATE_TENANT', 'TENANT', {
     oldData: { id: tenant.id, name: tenant.name, status: tenant.status, active: tenant.active, plan: tenant.plan },
-    newData: { id: updated!.id, name: updated!.name, status: updated!.status, active: updated!.active, plan: updated!.plan },
+    newData: { id: updated.id, name: updated.name, status: updated.status, active: updated.active, plan: updated.plan },
   }, req);
 
   return NextResponse.json(updated);

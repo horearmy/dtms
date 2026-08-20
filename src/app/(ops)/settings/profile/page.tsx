@@ -27,6 +27,7 @@ export default function TenantProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [wlLoaded, setWlLoaded] = useState(false);
   const [form, setForm] = useState({
     name: '', contactName: '', contactEmail: '', contactPhone: '',
     logoUrl: '', faviconUrl: '', appName: '',
@@ -55,7 +56,7 @@ export default function TenantProfilePage() {
         });
         try {
           const wlRes = await fetch(`/api/tenants/${session.tenantId}/white-label`);
-          if (wlRes.ok) { const wl = await wlRes.json(); setForm(f => ({ ...f, appName: wl.appName || '' })); }
+          if (wlRes.ok) { const wl = await wlRes.json(); setForm(f => ({ ...f, appName: wl.appName || '' })); setWlLoaded(true); }
         } catch {}
       }
     } catch { setError('Gagal memuat profil'); }
@@ -80,12 +81,14 @@ export default function TenantProfilePage() {
         }),
       });
       if (!res.ok) { const d = await res.json(); setError(d.error || 'Gagal menyimpan'); setSaving(false); return; }
-      try {
-        await fetch(`/api/tenants/${profile.id}/white-label`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ appName: form.appName || null }),
-        });
-      } catch {}
+      if (wlLoaded) {
+        try {
+          await fetch(`/api/tenants/${profile.id}/white-label`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ appName: form.appName || null }),
+          });
+        } catch {}
+      }
       setSuccess('Profil berhasil disimpan');
       loadProfile();
     } catch { setError('Terjadi kesalahan'); }

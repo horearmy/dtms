@@ -115,7 +115,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div>
-      <TenantDetail tenant={serialized} />
+      <TenantDetail tenant={serialized} userRole={session.role} />
     </div>
   );
 }

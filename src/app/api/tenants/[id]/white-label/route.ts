@@ -59,7 +59,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       data: {
         tenantId: id,
         ...updateData,
-        active: isSuperAdmin ? (body.active !== false) : existing?.active ?? false,
+        active: isSuperAdmin ? (body.active !== false) : false,
       },
     });
   }

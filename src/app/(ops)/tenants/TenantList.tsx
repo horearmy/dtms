@@ -63,9 +63,11 @@ export default function TenantList() {
 
   async function fetchTenants() {
     setLoading(true);
-    const url = statusFilter ? `/api/tenants?status=${statusFilter}` : '/api/tenants';
-    const res = await fetch(url);
-    if (res.ok) setTenants(await res.json());
+    try {
+      const url = statusFilter ? `/api/tenants?status=${statusFilter}` : '/api/tenants';
+      const res = await fetch(url);
+      if (res.ok) setTenants(await res.json());
+    } catch {}
     setLoading(false);
   }
 
@@ -132,6 +134,7 @@ export default function TenantList() {
           });
         } catch {}
       }
+      setSaving(false);
       setShowForm(false);
       fetchTenants();
     } catch {
@@ -252,7 +255,7 @@ export default function TenantList() {
                   <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
                     className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
                     <option value="ACTIVE">Active</option>
-                    <option value="PENDING">Pending</option>
+                    <option value="PENDING_APPROVAL">Pending</option>
                     <option value="SUSPENDED">Suspended</option>
                     <option value="INACTIVE">Inactive</option>
                   </select>

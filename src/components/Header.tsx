@@ -47,7 +47,7 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const pageTitle = PAGE_TITLES[pathname] || 'Dashboard';
+  const pageTitle = Object.entries(PAGE_TITLES).find(([k]) => pathname === k || pathname.startsWith(k + '/'))?.[1] || 'Dashboard';
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -57,13 +57,15 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
   }
 
   function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
+    try {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch {}
   }
 
   useEffect(() => {

@@ -103,9 +103,9 @@ export async function POST(req: NextRequest) {
       contactPhone: contactPhone ? String(contactPhone).slice(0, 20) : null,
       logoUrl: logoUrl ? String(logoUrl).slice(0, 500) : null,
       faviconUrl: faviconUrl ? String(faviconUrl).slice(0, 500) : null,
-      maxUsers: maxUsers || 5,
-      maxDrivers: maxDrivers || 10,
-      maxShipments: maxShipments || 100,
+      maxUsers: maxUsers ?? 5,
+      maxDrivers: maxDrivers ?? 10,
+      maxShipments: maxShipments ?? 100,
     },
   });
 

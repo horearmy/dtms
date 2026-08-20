@@ -98,11 +98,12 @@ function UsageBar({ used, max, label }: { used: number; max: number; label: stri
   );
 }
 
-export default function TenantDetail({ tenant }: { tenant: TenantData }) {
+export default function TenantDetail({ tenant, userRole }: { tenant: TenantData; userRole?: string }) {
   const router = useRouter();
+  const isSuperAdmin = userRole === 'SUPER_ADMIN';
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'drivers' | 'shipments' | 'vehicles' | 'billing'>('overview');
   const [resetUser, setResetUser] = useState<{ id: string; name: string; username: string } | null>(null);
-  const [resetResult, setResetResult] = useState<{ password: string; message: string } | null>(null);
+  const [resetResult, setResetResult] = useState<{ message: string } | null>(null);
   const [resetting, setResetting] = useState(false);
 
   async function toggleActive() {
@@ -125,7 +126,7 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
       });
       const data = await res.json();
       if (res.ok) {
-        setResetResult({ password: data.user?.username ? data.message : '', message: data.message || 'Password berhasil direset' });
+        setResetResult({ message: data.message || 'Password berhasil direset' });
       }
     } catch {}
     setResetting(false);
@@ -151,10 +152,16 @@ export default function TenantDetail({ tenant }: { tenant: TenantData }) {
           <p className="text-sm text-[#667085]">{tenant.code ? `${tenant.code} · ` : ''}{tenant.slug}{tenant.domain ? ` · ${tenant.domain}` : ''}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={toggleActive}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${tenant.active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
-            {tenant.active ? 'Aktif' : 'Nonaktif'}
-          </button>
+          {isSuperAdmin ? (
+            <button onClick={toggleActive}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${tenant.active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
+              {tenant.active ? 'Aktif' : 'Nonaktif'}
+            </button>
+          ) : (
+            <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${tenant.active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+              {tenant.active ? 'Aktif' : 'Nonaktif'}
+            </span>
+          )}
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${TENANT_STATUS_COLORS[tenant.status] || TENANT_STATUS_COLORS.ACTIVE}`}>
             {tenant.status}
           </span>
