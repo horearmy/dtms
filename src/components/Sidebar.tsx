@@ -28,6 +28,8 @@ import {
   CreditCard,
   Lock,
   MessageSquare,
+  Network,
+  Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -55,6 +57,10 @@ export default function Sidebar({ role, tenantPlan, planFeatures, open, onClose 
           title: 'TENANT MANAGEMENT',
           items: [
             { href: '/tenants', label: 'Tenants', icon: <Building2 size={18} /> },
+            { href: '/organizations', label: 'Organizations', icon: <Network size={18} /> },
+            { href: '/regions', label: 'Regions', icon: <Globe size={18} /> },
+            { href: '/tenant-onboarding', label: 'Onboarding', icon: <ClipboardList size={18} /> },
+            { href: '/tenant-health', label: 'Health Monitor', icon: <Activity size={18} /> },
             { href: '/demo-requests', label: 'Permohonan Demo', icon: <ClipboardList size={18} /> },
             { href: '/komunikasi', label: 'Komunikasi', icon: <MessageSquare size={18} /> },
             { href: '/global-control-tower', label: 'Global Control Tower', icon: <Activity size={18} /> },
@@ -97,13 +103,17 @@ export default function Sidebar({ role, tenantPlan, planFeatures, open, onClose 
         {
           title: 'SYSTEM',
           items: [
+            ...(showUsers ? [{ href: '/users', label: 'Pengguna', icon: <Shield size={18} /> }] : []),
+            ...(showUsers ? [{ href: '/organizations', label: 'Organizations', icon: <Network size={18} /> }] : []),
+            ...(showUsers ? [{ href: '/regions', label: 'Regions', icon: <Globe size={18} /> }] : []),
+            ...(showUsers ? [{ href: '/tenant-onboarding', label: 'Onboarding', icon: <ClipboardList size={18} /> }] : []),
+            ...(showUsers ? [{ href: '/tenant-health', label: 'Health Monitor', icon: <Activity size={18} /> }] : []),
             { href: '/exceptions', label: 'Exceptions', icon: <ShieldAlert size={18} />, locked: !hasFeature('sla'), feature: 'sla' },
             { href: '/sla', label: 'SLA Policies', icon: <TrendingUp size={18} />, locked: !hasFeature('sla'), feature: 'sla' },
             { href: '/notifications', label: 'Notifikasi', icon: <Bell size={18} /> },
             { href: '/pesan', label: 'Pesan', icon: <MessageSquare size={18} /> },
             { href: '/integrations', label: 'Integrations', icon: <Plug size={18} />, locked: !hasFeature('integrations'), feature: 'integrations' },
             { href: '/settings/whatsapp', label: 'Pengaturan', icon: <Settings size={18} /> },
-            ...(showUsers ? [{ href: '/users', label: 'Pengguna', icon: <Shield size={18} /> }] : []),
             { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
             { href: '/billing', label: 'Billing', icon: <CreditCard size={18} /> },
           ],

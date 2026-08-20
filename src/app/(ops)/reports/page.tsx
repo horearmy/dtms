@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth';
 import { runWithTenant } from '@/lib/api-guard';
 import { driverScore } from '@/lib/scoring';
 import CsvExport from '@/components/CsvExport';
+import ReportPdfExport, { type ReportData } from '@/components/ReportPdfExport';
 import StatusBadge from '@/components/StatusBadge';
 import { STATUS_LABELS } from '@/lib/constants';
 
@@ -12,13 +13,14 @@ export default async function ReportsPage() {
   const session = await getSession();
 
   const data = await runWithTenant(session?.tenantId ?? null, async () => {
+    const tenantFilter = session?.tenantId ? { tenantId: session.tenantId } : {};
     const [statusGroups, deliveries, returned, failed, drivers, totalCount, orderEvents, deliveredEvents, lastShipments, trendShipments] = await Promise.all([
-      prisma.shipment.groupBy({ by: ['status'], _count: { id: true } }),
-      prisma.shipment.count({ where: { status: 'DELIVERED' } }),
-      prisma.shipment.count({ where: { status: 'RETURNED' } }),
-      prisma.shipment.count({ where: { status: 'DELIVERY_FAILED' } }),
-      prisma.driver.findMany({ include: { _count: { select: { assignments: true } } } }),
-      prisma.shipment.count(),
+      prisma.shipment.groupBy({ by: ['status'], _count: { id: true }, where: tenantFilter }),
+      prisma.shipment.count({ where: { status: 'DELIVERED', ...tenantFilter } }),
+      prisma.shipment.count({ where: { status: 'RETURNED', ...tenantFilter } }),
+      prisma.shipment.count({ where: { status: 'DELIVERY_FAILED', ...tenantFilter } }),
+      prisma.driver.findMany({ where: tenantFilter, include: { _count: { select: { assignments: true } } } }),
+      prisma.shipment.count({ where: tenantFilter }),
       prisma.trackingEvent.findMany({
         where: {
           status: 'ORDER_CREATED',
@@ -33,8 +35,8 @@ export default async function ReportsPage() {
         },
         select: { shipmentId: true, createdAt: true },
       }),
-      prisma.shipment.findMany({ orderBy: { createdAt: 'desc' }, take: 50, include: { sender: true, receiver: true, assignments: { include: { driver: true } } } }),
-      prisma.shipment.findMany({ where: { createdAt: { gte: new Date(Date.now() - 7 * 86400000) } }, select: { destination: true, createdAt: true } }),
+      prisma.shipment.findMany({ where: tenantFilter, orderBy: { createdAt: 'desc' }, take: 50, include: { sender: true, receiver: true, assignments: { include: { driver: true } } } }),
+      prisma.shipment.findMany({ where: { createdAt: { gte: new Date(Date.now() - 7 * 86400000) }, ...tenantFilter }, select: { destination: true, createdAt: true } }),
     ]);
 
     return { statusGroups, deliveries, returned, failed, drivers, totalCount, orderEvents, deliveredEvents, lastShipments, trendShipments };
@@ -94,6 +96,37 @@ export default async function ReportsPage() {
     .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';'))
     .join('\n');
 
+  const reportData: ReportData = {
+    totalCount,
+    deliveries,
+    returned,
+    failed,
+    successRate,
+    failedRate,
+    avgHours,
+    statusMap: map,
+    drivers: scoredDrivers.map((d) => ({
+      name: d.name,
+      employeeId: d.employeeId,
+      score: d.stat.score,
+      delivered: d.stat.delivered,
+      failed: d.stat.failed,
+      onTime: d.stat.onTime,
+    })),
+    trend,
+    topDestinations,
+    shipments: lastShipments.map((s) => ({
+      trackingNumber: s.trackingNumber,
+      sender: s.sender.name,
+      receiver: s.receiver.name,
+      destination: s.destination || '-',
+      status: s.status,
+      driver: s.assignments[0]?.driver.name || '',
+      createdAt: new Date(s.createdAt).toLocaleString('id-ID'),
+    })),
+    tenantName: session?.tenantId ? 'Tenant' : 'Semua Tenant',
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -101,7 +134,10 @@ export default async function ReportsPage() {
           <h1 className="text-xl font-bold text-[#101828]">Reports</h1>
           <p className="text-sm text-[#667085]">Laporan operasional pengiriman</p>
         </div>
-        <CsvExport data={csv} filename={`dtms-shipment-report-${new Date().toISOString().slice(0, 10)}.csv`} />
+        <div className="flex flex-wrap items-center gap-2">
+          <CsvExport data={csv} filename={`dtms-shipment-report-${new Date().toISOString().slice(0, 10)}.csv`} />
+          <ReportPdfExport data={reportData} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

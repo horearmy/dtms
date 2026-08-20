@@ -20,30 +20,30 @@ enum TenantStatus {
 }
 
 model Tenant {
-  id              String       @id @default(cuid())
+  id              String                @id @default(cuid())
   name            String
-  slug            String       @unique
-  code            String?      @unique
-  status          TenantStatus @default(ACTIVE)
+  slug            String                @unique
+  code            String?               @unique
+  status          TenantStatus          @default(ACTIVE)
   logoUrl         String?
   faviconUrl      String?
-  primaryColor    String       @default("#2563eb")
-  secondaryColor  String       @default("#1e40af")
-  accentColor     String       @default("#3b82f6")
-  domain          String?      @unique
-  plan            String       @default("FREE")
-  timezone        String       @default("Asia/Jakarta")
-  locale          String       @default("id-ID")
-  currency        String       @default("IDR")
+  primaryColor    String                @default("#2563eb")
+  secondaryColor  String                @default("#1e40af")
+  accentColor     String                @default("#3b82f6")
+  domain          String?               @unique
+  plan            String                @default("FREE")
+  timezone        String                @default("Asia/Jakarta")
+  locale          String                @default("id-ID")
+  currency        String                @default("IDR")
   contactName     String?
   contactEmail    String?
   contactPhone    String?
-  maxUsers        Int          @default(5)
-  maxDrivers      Int          @default(10)
-  maxShipments    Int          @default(100)
-  active          Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  maxUsers        Int                   @default(5)
+  maxDrivers      Int                   @default(10)
+  maxShipments    Int                   @default(100)
+  active          Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
   users           User[]
   customers       Customer[]
   shipments       Shipment[]
@@ -53,6 +53,10 @@ model Tenant {
   companies       Company[]
   branches        Branch[]
   warehouses      Warehouse[]
+  organizations   Organization[]
+  regions         Region[]
+  departments     Department[]
+  hubs            Hub[]
   rolePermissions RolePermission[]
   shipmentEvents  ShipmentEvent[]
   exceptions      Exception[]
@@ -69,6 +73,11 @@ model Tenant {
   demoRequests    DemoRequest[]
   messages        Message[]
   rateLimit       TenantRateLimit?
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  whiteLabel      WhiteLabel?
+  onboardingSteps TenantOnboarding[]
+  healthMetrics   TenantHealthMetric[]
 
   @@index([slug])
   @@index([domain])
@@ -77,9 +86,9 @@ model Tenant {
 }
 
 model Company {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
   code        String?
   address     String?
@@ -89,95 +98,108 @@ model Company {
   email       String?
   latitude    Float?
   longitude   Float?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   branches    Branch[]
   departments Department[]
 
-  @@index([tenantId])
   @@unique([tenantId, code])
+  @@index([tenantId])
 }
 
 model Branch {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  companyId   String?
-  company     Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  name        String
-  code        String?
-  address     String?
-  city        String?
-  postalCode  String?
-  phone       String?
-  latitude    Float?
-  longitude   Float?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  warehouses  Warehouse[]
-  hubs        Hub[]
-  users       User[]
+  id             String        @id @default(cuid())
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  regionId       String?
+  region         Region?       @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  companyId      String?
+  company        Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  name           String
+  code           String?
+  address        String?
+  city           String?
+  postalCode     String?
+  phone          String?
+  latitude       Float?
+  longitude      Float?
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  warehouses     Warehouse[]
+  hubs           Hub[]
+  users          User[]
+  departments    Department[]
 
-  @@index([tenantId])
-  @@index([companyId])
   @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([organizationId])
+  @@index([regionId])
+  @@index([companyId])
 }
 
 model Department {
-  id          String   @id @default(cuid())
-  tenantId    String
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name        String
-  code        String?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  name      String
+  code      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([tenantId])
   @@index([companyId])
+  @@index([branchId])
 }
 
 model Warehouse {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branchId    String?
-  branch      Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  name        String
-  code        String?
-  address     String?
-  city        String?
-  latitude    Float?
-  longitude   Float?
-  radiusMeters Float  @default(500)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId     String?
+  branch       Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  name         String
+  code         String?
+  address      String?
+  city         String?
+  latitude     Float?
+  longitude    Float?
+  radiusMeters Float    @default(500)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
 
+  @@unique([tenantId, code])
   @@index([tenantId])
   @@index([branchId])
-  @@unique([tenantId, code])
 }
 
 model Hub {
-  id          String   @id @default(cuid())
-  tenantId    String
-  branchId    String
-  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  name        String
-  code        String?
-  address     String?
-  city        String?
-  latitude    Float?
-  longitude   Float?
-  radiusMeters Float  @default(500)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId     String
+  branch       Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name         String
+  code         String?
+  address      String?
+  city         String?
+  latitude     Float?
+  longitude    Float?
+  radiusMeters Float    @default(500)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
 
+  @@unique([tenantId, code])
   @@index([tenantId])
   @@index([branchId])
-  @@unique([tenantId, code])
 }
 
 enum Role {
@@ -290,80 +312,80 @@ enum GeofenceEventType {
 }
 
 model User {
-  id                 String         @id @default(cuid())
-  tenantId           String?
-  tenant             Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branchId           String?
-  branch             Branch?        @relation(fields: [branchId], references: [id])
-  name               String
-  username           String
-  passwordHash       String
-  email              String?
-  provider           String         @default("LOCAL")
-  role               Role
-  status             UserStatus     @default(ACTIVE)
-  phone              String?
-  pwdVersion         Int            @default(1)
-  mustChangePassword Boolean        @default(false)
-  lastPasswordChange DateTime?
-  totpSecret         String?
-  totpEnabled        Boolean        @default(false)
-  backupCodes        String?
-  createdAt          DateTime       @default(now())
-  driver             Driver?
-  notifications      Notification[]
-  auditLogs          AuditLog[]
-  ownedExceptions    Exception[]
+  id                  String               @id @default(cuid())
+  tenantId            String?
+  tenant              Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId            String?
+  branch              Branch?              @relation(fields: [branchId], references: [id])
+  name                String
+  username            String
+  passwordHash        String
+  email               String?
+  provider            String               @default("LOCAL")
+  role                Role
+  status              UserStatus           @default(ACTIVE)
+  phone               String?
+  pwdVersion          Int                  @default(1)
+  mustChangePassword  Boolean              @default(false)
+  lastPasswordChange  DateTime?
+  totpSecret          String?
+  totpEnabled         Boolean              @default(false)
+  backupCodes         String?
+  createdAt           DateTime             @default(now())
+  driver              Driver?
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  ownedExceptions     Exception[]
   passwordResetTokens PasswordResetToken[]
 
-  @@index([tenantId])
   @@unique([tenantId, username])
+  @@index([tenantId])
   @@index([branchId])
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
+  @@unique([userId, token])
   @@index([userId])
   @@index([token])
-  @@unique([userId, token])
 }
 
 model Customer {
-  id         String  @id @default(cuid())
-  tenantId   String?
-  tenant     Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name       String
-  phone      String
-  email      String?
-  address    String?
-  city       String?
-  postalCode String?
-  latitude   Float?
-  longitude  Float?
-  createdAt  DateTime @default(now())
-  sentBy     Shipment[] @relation("sender")
-  receivedBy Shipment[] @relation("receiver")
+  id           String         @id @default(cuid())
+  tenantId     String?
+  tenant       Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String
+  email        String?
+  address      String?
+  city         String?
+  postalCode   String?
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime       @default(now())
+  sentBy       Shipment[]     @relation("sender")
+  receivedBy   Shipment[]     @relation("receiver")
   stopsShipped ShipmentStop[] @relation("customerStop")
 
   @@index([tenantId])
 }
 
 model Shipment {
-  id             String        @id @default(cuid())
+  id             String               @id @default(cuid())
   tenantId       String?
-  tenant         Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  trackingNumber String        @unique
+  tenant         Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  trackingNumber String               @unique
   senderId       String
   receiverId     String
-  sender         Customer      @relation("sender", fields: [senderId], references: [id])
-  receiver       Customer      @relation("receiver", fields: [receiverId], references: [id])
+  sender         Customer             @relation("sender", fields: [senderId], references: [id])
+  receiver       Customer             @relation("receiver", fields: [receiverId], references: [id])
   origin         String
   destination    String
   originLat      Float?
@@ -372,17 +394,17 @@ model Shipment {
   destLng        Float?
   weight         Float
   volume         Float?
-  serviceType    ServiceType   @default(REGULAR)
-  status         ShipmentStatus @default(ORDER_CREATED)
-  fragile        Boolean       @default(false)
+  serviceType    ServiceType          @default(REGULAR)
+  status         ShipmentStatus       @default(ORDER_CREATED)
+  fragile        Boolean              @default(false)
   itemName       String?
-  itemCount      Int           @default(1)
+  itemCount      Int                  @default(1)
   itemCategory   String?
   itemValue      Float?
   slaDeadline    DateTime?
   deliveryTarget DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
   items          ShipmentItem[]
   assignments    DeliveryAssignment[]
   events         TrackingEvent[]
@@ -427,76 +449,76 @@ model ShipmentItem {
 }
 
 model Driver {
-  id             String        @id @default(cuid())
-  tenantId       String?
-  tenant         Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employeeId     String        @unique
-  name           String
-  phone          String
-  photo          String?
-  userId         String?       @unique
-  user           User?         @relation(fields: [userId], references: [id])
-  status         DriverStatus  @default(ACTIVE)
-  returning      Boolean       @default(false)
-  returnedAt     DateTime?
+  id              String               @id @default(cuid())
+  tenantId        String?
+  tenant          Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employeeId      String               @unique
+  name            String
+  phone           String
+  photo           String?
+  userId          String?              @unique
+  user            User?                @relation(fields: [userId], references: [id])
+  status          DriverStatus         @default(ACTIVE)
+  returning       Boolean              @default(false)
+  returnedAt      DateTime?
   returnStartedAt DateTime?
-  assignments    DeliveryAssignment[]
-  gpsLogs        GpsLog[]
-  geofenceEvents GeofenceEvent[]
-  dailyReports   DailyReport[]
+  assignments     DeliveryAssignment[]
+  gpsLogs         GpsLog[]
+  geofenceEvents  GeofenceEvent[]
+  dailyReports    DailyReport[]
 
   @@index([tenantId])
 }
 
 model Vehicle {
-  id            String   @id @default(cuid())
-  tenantId      String?
-  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  vehicleNumber String   @unique
-  type          String
-  capacity      Float    @default(0)
-  status        String   @default("AVAILABLE")
-  totalDistanceKm Float  @default(0)
-  photoFront    String?
-  photoBack     String?
-  photoRight    String?
-  photoLeft     String?
-  returning     Boolean @default(false)
-  returnedAt    DateTime?
-  assignments   DeliveryAssignment[]
-  gpsLogs       GpsLog[]
-  maintenanceRecords   VehicleMaintenance[]
+  id                 String               @id @default(cuid())
+  tenantId           String?
+  tenant             Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vehicleNumber      String               @unique
+  type               String
+  capacity           Float                @default(0)
+  status             String               @default("AVAILABLE")
+  totalDistanceKm    Float                @default(0)
+  photoFront         String?
+  photoBack          String?
+  photoRight         String?
+  photoLeft          String?
+  returning          Boolean              @default(false)
+  returnedAt         DateTime?
+  assignments        DeliveryAssignment[]
+  gpsLogs            GpsLog[]
+  maintenanceRecords VehicleMaintenance[]
 
   @@index([tenantId])
 }
 
 model VehicleMaintenance {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   vehicleId   String
-  vehicle     Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   type        String
   description String?
   cost        Float?
   odometerKm  Float?
   notes       String?
-  performedAt DateTime  @default(now())
-  createdAt   DateTime  @default(now())
+  performedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([vehicleId, performedAt])
 }
 
 model DailyReport {
-  id              String   @id @default(cuid())
-  driverId        String
-  driver          Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  reportDate      DateTime
-  deliveredCount  Int      @default(0)
-  failedCount     Int      @default(0)
-  rescheduledCount Int     @default(0)
-  fuelLiter       Float?
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(cuid())
+  driverId         String
+  driver           Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  reportDate       DateTime
+  deliveredCount   Int      @default(0)
+  failedCount      Int      @default(0)
+  rescheduledCount Int      @default(0)
+  fuelLiter        Float?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@unique([driverId, reportDate])
   @@index([reportDate])
@@ -518,15 +540,15 @@ model DeliveryAssignment {
 }
 
 model TrackingEvent {
-  id         String        @id @default(cuid())
+  id         String         @id @default(cuid())
   shipmentId String
-  shipment   Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  shipment   Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   status     ShipmentStatus
   latitude   Float?
   longitude  Float?
   notes      String?
   createdBy  String?
-  createdAt  DateTime      @default(now())
+  createdAt  DateTime       @default(now())
 }
 
 model ShipmentEvent {
@@ -585,17 +607,27 @@ model ProofOfDelivery {
 
 model Notification {
   id         String    @id @default(cuid())
+  tenantId   String?
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId     String?
   shipmentId String?
   user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   shipment   Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  type       String    @default("INFO")
+  title      String?
   message    String
+  metadata   Json?
   status     String    @default("UNREAD")
   createdAt  DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
 }
 
 model AuditLog {
   id        String   @id @default(cuid())
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId    String?
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   action    String
@@ -607,6 +639,11 @@ model AuditLog {
   path      String?
   userAgent String?
   createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([module])
+  @@index([createdAt])
 }
 
 model WarehouseScan {
@@ -641,16 +678,16 @@ model Geofence {
 }
 
 model GeofenceEvent {
-  id          String            @id @default(cuid())
-  geofenceId  String
-  geofence    Geofence          @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
-  driverId    String
-  driver      Driver            @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  shipmentId  String?
-  eventType   GeofenceEventType
-  latitude    Float
-  longitude   Float
-  createdAt   DateTime          @default(now())
+  id         String            @id @default(cuid())
+  geofenceId String
+  geofence   Geofence          @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
+  driverId   String
+  driver     Driver            @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  shipmentId String?
+  eventType  GeofenceEventType
+  latitude   Float
+  longitude  Float
+  createdAt  DateTime          @default(now())
 
   @@index([geofenceId, driverId])
 }
@@ -667,43 +704,43 @@ model LoginAttempt {
 }
 
 model DemoRequest {
-  id        String    @id @default(cuid())
-  name      String
-  email     String
-  phone     String?
-  company   String
-  message   String?
-  status    String    @default("PENDING")
-  tenantId  String?
-  tenant    Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  id            String    @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  company       String
+  message       String?
+  status        String    @default("PENDING")
+  tenantId      String?
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   provisionedAt DateTime?
-  createdAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
 
   @@index([status])
   @@index([createdAt])
 }
 
 model Permission {
-  id        String         @id @default(cuid())
-  code      String         @unique
+  id        String           @id @default(cuid())
+  code      String           @unique
   resource  String
   action    String
   label     String?
-  createdAt DateTime       @default(now())
+  createdAt DateTime         @default(now())
   roles     RolePermission[]
 
   @@index([resource])
 }
 
 model RolePermission {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   permissionId String
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
   role         Role
   tenantId     String?
-  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branchId     String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime   @default(now())
 
   @@unique([permissionId, role, tenantId])
   @@index([role])
@@ -711,24 +748,24 @@ model RolePermission {
 }
 
 model Exception {
-  id           String            @id @default(cuid())
-  tenantId     String
-  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  shipmentId   String?
-  shipment     Shipment?         @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
-  type         ExceptionType
-  severity     ExceptionSeverity @default(MEDIUM)
-  status       ExceptionStatus   @default(OPEN)
-  title        String
-  description  String?
-  ownerId      String?
-  owner        User?             @relation(fields: [ownerId], references: [id])
-  dueAt        DateTime?
-  resolvedAt   DateTime?
-  resolution   String?
-  createdBy    String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id          String            @id @default(cuid())
+  tenantId    String
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipmentId  String?
+  shipment    Shipment?         @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  type        ExceptionType
+  severity    ExceptionSeverity @default(MEDIUM)
+  status      ExceptionStatus   @default(OPEN)
+  title       String
+  description String?
+  ownerId     String?
+  owner       User?             @relation(fields: [ownerId], references: [id])
+  dueAt       DateTime?
+  resolvedAt  DateTime?
+  resolution  String?
+  createdBy   String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@index([tenantId])
   @@index([shipmentId])
@@ -738,37 +775,37 @@ model Exception {
 }
 
 model SlaPolicy {
-  id             String   @id @default(cuid())
-  tenantId       String
-  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name           String
-  serviceType    ServiceType @default(REGULAR)
-  originCity     String?
-  destCity       String?
-  priority       Int      @default(0)
-  targetHours    Int
-  cutoffTime     String?
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  events         SlaEvent[]
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  serviceType ServiceType @default(REGULAR)
+  originCity  String?
+  destCity    String?
+  priority    Int         @default(0)
+  targetHours Int
+  cutoffTime  String?
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  events      SlaEvent[]
 
   @@index([tenantId])
   @@index([tenantId, serviceType])
 }
 
 model SlaEvent {
-  id         String   @id @default(cuid())
+  id         String     @id @default(cuid())
   tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   shipmentId String
-  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  shipment   Shipment   @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   policyId   String?
   policy     SlaPolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
-  status     String   @default("ON_TRACK")
+  status     String     @default("ON_TRACK")
   deadline   DateTime
   breachedAt DateTime?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime   @default(now())
 
   @@index([tenantId])
   @@index([shipmentId])
@@ -784,51 +821,51 @@ enum IntegrationType {
 }
 
 model IntegrationConfig {
-  id          String          @id @default(cuid())
-  tenantId    String
-  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String
-  type        IntegrationType
-  baseUrl     String?
-  active      Boolean         @default(true)
-  config      Json?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  logs        IntegrationLog[]
-  webhooks    WebhookSubscription[]
+  id        String                @id @default(cuid())
+  tenantId  String
+  tenant    Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  type      IntegrationType
+  baseUrl   String?
+  active    Boolean               @default(true)
+  config    Json?
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  logs      IntegrationLog[]
+  webhooks  WebhookSubscription[]
 
   @@index([tenantId])
 }
 
 model ApiKey {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
-  keyHash   String   @unique
+  keyHash   String    @unique
   keyPrefix String
   scopes    String[]
-  active    Boolean  @default(true)
+  active    Boolean   @default(true)
   lastUsed  DateTime?
   expiresAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([tenantId])
 }
 
 model UploadedFile {
-  id          String   @id @default(cuid())
-  tenantId    String?
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  objectKey   String   @unique
-  fileName    String
-  mimeType    String
-  size        Int
-  checksum    String?
+  id           String   @id @default(cuid())
+  tenantId     String?
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  objectKey    String   @unique
+  fileName     String
+  mimeType     String
+  size         Int
+  checksum     String?
   uploadedById String?
-  category    String   @default("general")
-  shipmentId  String?
-  createdAt   DateTime @default(now())
+  category     String   @default("general")
+  shipmentId   String?
+  createdAt    DateTime @default(now())
 
   @@index([tenantId])
   @@index([objectKey])
@@ -836,35 +873,35 @@ model UploadedFile {
 }
 
 model WebhookSubscription {
-  id              String            @id @default(cuid())
-  tenantId        String
-  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integrationId   String?
-  integration     IntegrationConfig? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
-  url             String
-  events          String[]
-  secret          String?
-  active          Boolean           @default(true)
-  createdAt       DateTime          @default(now())
-  deliveries      WebhookDelivery[]
+  id            String             @id @default(cuid())
+  tenantId      String
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integrationId String?
+  integration   IntegrationConfig? @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+  url           String
+  events        String[]
+  secret        String?
+  active        Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  deliveries    WebhookDelivery[]
 
   @@index([tenantId])
 }
 
 model WebhookDelivery {
-  id              String              @id @default(cuid())
-  subscriptionId  String
-  subscription    WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  event           String
-  payload         Json
-  statusCode      Int?
-  responseBody    String?
-  attempt         Int                 @default(0)
-  maxAttempts     Int                 @default(3)
-  status          String              @default("PENDING")
-  nextRetryAt     DateTime?
-  deliveredAt     DateTime?
-  createdAt       DateTime            @default(now())
+  id             String              @id @default(cuid())
+  subscriptionId String
+  subscription   WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  event          String
+  payload        Json
+  statusCode     Int?
+  responseBody   String?
+  attempt        Int                 @default(0)
+  maxAttempts    Int                 @default(3)
+  status         String              @default("PENDING")
+  nextRetryAt    DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime            @default(now())
 
   @@index([subscriptionId])
   @@index([status])
@@ -874,7 +911,7 @@ model IntegrationLog {
   id            String            @id @default(cuid())
   integrationId String
   integration   IntegrationConfig @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  direction     String            // INBOUND | OUTBOUND
+  direction     String // INBOUND | OUTBOUND
   method        String?
   path          String?
   statusCode    Int?
@@ -890,103 +927,103 @@ model IntegrationLog {
 // ─── Subscription & Billing ──────────────────────────────
 
 model Plan {
-  id              String   @id @default(cuid())
-  name            String
-  code            String   @unique
-  description     String?
-  priceMonthly    Float    @default(0)
-  priceYearly     Float    @default(0)
-  currency        String   @default("IDR")
-  maxUsers        Int      @default(5)
-  maxDrivers      Int      @default(10)
-  maxShipments    Int      @default(100)
-  maxStorageMb    Int      @default(100)
-  features        Json?
-  active          Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique
+  description  String?
+  priceMonthly Float    @default(0)
+  priceYearly  Float    @default(0)
+  currency     String   @default("IDR")
+  maxUsers     Int      @default(5)
+  maxDrivers   Int      @default(10)
+  maxShipments Int      @default(100)
+  maxStorageMb Int      @default(100)
+  features     Json?
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  subscriptions   Subscription[]
+  subscriptions Subscription[]
 }
 
 model Subscription {
-  id              String   @id @default(cuid())
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  planId          String
-  plan            Plan     @relation(fields: [planId], references: [id])
-  status          String   @default("ACTIVE")
-  billingCycle    String   @default("MONTHLY")
-  startDate       DateTime @default(now())
-  currentPeriodStart DateTime @default(now())
+  id                 String    @id @default(cuid())
+  tenantId           String
+  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId             String
+  plan               Plan      @relation(fields: [planId], references: [id])
+  status             String    @default("ACTIVE")
+  billingCycle       String    @default("MONTHLY")
+  startDate          DateTime  @default(now())
+  currentPeriodStart DateTime  @default(now())
   currentPeriodEnd   DateTime
-  trialEndsAt     DateTime?
-  cancelledAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  trialEndsAt        DateTime?
+  cancelledAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  invoices        Invoice[]
-  usageRecords    UsageRecord[]
+  invoices     Invoice[]
+  usageRecords UsageRecord[]
 
   @@unique([tenantId])
 }
 
 model Invoice {
-  id              String   @id @default(cuid())
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  subscriptionId  String
-  subscription    Subscription @relation(fields: [subscriptionId], references: [id])
-  invoiceNumber   String   @unique
-  status          String   @default("DRAFT")
-  subtotal        Float    @default(0)
-  tax             Float    @default(0)
-  total           Float    @default(0)
-  currency        String   @default("IDR")
-  dueDate         DateTime
-  paidAt          DateTime?
+  id                 String       @id @default(cuid())
+  tenantId           String
+  tenant             Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionId     String
+  subscription       Subscription @relation(fields: [subscriptionId], references: [id])
+  invoiceNumber      String       @unique
+  status             String       @default("DRAFT")
+  subtotal           Float        @default(0)
+  tax                Float        @default(0)
+  total              Float        @default(0)
+  currency           String       @default("IDR")
+  dueDate            DateTime
+  paidAt             DateTime?
   billingPeriodStart DateTime
   billingPeriodEnd   DateTime
-  lineItems       Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  lineItems          Json?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
-  payments        Payment[]
+  payments Payment[]
 
   @@index([tenantId])
   @@index([status])
 }
 
 model Payment {
-  id              String   @id @default(cuid())
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoiceId       String
-  invoice         Invoice  @relation(fields: [invoiceId], references: [id])
-  amount          Float
-  currency        String   @default("IDR")
-  method          String?
-  reference       String?
-  status          String   @default("PENDING")
-  paidAt          DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id        String    @id @default(cuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoiceId String
+  invoice   Invoice   @relation(fields: [invoiceId], references: [id])
+  amount    Float
+  currency  String    @default("IDR")
+  method    String?
+  reference String?
+  status    String    @default("PENDING")
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([tenantId])
 }
 
 model UsageRecord {
-  id              String   @id @default(cuid())
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  subscriptionId  String
-  subscription    Subscription @relation(fields: [subscriptionId], references: [id])
-  metric          String
-  quantity        Int      @default(0)
-  recordedAt      DateTime @default(now())
-  periodStart     DateTime
-  periodEnd       DateTime
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  metric         String
+  quantity       Int          @default(0)
+  recordedAt     DateTime     @default(now())
+  periodStart    DateTime
+  periodEnd      DateTime
 
   @@index([tenantId, metric])
 }
@@ -1021,3 +1058,117 @@ model TenantRateLimit {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
+
+// ─── Enterprise Hierarchy ──────────────────────────────
+
+model Organization {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  code        String?
+  description String?
+  logoUrl     String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  regions     Region[]
+  branches    Branch[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model Region {
+  id             String        @id @default(cuid())
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  name           String
+  code           String?
+  description    String?
+  latitude       Float?
+  longitude      Float?
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  branches       Branch[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([organizationId])
+}
+
+// ─── White Label ──────────────────────────────
+
+model WhiteLabel {
+  id               String   @id @default(cuid())
+  tenantId         String   @unique
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appName          String?
+  logoUrl          String?
+  faviconUrl       String?
+  primaryColor     String?
+  secondaryColor   String?
+  accentColor      String?
+  loginBgUrl       String?
+  emailFromName    String?
+  emailFromAddress String?
+  emailTemplate    Json?
+  smsProvider      String?
+  smsConfig        Json?
+  customCss        String?
+  customDomain     String?
+  landingPageHtml  String?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ─── Tenant Onboarding ──────────────────────────────
+
+enum OnboardingStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  FAILED
+}
+
+model TenantOnboarding {
+  id          String           @id @default(cuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  step        String
+  label       String
+  description String?
+  status      OnboardingStatus @default(PENDING)
+  order       Int              @default(0)
+  completedAt DateTime?
+  data        Json?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([tenantId, step])
+  @@index([tenantId])
+}
+
+// ─── Tenant Health Monitoring ──────────────────────────────
+
+model TenantHealthMetric {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  metricType String
+  value      Float
+  unit       String?
+  period     String?
+  recordedAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, metricType])
+  @@index([tenantId, metricType, recordedAt])
+}
+
+// ─── Branch ↔ Hierarchy (add orgId, regionId) ──────

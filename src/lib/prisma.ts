@@ -22,6 +22,8 @@ const TENANT_SCOPED = new Set([
   'subscription', 'invoice', 'payment', 'usageRecord',
   'integrationConfig', 'apiKey', 'webhookSubscription',
   'uploadedFile', 'demoRequest', 'rolePermission',
+  'auditLog', 'notification', 'message', 'tenantRateLimit',
+  'organization', 'region', 'whiteLabel', 'tenantOnboarding', 'tenantHealthMetric',
 ]);
 
 function addTenantFilter(args: AnyArgs, tenantId: string): AnyArgs {
@@ -131,5 +133,14 @@ export const prisma = basePrisma.$extends({
     uploadedFile: modelExtension('uploadedFile'),
     demoRequest: modelExtension('demoRequest'),
     rolePermission: modelExtension('rolePermission'),
+    auditLog: modelExtension('auditLog'),
+    notification: modelExtension('notification'),
+    message: modelExtension('message'),
+    tenantRateLimit: modelExtension('tenantRateLimit'),
+    organization: modelExtension('organization'),
+    region: modelExtension('region'),
+    whiteLabel: modelExtension('whiteLabel'),
+    tenantOnboarding: modelExtension('tenantOnboarding'),
+    tenantHealthMetric: modelExtension('tenantHealthMetric'),
   },
 });

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
 import { runWithTenant } from '@/lib/api-guard';
+import { createSubscription } from '@/lib/billing';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -54,15 +55,34 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (body.maxDrivers !== undefined) data.maxDrivers = Number(body.maxDrivers);
   if (body.maxShipments !== undefined) data.maxShipments = Number(body.maxShipments);
 
-  if (Object.keys(data).length === 0) {
+  if (Object.keys(data).length === 0 && body.plan === undefined) {
     return NextResponse.json({ error: 'Tidak ada data yang diubah' }, { status: 400 });
   }
 
-  const updated = await prisma.tenant.update({ where: { id }, data });
+  // If plan changed, use createSubscription to sync both Tenant.plan AND Subscription
+  if (body.plan !== undefined && body.plan !== tenant.plan) {
+    await createSubscription(id, String(body.plan), body.billingCycle || 'MONTHLY');
+
+    // Invalidate all tenant user sessions (bump pwdVersion) so JWT gets fresh plan
+    await prisma.user.updateMany({
+      where: { tenantId: id },
+      data: { pwdVersion: { increment: 1 } },
+    });
+  }
+
+  // Remove plan from data since createSubscription already sets it
+  delete data.plan;
+  delete data.billingCycle;
+
+  if (Object.keys(data).length > 0) {
+    await prisma.tenant.update({ where: { id }, data });
+  }
+
+  const updated = await prisma.tenant.findUnique({ where: { id }, include: { subscription: { include: { plan: true } } } });
 
   await logAudit(session, 'UPDATE_TENANT', 'TENANT', {
     oldData: { id: tenant.id, name: tenant.name, status: tenant.status, active: tenant.active, plan: tenant.plan },
-    newData: { id: updated.id, name: updated.name, status: updated.status, active: updated.active, plan: updated.plan },
+    newData: { id: updated!.id, name: updated!.name, status: updated!.status, active: updated!.active, plan: updated!.plan },
   }, req);
 
   return NextResponse.json(updated);
