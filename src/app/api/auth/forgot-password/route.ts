@@ -2,18 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendTextMessage, toE164, isWhatsAppEnabled } from '@/lib/whatsapp';
 import { logger } from '@/lib/logger';
+import { checkRateLimit, getClientIp } from '@/lib/security';
+import crypto from 'crypto';
 
 const TOKEN_TTL_MINUTES = 15;
 
 function generateToken(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  let token = '';
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  for (let i = 0; i < 32; i++) token += chars[bytes[i] % chars.length];
-  return token;
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rateLimited = await checkRateLimit(`forgot-pw:${ip}`, 5, 60_000);
+  if (!rateLimited) {
+    return NextResponse.json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' }, { status: 429 });
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -48,10 +58,11 @@ export async function POST(req: NextRequest) {
   });
 
   const token = generateToken();
+  const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + TOKEN_TTL_MINUTES * 60000);
 
   await prisma.passwordResetToken.create({
-    data: { userId: user.id, token, expiresAt },
+    data: { userId: user.id, token: tokenHash, expiresAt },
   });
 
   let sent = false;

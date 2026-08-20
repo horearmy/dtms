@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { setSession } from '@/lib/auth';
 import { logAudit, runWithTenant } from '@/lib/api-guard';
 import { validatePassword } from '@/lib/security';
+
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -17,8 +22,9 @@ export async function POST(req: NextRequest) {
   const { valid: pwValid, error: pwError } = validatePassword(newPassword);
   if (!pwValid) return NextResponse.json({ error: pwError }, { status: 400 });
 
+  const tokenHash = hashToken(token);
   const resetToken = await prisma.passwordResetToken.findFirst({
-    where: { token, usedAt: null, expiresAt: { gt: new Date() } },
+    where: { token: tokenHash, usedAt: null, expiresAt: { gt: new Date() } },
     include: { user: true },
   });
 

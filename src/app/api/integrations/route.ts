@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { prisma } from '@/lib/prisma';
 import { PERMISSIONS } from '@/lib/permissions';
+import { isUrlSafe } from '@/lib/security';
 
 export async function GET() {
   const { session, error } = await guardPermission(PERMISSIONS.INTEGRATION.READ);
@@ -30,8 +31,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nama integrasi wajib diisi' }, { status: 400 });
     }
     const baseUrl = body.baseUrl?.toString().trim().slice(0, 500) || null;
-    if (baseUrl && !/^https?:\/\//.test(baseUrl)) {
-      return NextResponse.json({ error: 'URL harus menggunakan http:// atau https://' }, { status: 400 });
+    if (baseUrl) {
+      const urlCheck = isUrlSafe(baseUrl);
+      if (!urlCheck.safe) {
+        return NextResponse.json({ error: urlCheck.reason }, { status: 400 });
+      }
     }
     const config = body.config && typeof body.config === 'object' ? JSON.parse(JSON.stringify(body.config)) : undefined;
     const integration = await prisma.integrationConfig.create({

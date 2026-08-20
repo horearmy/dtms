@@ -1,0 +1,1543 @@
+[
+  {
+    "id": "TC001",
+    "title": "Log in and reach the correct workspace",
+    "description": "A user can sign in with valid credentials and land in the authenticated workspace with access to role-based navigation.",
+    "category": "User Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the authenticated workspace is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the role-based dashboard is accessible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Track a shipment from the public tracking page",
+    "description": "A public visitor can look up a shipment and see the current tracking status.",
+    "category": "Public Shipment Tracking",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /tracking"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a valid shipment tracking number"
+      },
+      {
+        "type": "action",
+        "description": "Submit the tracking lookup"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the shipment status is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tracking history is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Auto-detect super admin login",
+    "description": "Typing a super admin username signs the user into the super admin workspace without requiring tenant selection.",
+    "category": "User Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the super admin workspace is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tenant selection is not required"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Look up a shipment and view its tracking status",
+    "description": "A public visitor can search for a shipment on the tracking page and see the current tracking status.",
+    "category": "Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /tracking"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a valid shipment tracking reference"
+      },
+      {
+        "type": "action",
+        "description": "Look up the shipment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the shipment tracking status is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Look up a shipment and see its tracking status",
+    "description": "This verifies that a public visitor can search for a shipment on public tracking and see the current status.",
+    "category": "Public Shipment Tracking",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /tracking"
+      },
+      {
+        "type": "action",
+        "description": "Enter a valid shipment lookup value"
+      },
+      {
+        "type": "action",
+        "description": "Submit the tracking lookup"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the shipment tracking status is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Public visitor looks up a shipment",
+    "description": "A public visitor can enter a tracking number and see the current shipment tracking status.",
+    "category": "Public Shipment Tracking",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /tracking"
+      },
+      {
+        "type": "action",
+        "description": "Enter a tracking number into the tracking field"
+      },
+      {
+        "type": "action",
+        "description": "Search for the shipment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the current tracking status is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Log in with tenant selection",
+    "description": "A tenant user can choose the correct tenant during sign-in and reach the authenticated workspace for that tenant.",
+    "category": "User Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Select the tenant from the tenant selector"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the authenticated workspace for the selected tenant is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Assign a driver to a shipment and see it recorded",
+    "description": "A dispatcher can assign a driver to an unassigned shipment and confirm the assignment appears in dispatch history.",
+    "category": "Dispatch Center",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the dispatch center link"
+      },
+      {
+        "type": "action",
+        "description": "Assign a driver to an unassigned shipment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dispatch history entry is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the shipment is no longer unassigned"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Submit a demo request successfully",
+    "description": "A public visitor can submit a demo request with company and contact details and see a confirmation afterward.",
+    "category": "Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /demo-request"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the company name with Acme Logistics"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the contact information with Jordan Lee, jordan@example.com, and 555-0100"
+      },
+      {
+        "type": "action",
+        "description": "Submit the request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a request submitted confirmation is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "View dashboard metrics after login",
+    "description": "A logged-in user can open the dashboard and review operational summary cards and charts for the current period.",
+    "category": "Dashboard",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the dashboard navigation link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify statistics cards are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard charts are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Super admin sends a tenant message",
+    "description": "A super admin can select a tenant, view the conversation, send a message, and see it appear in the thread.",
+    "category": "Tenant Communication",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a super admin"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /komunikasi"
+      },
+      {
+        "type": "action",
+        "description": "Select a tenant"
+      },
+      {
+        "type": "action",
+        "description": "Type a message into the message field"
+      },
+      {
+        "type": "action",
+        "description": "Send the message"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the sent message appears in the conversation thread"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Assign a driver to an unassigned shipment",
+    "description": "A dispatcher can review unassigned shipments, assign a driver, and see the dispatch history update.",
+    "category": "Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the dispatcher navigation link"
+      },
+      {
+        "type": "action",
+        "description": "Assign a driver to an unassigned shipment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the shipment is shown as assigned"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a new dispatch history entry is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Review dashboard metrics after login",
+    "description": "An authenticated user can open the dashboard and see operational metrics for their workspace.",
+    "category": "Role-based dashboards",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the dashboard link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard metrics are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Scan a barcode and confirm receipt in warehouse operations",
+    "description": "This verifies that a warehouse operator can scan a barcode, see the scanned item in the results, and confirm receipt successfully.",
+    "category": "Warehouse Operations",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the tenant selection and credentials for a warehouse operator with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /gudang"
+      },
+      {
+        "type": "action",
+        "description": "Scan a valid barcode"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the scanned item appears in the results list"
+      },
+      {
+        "type": "action",
+        "description": "Confirm receipt for the scanned item"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the receipt confirmation is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "Tenant reads and replies to a message",
+    "description": "A tenant user can open an incoming message, read it, reply to it, and see the reply added to the thread.",
+    "category": "Tenant Inbox",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a tenant user"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /pesan"
+      },
+      {
+        "type": "action",
+        "description": "Open a message from the list"
+      },
+      {
+        "type": "action",
+        "description": "Type a reply into the reply field"
+      },
+      {
+        "type": "action",
+        "description": "Send the reply"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the reply appears in the message thread"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Change the dashboard date range",
+    "description": "A logged-in user can adjust the dashboard date range and see the dashboard refresh to the selected period.",
+    "category": "Dashboard",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the dashboard navigation link"
+      },
+      {
+        "type": "action",
+        "description": "Adjust the date range filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard updates for the selected period"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "Create a complaint and update its status",
+    "description": "This verifies that a customer service agent can create a complaint and then update its status from the complaint list.",
+    "category": "Customer Service",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the tenant selection and credentials for a customer service agent with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /cs"
+      },
+      {
+        "type": "action",
+        "description": "Create a new complaint with valid details"
+      },
+      {
+        "type": "action",
+        "description": "Update the status of the newly created complaint"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the complaint reflects the updated status in the list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC018",
+    "title": "View driver locations and status on the tracking map",
+    "description": "An authenticated user can open driver tracking and observe driver locations and status indicators on the map.",
+    "category": "Driver Tracking",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the driver tracking link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the driver map is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify driver status indicators are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC019",
+    "title": "Scan a barcode and see it added to warehouse inventory",
+    "description": "This verifies that a warehouse operator can scan a barcode and see the item reflected in the inventory list.",
+    "category": "Warehouse Operations",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the tenant selection and credentials for a warehouse operator with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /gudang"
+      },
+      {
+        "type": "action",
+        "description": "Scan a valid barcode"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the scanned item appears in the inventory list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC020",
+    "title": "Send a tenant message and read the reply",
+    "description": "A super admin can send a tenant message from communications and the tenant can read and reply in the inbox.",
+    "category": "Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the communications navigation link"
+      },
+      {
+        "type": "action",
+        "description": "Send a message to a tenant"
+      },
+      {
+        "type": "action",
+        "description": "Open the tenant inbox"
+      },
+      {
+        "type": "action",
+        "description": "Reply to the message"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the sent message is visible in communications"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the reply is visible in the inbox"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC021",
+    "title": "Create, update, archive, and delete a tenant",
+    "description": "A super admin can manage a tenant end-to-end, including creating it, editing it, archiving it, unarchiving it, and deleting it after confirmation.",
+    "category": "Tenant Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the tenants navigation link"
+      },
+      {
+        "type": "action",
+        "description": "Create a new tenant with valid details"
+      },
+      {
+        "type": "action",
+        "description": "Edit the newly created tenant details"
+      },
+      {
+        "type": "action",
+        "description": "Archive the newly created tenant"
+      },
+      {
+        "type": "action",
+        "description": "Unarchive the newly created tenant"
+      },
+      {
+        "type": "action",
+        "description": "Delete the newly created tenant and confirm the action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the tenant is removed from the list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC022",
+    "title": "Review dispatch queue and history without making changes",
+    "description": "A dispatcher can view the current unassigned shipments and existing dispatch history in the dispatch center.",
+    "category": "Dispatch Center",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the dispatch center link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify unassigned shipments are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dispatch history is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC023",
+    "title": "Create a complaint and see it added to the complaint list",
+    "description": "This verifies that a customer service agent can create a complaint and see it reflected in the complaint list.",
+    "category": "Customer Service",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the tenant selection and credentials for a customer service agent with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /cs"
+      },
+      {
+        "type": "action",
+        "description": "Create a new complaint with valid details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new complaint appears in the complaint list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC024",
+    "title": "Super admin sends credentials to a tenant",
+    "description": "A super admin can select a tenant and send credentials, and the credentials appear in the conversation thread.",
+    "category": "Tenant Communication",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a super admin"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /komunikasi"
+      },
+      {
+        "type": "action",
+        "description": "Select a tenant"
+      },
+      {
+        "type": "action",
+        "description": "Send credentials to the tenant"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the credential message appears in the conversation thread"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "Review tenant activity and send a message to a tenant",
+    "description": "A super admin can review tenant activity in the control tower and send a message through tenant communications.",
+    "category": "Tenant Communication",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the global control tower link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tenant activity is displayed"
+      },
+      {
+        "type": "action",
+        "description": "Click the tenant communications link"
+      },
+      {
+        "type": "action",
+        "description": "Send a message to a tenant"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the sent message appears in the conversation"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC026",
+    "title": "Filter tenants by status",
+    "description": "A super admin can filter the tenant list by status and see the list update to match the chosen filter.",
+    "category": "Tenant Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the tenants navigation link"
+      },
+      {
+        "type": "action",
+        "description": "Select a tenant status filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the tenant list updates to match the selected status"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC027",
+    "title": "Review global driver activity and system health",
+    "description": "This verifies that a super admin can review the global control tower heatmap, trends, and system health metrics.",
+    "category": "Global Control Tower",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the tenant selection and credentials for a super admin with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /global-control-tower"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the active driver heatmap is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the system health metrics are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC028",
+    "title": "Create a user, change the role, and delete the user",
+    "description": "A tenant admin can create a user, update that user's role, and remove the user from the tenant.",
+    "category": "User Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the user management link"
+      },
+      {
+        "type": "action",
+        "description": "Create a new user"
+      },
+      {
+        "type": "action",
+        "description": "Edit the new user's role"
+      },
+      {
+        "type": "action",
+        "description": "Delete the user"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user is removed from the list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC029",
+    "title": "Tenant communication shows the selected conversation",
+    "description": "A super admin can select a tenant and view the corresponding conversation thread before sending a message.",
+    "category": "Tenant Communication",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a super admin"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /komunikasi"
+      },
+      {
+        "type": "action",
+        "description": "Select a tenant"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the conversation thread is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC030",
+    "title": "Set a tenant rate limit and block then unblock the tenant",
+    "description": "This verifies that a super admin can change tenant activity controls in the global control tower and see the tenant return to an unblocked state.",
+    "category": "Global Control Tower",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the tenant selection and credentials for a super admin with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /global-control-tower"
+      },
+      {
+        "type": "action",
+        "description": "Set a rate limit for a tenant"
+      },
+      {
+        "type": "action",
+        "description": "Block the tenant"
+      },
+      {
+        "type": "action",
+        "description": "Unblock the tenant"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the tenant activity controls show the tenant is unblocked"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC031",
+    "title": "Create a new user and see it appear in the list",
+    "description": "A tenant admin can create a new user and confirm the user appears in the tenant user list.",
+    "category": "User Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the user management link"
+      },
+      {
+        "type": "action",
+        "description": "Create a new user"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new user appears in the list"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC032",
+    "title": "Review tenant activity in the control tower",
+    "description": "A super admin can open the global control tower and review tenant activity and health views.",
+    "category": "Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the global control tower navigation link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify tenant activity is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a health view is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC033",
+    "title": "Tenant message is marked as read",
+    "description": "A tenant user can open an unread message and the unread count decreases after the message is read.",
+    "category": "Tenant Inbox",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a tenant user"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /pesan"
+      },
+      {
+        "type": "action",
+        "description": "Open an unread message from the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the message is displayed as read"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the unread count decreases"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC034",
+    "title": "Public visitor submits a demo request",
+    "description": "A public visitor can submit a demo request and receive a confirmation that the request was submitted.",
+    "category": "Public Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /demo-request"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the demo request name field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the demo request contact field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the demo request company field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the demo request form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a success confirmation is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC035",
+    "title": "Submit a demo request as a public visitor",
+    "description": "This verifies that a public visitor can submit a demo request and see a confirmation afterward.",
+    "category": "Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /demo-request"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the demo request form with valid details"
+      },
+      {
+        "type": "action",
+        "description": "Submit the demo request form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a confirmation is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC036",
+    "title": "Tenant inbox handles an unread message list",
+    "description": "A tenant user can open the inbox and see the message list available for review.",
+    "category": "Tenant Inbox",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a tenant user"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /pesan"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the message list is displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC037",
+    "title": "Reject invalid login credentials",
+    "description": "A user who submits incorrect credentials sees an invalid credentials message and remains unable to enter the app.",
+    "category": "User Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with invalid-user"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with invalid-password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an invalid credentials message is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC038",
+    "title": "Require company details before submitting a demo request",
+    "description": "A public visitor cannot submit the demo request form until the required company and contact fields are completed.",
+    "category": "Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /demo-request"
+      },
+      {
+        "type": "action",
+        "description": "Submit the request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation errors are visible for the required fields"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC039",
+    "title": "Validate duplicate or invalid tenant details",
+    "description": "A super admin trying to save a tenant with invalid or duplicate details sees validation feedback and the tenant is not created.",
+    "category": "Tenant Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the tenants navigation link"
+      },
+      {
+        "type": "action",
+        "description": "Open the create tenant form"
+      },
+      {
+        "type": "action",
+        "description": "Submit the tenant form with invalid or duplicate details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a tenant validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC040",
+    "title": "Show dashboard empty-state for insufficient data",
+    "description": "A logged-in user viewing a new or sparse tenant dashboard sees an empty or no-data state instead of broken analytics.",
+    "category": "Dashboard",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the dashboard navigation link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty-state message for insufficient data is displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC041",
+    "title": "Handle an empty driver tracking state",
+    "description": "An authenticated user sees an empty or unavailable state when no active driver positions are currently shown on the map.",
+    "category": "Driver Tracking",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the driver tracking link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a driver tracking empty state is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC042",
+    "title": "Show validation when a public demo request is incomplete",
+    "description": "This verifies that the demo request form prevents submission and shows validation when required information is missing.",
+    "category": "Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /demo-request"
+      },
+      {
+        "type": "action",
+        "description": "Submit the demo request form without completing required fields"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation errors are visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC043",
+    "title": "Public shipment lookup validates missing input",
+    "description": "A public visitor sees a validation error when attempting to search for shipment tracking without entering a tracking number.",
+    "category": "Public Shipment Tracking",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /tracking"
+      },
+      {
+        "type": "action",
+        "description": "Search for the shipment without entering a tracking number"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a tracking validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC044",
+    "title": "Show a tracking validation message for an invalid lookup",
+    "description": "A public visitor sees a validation or not-found state when searching for an invalid shipment reference.",
+    "category": "Demo Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /tracking"
+      },
+      {
+        "type": "action",
+        "description": "Fill in an invalid shipment tracking reference"
+      },
+      {
+        "type": "action",
+        "description": "Look up the shipment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a tracking validation or not-found message is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC045",
+    "title": "Handle an invalid public tracking lookup",
+    "description": "A public visitor sees a validation or not-found state when a shipment lookup cannot be completed with the entered tracking number.",
+    "category": "Public Shipment Tracking",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /tracking"
+      },
+      {
+        "type": "action",
+        "description": "Fill in an invalid shipment tracking number"
+      },
+      {
+        "type": "action",
+        "description": "Submit the tracking lookup"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a tracking lookup error state is visible"
+      }
+    ],
+    "priority": "Low"
+  }
+]

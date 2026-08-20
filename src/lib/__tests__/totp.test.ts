@@ -54,9 +54,9 @@ describe('totp', () => {
 
   it('totp konsisten dalam window 30 detik', () => {
     const secret = generateTotpSecret();
-    const now = Date.now();
-    const t1 = totp(secret, now);
-    const t2 = totp(secret, now + 1000);
+    const fixedTime = 1755700000000;
+    const t1 = totp(secret, fixedTime);
+    const t2 = totp(secret, fixedTime + 5000);
     expect(t1).toBe(t2);
     expect(t1).toMatch(/^\d{6}$/);
   });

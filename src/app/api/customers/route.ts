@@ -10,7 +10,9 @@ export async function GET(req: NextRequest) {
     const q = req.nextUrl.searchParams.get('q') || '';
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get('pageSize') || '20', 10)));
+
     const where = q ? { OR: [{ name: { contains: q } }, { phone: { contains: q } }, { city: { contains: q } }] } : undefined;
+
     const [total, customers] = await Promise.all([
       prisma.customer.count({ where }),
       prisma.customer.findMany({
@@ -18,10 +20,37 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: { _count: { select: { sentBy: true, receivedBy: true } } },
       }),
     ]);
-    return NextResponse.json({ items: customers, total, page, pageSize });
+
+    const customerIds = customers.map((c) => c.id);
+    const sentByMap = new Map<string, number>();
+    const receivedByMap = new Map<string, number>();
+
+    if (customerIds.length > 0) {
+      const [sentRows, recvRows] = await Promise.all([
+        prisma.$queryRaw<{ senderId: string; cnt: bigint }[]>`
+          SELECT "senderId", COUNT(*) AS cnt FROM "Shipment"
+          WHERE "senderId" = ANY(${customerIds}) GROUP BY "senderId"
+        `,
+        prisma.$queryRaw<{ receiverId: string; cnt: bigint }[]>`
+          SELECT "receiverId", COUNT(*) AS cnt FROM "Shipment"
+          WHERE "receiverId" = ANY(${customerIds}) GROUP BY "receiverId"
+        `,
+      ]);
+      for (const row of sentRows) sentByMap.set(row.senderId, Number(row.cnt));
+      for (const row of recvRows) receivedByMap.set(row.receiverId, Number(row.cnt));
+    }
+
+    const items = customers.map((c) => ({
+      ...c,
+      _count: {
+        sentBy: sentByMap.get(c.id) || 0,
+        receivedBy: receivedByMap.get(c.id) || 0,
+      },
+    }));
+
+    return NextResponse.json({ items, total, page, pageSize });
   });
 }
 

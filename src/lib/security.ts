@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from './prisma';
 
 const MAX_USER_FAILURES = Number(process.env.MAX_LOGIN_ATTEMPTS) || 5;
-const MAX_IP_FAILURES = 20;
+const MAX_IP_FAILURES = Number(process.env.MAX_IP_FAILURES) || 20;
 const WINDOW_MIN = 15;
 const CLEANUP_OLDER_HOURS = 24;
 const EXPONENTIAL_BACKOFF_THRESHOLD = 3;
@@ -131,6 +131,34 @@ async function getRedis() {
   const { Redis } = await import('@upstash/redis').catch(() => ({ Redis: null as any }));
   if (!Redis) return null;
   return new Redis({ url, token });
+}
+
+const PRIVATE_IP_PATTERNS = [
+  /^https?:\/\/(127\.\d+\.\d+\.\d+|localhost)/i,
+  /^https?:\/\/(10\.\d+\.\d+\.\d+)/i,
+  /^https?:\/\/(172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)/i,
+  /^https?:\/\/(192\.168\.\d+\.\d+)/i,
+  /^https?:\/\/(169\.254\.\d+\.\d+)/i,
+  /^https?:\/\/\[::1\]/i,
+  /^https?:\/\/0\.0\.0\.0/i,
+];
+
+export function isUrlSafe(url: string): { safe: boolean; reason?: string } {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { safe: false, reason: 'URL tidak valid' };
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    return { safe: false, reason: 'Hanya URL http/https yang diperbolehkan' };
+  }
+  for (const pattern of PRIVATE_IP_PATTERNS) {
+    if (pattern.test(url)) {
+      return { safe: false, reason: 'URL target tidak boleh menggunakan IP privat atau localhost' };
+    }
+  }
+  return { safe: true };
 }
 
 export async function checkRateLimit(key: string, maxRequests: number, windowMs: number): Promise<boolean> {

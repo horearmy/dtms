@@ -13,3 +13,6 @@ prisma/dev.db-journal
 .env.*.local
 storage
 *.tsbuildinfo
+testsprite_tests/tmp/
+testsprite_tests/tmp/config.json
+src/integration/.test-tokens.json

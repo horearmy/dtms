@@ -12,46 +12,43 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { session, error } = await guardPermission(PERMISSIONS.DRIVER.READ);
   if (error) return error;
   return runWithTenant(session?.tenantId ?? null, async () => {
-    const driver = await prisma.driver.findUnique({
-      where: { id },
-      include: { user: { select: { username: true } }, _count: { select: { assignments: true } } },
-    });
-    if (!driver) return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });
-
-    // kendaraan yang sedang dipakai (penugasan terbaru)
-    const latestAssignment = await prisma.deliveryAssignment.findFirst({
-      where: { driverId: id },
-      orderBy: { assignedAt: 'desc' },
-      include: { vehicle: true },
-    });
-
-    // shipment yang sedang aktif (status perjalanan)
-    const activeAssignment = await prisma.deliveryAssignment.findFirst({
-      where: { driverId: id, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
-      orderBy: { assignedAt: 'desc' },
-      include: {
-        shipment: {
-          select: {
-            id: true,
-            trackingNumber: true,
-            status: true,
-            origin: true,
-            destination: true,
-            originLat: true,
-            originLng: true,
-            destLat: true,
-            destLng: true,
-            receiver: { select: { name: true, address: true, city: true } },
+    const [driver, latestAssignment, activeAssignment, gps] = await Promise.all([
+      prisma.driver.findUnique({
+        where: { id },
+        include: { user: { select: { username: true } }, _count: { select: { assignments: true } } },
+      }),
+      prisma.deliveryAssignment.findFirst({
+        where: { driverId: id },
+        orderBy: { assignedAt: 'desc' },
+        include: { vehicle: true },
+      }),
+      prisma.deliveryAssignment.findFirst({
+        where: { driverId: id, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
+        orderBy: { assignedAt: 'desc' },
+        include: {
+          shipment: {
+            select: {
+              id: true,
+              trackingNumber: true,
+              status: true,
+              origin: true,
+              destination: true,
+              originLat: true,
+              originLng: true,
+              destLat: true,
+              destLng: true,
+              receiver: { select: { name: true, address: true, city: true } },
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.gpsLog.findFirst({
+        where: { driverId: id },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
 
-    // posisi GPS terakhir driver
-    const gps = await prisma.gpsLog.findFirst({
-      where: { driverId: id },
-      orderBy: { createdAt: 'desc' },
-    });
+    if (!driver) return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });
 
     return NextResponse.json({
       driver: {

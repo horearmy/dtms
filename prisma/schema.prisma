@@ -395,6 +395,10 @@ model Shipment {
   slaEvents      SlaEvent[]
 
   @@index([tenantId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model ShipmentStop {
@@ -507,6 +511,10 @@ model DeliveryAssignment {
   driver     Driver   @relation(fields: [driverId], references: [id])
   vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
   assignedAt DateTime @default(now())
+
+  @@index([driverId, assignedAt])
+  @@index([shipmentId])
+  @@index([vehicleId])
 }
 
 model TrackingEvent {
@@ -556,6 +564,10 @@ model GpsLog {
   accuracy  Float?
   battery   Float?
   createdAt DateTime @default(now())
+
+  @@index([driverId, createdAt])
+  @@index([createdAt])
+  @@index([vehicleId])
 }
 
 model ProofOfDelivery {

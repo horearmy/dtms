@@ -5,6 +5,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    globalSetup: ['./src/integration/global-setup.ts'],
+    testTimeout: 15000,
+    hookTimeout: 30000,
   },
   resolve: {
     alias: {

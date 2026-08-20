@@ -99,36 +99,63 @@ export default function GlobalControlTowerPage() {
   const [mapCenter] = useState<[number, number]>([-6.2088, 106.8456]);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [trends, setTrends] = useState({ driverTrend: 0, blockedTrend: 0, tenantTrend: 0 });
+  const [health, setHealth] = useState<{
+    apiSuccessRate: number;
+    apiSuccessTrend: number;
+    webhookSuccessRate: number;
+    errorRate: number;
+    errorTrend: number;
+    currentRequests: number;
+    currentErrors: number;
+    activeIntegrations: number;
+  } | null>(null);
 
   const loadTenants = useCallback(async () => {
-    const res = await fetch('/api/admin/throttle');
-    if (res.ok) setTenants(await res.json());
+    try {
+      const res = await fetch('/api/admin/throttle');
+      if (res.ok) setTenants(await res.json());
+    } catch {}
   }, []);
 
   const loadHeatmap = useCallback(async () => {
-    const res = await fetch('/api/gps/global?minutes=60');
-    if (res.ok) {
-      const data = await res.json();
-      setHeatPoints(data.points);
-      setTenantStats(data.tenantStats);
-      setTotalPoints(data.total);
-    }
+    try {
+      const res = await fetch('/api/gps/global?minutes=60');
+      if (res.ok) {
+        const data = await res.json();
+        setHeatPoints(data.points);
+        setTenantStats(data.tenantStats);
+        setTotalPoints(data.total);
+        if (data.trends) setTrends(data.trends);
+      }
+    } catch {}
     setLoading(false);
+  }, []);
+
+  const loadHealth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/system-health');
+      if (res.ok) setHealth(await res.json());
+    } catch {}
   }, []);
 
   useEffect(() => {
     loadTenants();
     loadHeatmap();
-  }, [loadTenants, loadHeatmap]);
+    loadHealth();
+  }, [loadTenants, loadHeatmap, loadHealth]);
 
   useEffect(() => {
     if (autoRefresh) {
-      intervalRef.current = setInterval(loadHeatmap, 15000);
+      intervalRef.current = setInterval(() => {
+        loadHeatmap();
+        loadHealth();
+      }, 15000);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [autoRefresh, loadHeatmap]);
+  }, [autoRefresh, loadHeatmap, loadHealth]);
 
   function openThrottle(tenant: TenantThrottle) {
     setEditTenant(tenant);
@@ -186,30 +213,80 @@ export default function GlobalControlTowerPage() {
       )}
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         <div className="rounded-xl border border-[#E4E7EC] bg-white p-4">
           <div className="flex items-center gap-2 text-xs text-[#667085]">
             <Truck size={14} /> Active Drivers
           </div>
           <div className="mt-1 text-2xl font-bold text-[#101828]">{totalPoints}</div>
+          {trends.driverTrend !== 0 && (
+            <div className={`mt-1 text-[10px] font-semibold ${trends.driverTrend > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+              {trends.driverTrend > 0 ? '+' : ''}{trends.driverTrend}% vs jam lalu
+            </div>
+          )}
         </div>
         <div className="rounded-xl border border-[#E4E7EC] bg-white p-4">
           <div className="flex items-center gap-2 text-xs text-[#667085]">
             <Users size={14} /> Active Tenants
           </div>
           <div className="mt-1 text-2xl font-bold text-[#101828]">{activeTenants.length}</div>
+          {trends.tenantTrend !== 0 && (
+            <div className="mt-1 text-[10px] font-semibold text-emerald-600">
+              +{trends.tenantTrend} sejak periode lalu
+            </div>
+          )}
         </div>
         <div className="rounded-xl border border-[#E4E7EC] bg-white p-4">
           <div className="flex items-center gap-2 text-xs text-[#667085]">
             <Shield size={14} /> Blocked Tenants
           </div>
           <div className="mt-1 text-2xl font-bold text-red-600">{blockedTenants.length}</div>
+          {trends.blockedTrend !== 0 && (
+            <div className={`mt-1 text-[10px] font-semibold ${trends.blockedTrend > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+              {trends.blockedTrend > 0 ? '+' : ''}{trends.blockedTrend} vs jam lalu
+            </div>
+          )}
         </div>
         <div className="rounded-xl border border-[#E4E7EC] bg-white p-4">
           <div className="flex items-center gap-2 text-xs text-[#667085]">
             <Activity size={14} /> Heat Points
           </div>
           <div className="mt-1 text-2xl font-bold text-[#101828]">{heatPoints.length}</div>
+        </div>
+        {/* System Health Card */}
+        <div className={`rounded-xl border bg-white p-4 ${
+          health && health.apiSuccessRate >= 99 ? 'border-emerald-200' :
+          health && health.apiSuccessRate >= 95 ? 'border-amber-200' :
+          'border-red-200'
+        }`}>
+          <div className="flex items-center gap-2 text-xs text-[#667085]">
+            {health && health.apiSuccessRate >= 99 ? <CheckCircle size={14} className="text-emerald-500" /> :
+             health && health.apiSuccessRate >= 95 ? <AlertTriangle size={14} className="text-amber-500" /> :
+             <XCircle size={14} className="text-red-500" />}
+            System Health
+          </div>
+          {health ? (
+            <>
+              <div className={`mt-1 text-2xl font-bold ${
+                health.apiSuccessRate >= 99 ? 'text-emerald-600' :
+                health.apiSuccessRate >= 95 ? 'text-amber-600' : 'text-red-600'
+              }`}>
+                {health.apiSuccessRate}%
+              </div>
+              <div className="text-[10px] text-[#667085]">API Success Rate</div>
+              {health.apiSuccessTrend !== 0 && (
+                <div className={`mt-0.5 text-[10px] font-semibold ${health.apiSuccessTrend > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {health.apiSuccessTrend > 0 ? '+' : ''}{health.apiSuccessTrend}% vs jam lalu
+                </div>
+              )}
+              <div className="mt-2 grid grid-cols-2 gap-1 text-[10px]">
+                <div className="text-[#667085]">Requests: <span className="font-semibold text-[#101828]">{health.currentRequests}</span></div>
+                <div className="text-[#667085]">Errors: <span className={`font-semibold ${health.currentErrors > 0 ? 'text-red-600' : 'text-[#101828]'}`}>{health.currentErrors}</span></div>
+              </div>
+            </>
+          ) : (
+            <div className="mt-2 text-xs text-[#667085]">Memuat...</div>
+          )}
         </div>
       </div>
 

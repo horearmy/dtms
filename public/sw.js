@@ -1,6 +1,6 @@
-const CACHE_NAME = 'dtms-v1';
+const CACHE_NAME = 'dtms-v2';
 const PRECACHE = [
-  '/driver',
+  '/login',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/apple-touch-icon.png',
@@ -22,11 +22,15 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  if (e.request.url.includes('/api/')) return;
+
   e.respondWith(
     fetch(e.request)
       .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+        }
         return res;
       })
       .catch(() => caches.match(e.request))

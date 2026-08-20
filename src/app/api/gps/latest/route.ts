@@ -10,8 +10,62 @@ export async function GET(req: NextRequest) {
   return runWithTenant(session?.tenantId ?? null, async () => {
     const minutes = Number(req.nextUrl.searchParams.get('minutes')) || 60;
     const since = new Date(Date.now() - minutes * 60000);
+    const tenantFilter = session?.tenantId;
+    const limitParam = Number(req.nextUrl.searchParams.get('limit')) || 1000;
+    const limit = Math.min(limitParam, 5000);
 
-    // lat & lng aktif semua shipment (untuk marker tujuan/asal)
+    let gpsRows: any[];
+    if (tenantFilter) {
+      gpsRows = await prisma.$queryRaw`
+        SELECT DISTINCT ON (g."driverId")
+          g."driverId", g."vehicleId", g.latitude, g.longitude, g.speed, g.heading,
+          g.accuracy, g.battery, g."createdAt",
+          d.name, d.photo, d.returning, d."returnedAt",
+          v."vehicleNumber"
+        FROM "GpsLog" g
+        JOIN "Driver" d ON d.id = g."driverId"
+        LEFT JOIN "Vehicle" v ON v.id = g."vehicleId"
+        WHERE g."createdAt" >= ${since}
+          AND d."tenantId" = ${tenantFilter}
+        ORDER BY g."driverId", g."createdAt" DESC
+        LIMIT ${limit}
+      `;
+    } else {
+      gpsRows = await prisma.$queryRaw`
+        SELECT DISTINCT ON (g."driverId")
+          g."driverId", g."vehicleId", g.latitude, g.longitude, g.speed, g.heading,
+          g.accuracy, g.battery, g."createdAt",
+          d.name, d.photo, d.returning, d."returnedAt",
+          v."vehicleNumber"
+        FROM "GpsLog" g
+        JOIN "Driver" d ON d.id = g."driverId"
+        LEFT JOIN "Vehicle" v ON v.id = g."vehicleId"
+        WHERE g."createdAt" >= ${since}
+        ORDER BY g."driverId", g."createdAt" DESC
+        LIMIT ${limit}
+      `;
+    }
+
+    const driverIds = gpsRows.map((r: any) => r.driverId);
+    const warehouseRows = driverIds.length
+      ? await prisma.$queryRaw<
+          { driverId: string; origin: string | null; originLat: number | null; originLng: number | null; lastEventLat: number | null; lastEventLng: number | null }[]
+        >`
+          SELECT DISTINCT ON (da."driverId")
+            da."driverId", s.origin, s."originLat", s."originLng",
+            te.latitude AS "lastEventLat", te.longitude AS "lastEventLng"
+          FROM "DeliveryAssignment" da
+          JOIN "Shipment" s ON s.id = da."shipmentId"
+          LEFT JOIN "ShipmentEvent" te ON te."shipmentId" = s.id AND te."createdAt" = (
+            SELECT MAX(te2."createdAt") FROM "ShipmentEvent" te2 WHERE te2."shipmentId" = s.id
+          )
+          WHERE da."driverId" = ANY(${driverIds})
+          ORDER BY da."driverId", da."assignedAt" ASC
+        `
+      : [];
+
+    const warehouseMap = new Map(warehouseRows.map((w: any) => [w.driverId, w]));
+
     const shipments = await prisma.shipment.findMany({
       where: { status: { notIn: ['DELIVERED', 'RETURNED'] } },
       include: {
@@ -19,73 +73,29 @@ export async function GET(req: NextRequest) {
         events: { orderBy: { createdAt: 'desc' }, take: 1 },
         stops: { orderBy: { seq: 'asc' } },
       },
+      take: 500,
+      orderBy: { updatedAt: 'desc' },
     });
-
-    const gpsLogs = await prisma.gpsLog.findMany({
-      where: {
-        createdAt: { gte: since },
-        ...(session?.tenantId ? { driver: { tenantId: session.tenantId } } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-      include: { driver: true, vehicle: true },
-    });
-
-    // posisi terakhir per driver
-    const latestByDriver = new Map<string, (typeof gpsLogs)[number]>();
-    for (const g of gpsLogs) {
-      if (!latestByDriver.has(g.driverId)) latestByDriver.set(g.driverId, g);
-    }
-
-    // gudang asal per driver (asal shipment pada penugasan terbarunya) utk rute kembali
-    const driverIds = Array.from(latestByDriver.keys());
-    const latestAssignments = driverIds.length
-      ? await prisma.deliveryAssignment.findMany({
-          where: { driverId: { in: driverIds } },
-          orderBy: { assignedAt: 'asc' },
-          distinct: ['driverId'],
-          select: {
-            driverId: true,
-            shipment: {
-              select: {
-                originLat: true,
-                originLng: true,
-                origin: true,
-                events: { orderBy: { createdAt: 'desc' }, take: 1 },
-              },
-            },
-          },
-        })
-      : [];
-    const warehouseByDriver = new Map(
-      latestAssignments.map((a) => [
-        a.driverId,
-        {
-          name: a.shipment.origin,
-          lat: a.shipment.originLat ?? a.shipment.events[0]?.latitude ?? null,
-          lng: a.shipment.originLng ?? a.shipment.events[0]?.longitude ?? null,
-        },
-      ])
-    );
 
     return NextResponse.json({
-      drivers: Array.from(latestByDriver.values()).map((g) => {
-        const w = warehouseByDriver.get(g.driverId);
+      drivers: gpsRows.map((g: any) => {
+        const w = warehouseMap.get(g.driverId);
         return {
           driverId: g.driverId,
-          name: g.driver.name,
-          photo: g.driver.photo,
-          vehicleNumber: g.vehicle?.vehicleNumber || null,
+          name: g.name,
+          photo: g.photo,
+          vehicleNumber: g.vehicleNumber || null,
           latitude: g.latitude,
           longitude: g.longitude,
           speed: g.speed,
           heading: g.heading,
           accuracy: g.accuracy,
           battery: g.battery,
-          returning: g.driver.returning,
-          returnedAt: g.driver.returnedAt,
-          warehouseName: w?.name || null,
-          warehouseLat: w?.lat ?? null,
-          warehouseLng: w?.lng ?? null,
+          returning: g.returning,
+          returnedAt: g.returnedAt,
+          warehouseName: w?.origin || null,
+          warehouseLat: w?.originLat ?? w?.lastEventLat ?? null,
+          warehouseLng: w?.originLng ?? w?.lastEventLng ?? null,
           updatedAt: g.createdAt,
         };
       }),

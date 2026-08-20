@@ -9,35 +9,46 @@ export async function GET(req: NextRequest) {
   return runWithTenant(session?.tenantId ?? null, async () => {
     const isSuperAdmin = session!.role === 'SUPER_ADMIN';
     const minutes = Math.min(240, Math.max(5, parseInt(req.nextUrl.searchParams.get('minutes') || '60', 10)));
+    const now = Date.now();
+    const currentStart = new Date(now - minutes * 60 * 1000);
+    const prevStart = new Date(now - minutes * 2 * 60 * 1000);
 
-    const since = new Date(Date.now() - minutes * 60 * 1000);
-
-    const where: Record<string, unknown> = {
-      createdAt: { gte: since },
-    };
-
+    const gpsWhere: Record<string, unknown> = { createdAt: { gte: currentStart } };
+    const prevGpsWhere: Record<string, unknown> = { createdAt: { gte: prevStart, lt: currentStart } };
     if (!isSuperAdmin) {
-      where.driver = { tenantId: session!.tenantId };
+      gpsWhere.driver = { tenantId: session!.tenantId };
+      prevGpsWhere.driver = { tenantId: session!.tenantId };
     }
 
-    const gpsLogs = await prisma.gpsLog.findMany({
-      where,
-      select: {
-        latitude: true,
-        longitude: true,
-        speed: true,
-        driver: {
-          select: {
-            id: true,
-            name: true,
-            tenantId: true,
-            tenant: { select: { id: true, name: true } },
+    const [gpsLogs, prevGpsLogs, blockedCountNow, blockedCountPrev, tenantCountNow, tenantCountPrev] = await Promise.all([
+      prisma.gpsLog.findMany({
+        where: gpsWhere,
+        select: {
+          latitude: true,
+          longitude: true,
+          speed: true,
+          driver: {
+            select: {
+              id: true,
+              name: true,
+              tenantId: true,
+              tenant: { select: { id: true, name: true } },
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 5000,
-    });
+        orderBy: { createdAt: 'desc' },
+        take: 5000,
+      }),
+      prisma.gpsLog.findMany({
+        where: prevGpsWhere,
+        select: { driver: { select: { id: true } } },
+        take: 5000,
+      }),
+      prisma.tenantRateLimit.count({ where: { blocked: true } }),
+      prisma.tenantRateLimit.count({ where: { blocked: true, createdAt: { lt: currentStart } } }),
+      prisma.tenant.count({ where: { active: true } }),
+      prisma.tenant.count({ where: { active: true, createdAt: { lt: currentStart } } }),
+    ]);
 
     const latestByDriver = new Map<string, typeof gpsLogs[0]>();
     for (const log of gpsLogs) {
@@ -79,11 +90,20 @@ export async function GET(req: NextRequest) {
       if (stat) stat.driverCount = count.size;
     }
 
+    const currentDrivers = new Set(gpsLogs.map((l) => l.driver.id)).size;
+    const prevDrivers = new Set(prevGpsLogs.map((l) => l.driver.id)).size;
+    const driverTrend = prevDrivers > 0 ? Math.round(((currentDrivers - prevDrivers) / prevDrivers) * 100) : 0;
+
     return NextResponse.json({
       points,
       tenantStats: Object.fromEntries(tenantStats),
       total: points.length,
       minutes,
+      trends: {
+        driverTrend,
+        blockedTrend: blockedCountNow - blockedCountPrev,
+        tenantTrend: tenantCountNow - tenantCountPrev,
+      },
     });
   });
 }

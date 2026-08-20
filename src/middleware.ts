@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { timingSafeEqual } from 'crypto';
 import { ROUTE_FEATURE_MAP } from '@/lib/billing';
 
 const COOKIE_NAME = 'dtms_token';
@@ -12,9 +11,9 @@ if (!AUTH_SECRET) {
 const secret = new TextEncoder().encode(AUTH_SECRET);
 
 const RATE_WINDOW_MS = 60_000;
-const RATE_API_LIMIT = 300;
-const RATE_LOGIN_LIMIT = 10;
-const RATE_GPS_LIMIT = 60;
+const RATE_API_LIMIT = Number(process.env.RATE_API_LIMIT) || 300;
+const RATE_LOGIN_LIMIT = Math.min(Number(process.env.RATE_LOGIN_LIMIT) || 10, process.env.NODE_ENV === 'production' ? 30 : 9999);
+const RATE_GPS_LIMIT = Number(process.env.RATE_GPS_LIMIT) || 60;
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
 setInterval(() => {
@@ -56,11 +55,12 @@ function verifyCsrf(req: NextRequest): boolean {
   const token = req.headers.get('x-csrf-token');
   const cookie = req.cookies.get(CSRF_COOKIE)?.value;
   if (!token || !cookie) return false;
-  try {
-    return timingSafeEqual(Buffer.from(token, 'utf8'), Buffer.from(cookie, 'utf8'));
-  } catch {
-    return token === cookie;
+  if (token.length !== cookie.length) return false;
+  let result = 0;
+  for (let i = 0; i < token.length; i++) {
+    result |= token.charCodeAt(i) ^ cookie.charCodeAt(i);
   }
+  return result === 0;
 }
 
 function addSecurityHeaders(res: NextResponse): NextResponse {
