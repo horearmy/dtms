@@ -81,11 +81,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
           title: 'TENANT MANAGEMENT',
           items: [
             { href: '/tenants', label: 'Tenants', icon: <Building2 size={18} /> },
-            { href: '/organizations', label: 'Organizations', icon: <Network size={18} /> },
-            { href: '/regions', label: 'Regions', icon: <Globe size={18} /> },
-            { href: '/branches', label: 'Branches', icon: <Building size={18} /> },
-            { href: '/departments', label: 'Departemen', icon: <Building2 size={18} /> },
-            { href: '/hubs', label: 'Hub', icon: <MapPin size={18} /> },
+            { href: '/hierarchy', label: 'Hierarchy', icon: <Network size={18} /> },
             { href: '/tenant-onboarding', label: 'Onboarding', icon: <ClipboardList size={18} /> },
             { href: '/tenant-health', label: 'Health Monitor', icon: <Activity size={18} /> },
             { href: '/demo-requests', label: 'Permohonan Demo', icon: <ClipboardList size={18} /> },
