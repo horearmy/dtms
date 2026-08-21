@@ -228,3 +228,12 @@ export async function logAudit(
     // jangan menggagalkan request utama
   }
 }
+
+export async function safeJson(req: NextRequest): Promise<{ body: Record<string, unknown>; error?: NextResponse }> {
+  try {
+    const body = await req.json();
+    return { body };
+  } catch {
+    return { body: {}, error: NextResponse.json({ error: 'Body tidak valid' }, { status: 400 }) };
+  }
+}

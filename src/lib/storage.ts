@@ -104,7 +104,11 @@ async function uploadToLocal(key: string, buffer: Buffer, mimeType: string, chec
 
 async function getFromLocal(key: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
   try {
-    const fullPath = path.join(UPLOAD_DIR, key);
+    const resolvedUploadDir = path.resolve(UPLOAD_DIR);
+    const fullPath = path.resolve(path.join(UPLOAD_DIR, key));
+    if (!fullPath.startsWith(resolvedUploadDir + path.sep) && fullPath !== resolvedUploadDir) {
+      return null;
+    }
     const buffer = await fs.promises.readFile(fullPath);
     const mimeType = getMimeType(key);
     return { buffer, mimeType };

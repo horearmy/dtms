@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
               heading: p.heading as number | undefined,
               accuracy: p.accuracy as number | undefined,
               battery: p.battery as number | undefined,
-            });
+            }, session?.id);
             results.push({ localEventId: action.localEventId, status: 'accepted' });
             break;
           }

@@ -34,7 +34,10 @@ function addTenantFilter(args: AnyArgs, tenantId: string): AnyArgs {
 }
 
 function injectTenantId(data: AnyArgs, tenantId: string): AnyArgs {
-  if (data && typeof data === 'object' && !Array.isArray(data) && !('tenantId' in data && data.tenantId)) {
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    if ('tenantId' in data && data.tenantId && data.tenantId !== tenantId) {
+      throw new Error('TENANT_MISMATCH: Cannot create record for a different tenant');
+    }
     return { ...data, tenantId };
   }
   return data;

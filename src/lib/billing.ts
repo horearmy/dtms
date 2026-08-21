@@ -215,7 +215,6 @@ export async function createSubscription(tenantId: string, planCode: string, bil
       billingCycle,
       currentPeriodStart: now,
       currentPeriodEnd: periodEnd,
-      trialEndsAt,
       cancelledAt: null,
     },
     create: {

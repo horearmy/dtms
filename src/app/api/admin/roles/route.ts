@@ -68,12 +68,23 @@ export async function PUT(req: NextRequest) {
     if (role === 'SUPER_ADMIN' && session?.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Hanya Super Admin yang dapat mengedit role SUPER_ADMIN' }, { status: 403 });
     }
+    if (role === session?.role) {
+      return NextResponse.json({ error: 'Tidak dapat mengedit role sendiri' }, { status: 403 });
+    }
+
+    let tenantId: string | null;
+    if (session?.role === 'SUPER_ADMIN') {
+      if (!body.tenantId) {
+        return NextResponse.json({ error: 'tenantId wajib untuk Super Admin' }, { status: 400 });
+      }
+      tenantId = body.tenantId;
+    } else {
+      tenantId = session?.tenantId;
+    }
 
     const allPermCodes = await prisma.permission.findMany({ select: { code: true } });
     const validCodes = new Set(allPermCodes.map((p) => p.code));
     const filteredPerms = (permissions || []).filter((c: string) => validCodes.has(c));
-
-    const tenantId = session?.role === 'SUPER_ADMIN' ? (body.tenantId || null) : session?.tenantId;
 
     await prisma.$transaction(async (tx) => {
       await tx.rolePermission.deleteMany({ where: { role: role as never, tenantId } });

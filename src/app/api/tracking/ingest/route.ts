@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       accuracy: pt.accuracy,
       battery: pt.battery,
       sequence: pt.sequence,
-    });
+    }, session?.id);
     jobs.push({ id: 'queued' });
   }
 

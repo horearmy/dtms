@@ -36,8 +36,8 @@ export async function GET(req: Request) {
         }
       });
 
-      // Also subscribe to global channel for cross-tenant events
-      const unsubGlobal = channel !== 'global' ? subscribe('global', (event, data) => {
+      // Also subscribe to global channel for cross-tenant events (SUPER_ADMIN only)
+      const unsubGlobal = (session?.role === 'SUPER_ADMIN' && channel === 'global') ? subscribe('global', (event, data) => {
         if (closed) return;
         try {
           controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));

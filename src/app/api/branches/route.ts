@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
         city: body.city ? String(body.city).slice(0, 100) : null,
         postalCode: body.postalCode ? String(body.postalCode).slice(0, 10) : null,
         phone: body.phone ? String(body.phone).slice(0, 20) : null,
-        latitude: body.latitude ? Number(body.latitude) : null,
-        longitude: body.longitude ? Number(body.longitude) : null,
+        latitude: body.latitude != null ? Number(body.latitude) : null,
+        longitude: body.longitude != null ? Number(body.longitude) : null,
         active: body.active !== false,
       },
       include: {

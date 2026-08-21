@@ -60,8 +60,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.city !== undefined) data.city = body.city ? String(body.city).slice(0, 100) : null;
     if (body.postalCode !== undefined) data.postalCode = body.postalCode ? String(body.postalCode).slice(0, 10) : null;
     if (body.phone !== undefined) data.phone = body.phone ? String(body.phone).slice(0, 20) : null;
-    if (body.latitude !== undefined) data.latitude = body.latitude ? Number(body.latitude) : null;
-    if (body.longitude !== undefined) data.longitude = body.longitude ? Number(body.longitude) : null;
+    if (body.latitude !== undefined) data.latitude = body.latitude != null ? Number(body.latitude) : null;
+    if (body.longitude !== undefined) data.longitude = body.longitude != null ? Number(body.longitude) : null;
     if (body.organizationId !== undefined) data.organizationId = body.organizationId || null;
     if (body.regionId !== undefined) data.regionId = body.regionId || null;
     if (body.active !== undefined) data.active = Boolean(body.active);

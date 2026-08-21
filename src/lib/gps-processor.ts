@@ -22,12 +22,23 @@ interface GpsPayload {
   sequence?: number;
 }
 
-export function ingestGps(payload: GpsPayload) {
-  enqueue('GPS_INGEST', payload as unknown as Record<string, unknown>);
+export function ingestGps(payload: GpsPayload, sessionUserId?: string) {
+  enqueue('GPS_INGEST', { ...payload, sessionUserId } as unknown as Record<string, unknown>);
 }
 
 registerJobHandler('GPS_INGEST', async (job) => {
-  const p = job.payload as unknown as GpsPayload;
+  const p = job.payload as unknown as GpsPayload & { sessionUserId?: string };
+
+  // Validate driver ownership if sessionUserId provided
+  if (p.sessionUserId && p.driverId) {
+    const driver = await prisma.driver.findFirst({
+      where: { id: p.driverId, userId: p.sessionUserId },
+      select: { id: true },
+    });
+    if (!driver) {
+      throw new Error('GPS_INGEST_DENIED: driverId does not belong to authenticated user');
+    }
+  }
 
   // 1. Store raw GPS
   await prisma.gpsLog.create({

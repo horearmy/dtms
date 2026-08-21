@@ -53,8 +53,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.code !== undefined) data.code = body.code ? String(body.code).slice(0, 20) : null;
     if (body.description !== undefined) data.description = body.description ? String(body.description).slice(0, 500) : null;
     if (body.organizationId !== undefined) data.organizationId = body.organizationId || null;
-    if (body.latitude !== undefined) data.latitude = body.latitude ? Number(body.latitude) : null;
-    if (body.longitude !== undefined) data.longitude = body.longitude ? Number(body.longitude) : null;
+    if (body.latitude !== undefined) data.latitude = body.latitude != null ? Number(body.latitude) : null;
+    if (body.longitude !== undefined) data.longitude = body.longitude != null ? Number(body.longitude) : null;
     if (body.active !== undefined) data.active = Boolean(body.active);
 
     if (Object.keys(data).length === 0) {

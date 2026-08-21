@@ -26,6 +26,8 @@ export function registerJobHandler(type: string, handler: Handler) {
   handlers.set(type, handler);
 }
 
+const MAX_JOBS_IN_MEMORY = 1000;
+
 export function enqueue(type: string, payload: Record<string, unknown>, opts?: { maxAttempts?: number }): Job {
   const job: Job = {
     id: `job_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
@@ -57,10 +59,24 @@ export function getStats() {
   };
 }
 
+function cleanupCompletedJobs() {
+  for (const [id, job] of jobsById) {
+    if (job.status === 'completed' || (job.status === 'failed' && job.attempt >= job.maxAttempts)) {
+      jobsById.delete(id);
+    }
+  }
+  while (queue.length > MAX_JOBS_IN_MEMORY) {
+    const idx = queue.findIndex((j) => j.status === 'completed' || (j.status === 'failed' && j.attempt >= j.maxAttempts));
+    if (idx >= 0) queue.splice(idx, 1);
+    else break;
+  }
+}
+
 async function processNext() {
   if (processing) return;
   processing = true;
   while (queue.length > 0) {
+    cleanupCompletedJobs();
     const job = queue.find((j) => j.status === 'pending');
     if (!job) break;
     const handler = handlers.get(job.type);
