@@ -20,8 +20,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const org = await prisma.organization.findUnique({
       where: { id },
       include: {
-        regions: { include: { _count: { select: { branches: true } } } },
-        branches: { include: { _count: { select: { users: true, warehouses: true, hubs: true } } } },
+        regions: {
+          include: {
+            branches: { include: { _count: { select: { users: true, warehouses: true, hubs: true } } } },
+            _count: { select: { branches: true } },
+          },
+        },
+        branches: {
+          include: {
+            users: { select: { id: true, name: true, username: true, role: true, status: true } },
+            _count: { select: { users: true, warehouses: true, hubs: true } },
+          },
+        },
         _count: { select: { regions: true, branches: true } },
       },
     });

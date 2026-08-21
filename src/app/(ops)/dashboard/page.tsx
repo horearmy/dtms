@@ -22,7 +22,7 @@ export default async function DashboardPage() {
   const data = await runWithTenant(session?.tenantId ?? null, async () => {
     const tenantFilter = session?.tenantId ? { tenantId: session.tenantId } : {};
 
-    const [totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts] = await Promise.all([
+    const [totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches] = await Promise.all([
       prisma.shipment.count({ where: { createdAt: { gte: todayStart } } }),
       prisma.shipment.findMany({
         where: { status: { notIn: ['DELIVERED', 'RETURNED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'] } },
@@ -70,12 +70,23 @@ export default async function DashboardPage() {
         orderBy: { createdAt: 'desc' },
         take: 5,
       }),
+      prisma.branch.count({}),
+      prisma.branch.count({ where: { active: true } }),
+      prisma.branch.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          organization: { select: { name: true } },
+          region: { select: { name: true } },
+          _count: { select: { users: true, warehouses: true, hubs: true } },
+        },
+      }),
     ]);
 
-    return { totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts };
+    return { totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches };
   });
 
-  const { totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts } = data;
+  const { totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches } = data;
 
   // SLA monitoring
   let slaRisk = 0;
@@ -268,6 +279,67 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Branch Overview */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-[#101828]">Branch Overview</h2>
+            <Link href="/branches" className="text-xs font-semibold text-[#0D6EFD] hover:underline">Kelola</Link>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#667085]">Total Branch</span>
+              <span className="text-lg font-bold text-[#101828]">{totalBranches}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#667085]">Aktif</span>
+              <span className="text-lg font-bold text-emerald-600">{activeBranches}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#667085]">Nonaktif</span>
+              <span className="text-lg font-bold text-gray-400">{totalBranches - activeBranches}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:col-span-2">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-[#101828]">Branch Terbaru</h2>
+            <Link href="/branches" className="text-xs font-semibold text-[#0D6EFD] hover:underline">Lihat semua</Link>
+          </div>
+          {topBranches.length === 0 ? (
+            <p className="text-sm text-[#667085]">Belum ada branch.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-[#F7F9FC] text-left text-xs uppercase tracking-wide text-[#667085]">
+                    <th className="pb-2 pr-3">Nama</th>
+                    <th className="pb-2 pr-3">Organization</th>
+                    <th className="pb-2 pr-3">Region</th>
+                    <th className="pb-2 pr-3">Users</th>
+                    <th className="pb-2 pr-3">Warehouses</th>
+                    <th className="pb-2">Hubs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topBranches.map((b) => (
+                    <tr key={b.id} className="border-b border-[#E4E7EC] last:border-0">
+                      <td className="py-2 pr-3 font-medium text-[#101828]">{b.name}</td>
+                      <td className="py-2 pr-3 text-xs text-[#667085]">{b.organization?.name || '-'}</td>
+                      <td className="py-2 pr-3 text-xs text-[#667085]">{b.region?.name || '-'}</td>
+                      <td className="py-2 pr-3 text-xs">{b._count.users}</td>
+                      <td className="py-2 pr-3 text-xs">{b._count.warehouses}</td>
+                      <td className="py-2 text-xs">{b._count.hubs}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

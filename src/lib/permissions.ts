@@ -84,6 +84,12 @@ export const PERMISSIONS = {
     UPDATE: 'region.update',
     DELETE: 'region.delete',
   },
+  BRANCH: {
+    READ: 'branch.read',
+    CREATE: 'branch.create',
+    UPDATE: 'branch.update',
+    DELETE: 'branch.delete',
+  },
   SETTINGS: {
     READ: 'settings.read',
     UPDATE: 'settings.update',

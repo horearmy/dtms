@@ -14,6 +14,28 @@ type Org = {
   _count: { regions: number; branches: number };
 };
 
+type OrgDetail = Org & {
+  regions: {
+    id: string; name: string; code: string | null;
+    _count: { branches: number };
+    branches: {
+      id: string; name: string; code: string | null; city: string | null;
+      _count: { users: number; warehouses: number; hubs: number };
+    }[];
+  }[];
+  branches: {
+    id: string; name: string; code: string | null; city: string | null;
+    users: { id: string; name: string; username: string; role: string; status: string }[];
+    _count: { users: number; warehouses: number; hubs: number };
+  }[];
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin', ADMIN_OPERASIONAL: 'Admin Operasional',
+  DISPATCHER: 'Dispatcher', WAREHOUSE: 'Warehouse', SUPERVISOR: 'Supervisor',
+  MANAGEMENT: 'Management', CUSTOMER_SERVICE: 'Customer Service', DRIVER: 'Driver', CUSTOMER: 'Customer',
+};
+
 export default function OrganizationList() {
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,15 +45,14 @@ export default function OrganizationList() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
+  const [detail, setDetail] = useState<OrgDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => { fetchOrgs(); }, []);
 
   async function fetchOrgs() {
     setLoading(true);
-    try {
-      const res = await fetch('/api/organizations');
-      if (res.ok) setOrgs(await res.json());
-    } catch { /* ignore */ }
+    try { const res = await fetch('/api/organizations'); if (res.ok) setOrgs(await res.json()); } catch {}
     setLoading(false);
   }
 
@@ -47,6 +68,15 @@ export default function OrganizationList() {
     setForm({ name: o.name, code: o.code || '', description: o.description || '' });
     setShowForm(true);
     setError('');
+  }
+
+  async function openDetail(id: string) {
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/organizations/${id}`);
+      if (res.ok) setDetail(await res.json());
+    } catch {}
+    setDetailLoading(false);
   }
 
   async function save(e: React.FormEvent) {
@@ -121,6 +151,99 @@ export default function OrganizationList() {
         </div>
       )}
 
+      {detail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-[#101828]">{detail.name}</h3>
+                {detail.code && <p className="text-xs font-mono text-[#667085]">{detail.code}</p>}
+                {detail.description && <p className="mt-1 text-sm text-[#667085]">{detail.description}</p>}
+              </div>
+              <button onClick={() => setDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="rounded-lg bg-blue-50 p-3 text-center">
+                <div className="text-lg font-bold text-blue-700">{detail._count.regions}</div>
+                <div className="text-xs text-blue-600">Regions</div>
+              </div>
+              <div className="rounded-lg bg-amber-50 p-3 text-center">
+                <div className="text-lg font-bold text-amber-700">{detail._count.branches}</div>
+                <div className="text-xs text-amber-600">Branches</div>
+              </div>
+              <div className="rounded-lg bg-emerald-50 p-3 text-center">
+                <div className="text-lg font-bold text-emerald-700">
+                  {detail.branches.reduce((sum, b) => sum + b._count.users, 0)}
+                </div>
+                <div className="text-xs text-emerald-600">Total Users</div>
+              </div>
+            </div>
+
+            {/* Branches & Users */}
+            {detail.branches.length > 0 && (
+              <div className="mt-5">
+                <h4 className="mb-3 text-sm font-bold text-[#101828]">Branch & Users</h4>
+                <div className="space-y-3">
+                  {detail.branches.map(branch => (
+                    <div key={branch.id} className="rounded-lg border border-[#E4E7EC] p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-sm text-[#101828]">{branch.name}</span>
+                          {branch.city && <span className="ml-2 text-xs text-[#667085]">({branch.city})</span>}
+                        </div>
+                        <div className="flex gap-3 text-xs text-[#667085]">
+                          <span>{branch._count.users} user</span>
+                          <span>{branch._count.warehouses} gudang</span>
+                          <span>{branch._count.hubs} hub</span>
+                        </div>
+                      </div>
+                      {branch.users.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {branch.users.map(u => (
+                            <span key={u.id} className="inline-flex items-center gap-1 rounded-full bg-[#F7F9FC] border border-[#E4E7EC] px-2.5 py-0.5 text-xs">
+                              <span className="font-medium text-[#101828]">{u.name}</span>
+                              <span className="text-[#667085]">({ROLE_LABELS[u.role] || u.role})</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {branch.users.length === 0 && (
+                        <p className="mt-2 text-xs text-[#667085] italic">Belum ada user</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Regions */}
+            {detail.regions.length > 0 && (
+              <div className="mt-5">
+                <h4 className="mb-3 text-sm font-bold text-[#101828]">Regions</h4>
+                <div className="space-y-2">
+                  {detail.regions.map(region => (
+                    <div key={region.id} className="flex items-center justify-between rounded-lg border border-[#E4E7EC] px-3 py-2">
+                      <div>
+                        <span className="font-medium text-sm text-[#101828]">{region.name}</span>
+                        {region.code && <span className="ml-2 text-xs font-mono text-[#667085]">{region.code}</span>}
+                      </div>
+                      <span className="text-xs text-[#667085]">{region._count.branches} branch</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {detailLoading && <p className="mt-4 text-sm text-[#667085]">Memuat detail...</p>}
+
+            <div className="mt-5 flex justify-end">
+              <button onClick={() => setDetail(null)} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {orgs.length === 0 ? (
         <div className="rounded-xl border bg-white p-12 text-center text-sm text-[#667085]">
           Belum ada organization. Klik &ldquo;Buat Organization&rdquo; untuk menambah.
@@ -144,6 +267,7 @@ export default function OrganizationList() {
                 <span>{o._count.branches} branch</span>
               </div>
               <div className="mt-3 flex gap-2">
+                <button onClick={() => openDetail(o.id)} className="rounded-lg border px-3 py-1.5 text-xs text-[#667085] hover:bg-gray-50">Detail</button>
                 <button onClick={() => openEdit(o)} className="rounded-lg border px-3 py-1.5 text-xs hover:bg-gray-50">Edit</button>
                 <button onClick={() => { if (confirm(`Hapus "${o.name}"?`)) deleteOrg(o.id); }} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50">Hapus</button>
               </div>

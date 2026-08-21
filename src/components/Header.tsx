@@ -38,6 +38,9 @@ const PAGE_TITLES: Record<string, string> = {
   '/notifications': 'Notifikasi',
   '/warehouses': 'Gudang',
   '/roles': 'Roles & Permissions',
+  '/organizations': 'Organizations',
+  '/regions': 'Regions',
+  '/branches': 'Branches',
 };
 
 type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null;
