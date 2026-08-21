@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
             role: 'DRIVER',
             status: 'ACTIVE',
             phone: body.phone,
+            tenantId: session?.tenantId ?? null,
             pwdVersion: 1,
             mustChangePassword: false,
           },
