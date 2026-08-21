@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { checkGeofences } from '@/lib/geofence';
+import { recordUsage } from '@/lib/billing';
 import { haversineKm } from '@/lib/eta';
 import { MAINTENANCE_DISTANCE_KM } from '@/lib/constants';
 
@@ -40,6 +41,11 @@ export async function POST(req: NextRequest) {
         battery: battery != null ? Number(battery) : null,
       },
     });
+
+    // Record GPS usage for metered billing (fire-and-forget)
+    if (session?.tenantId) {
+      recordUsage(session.tenantId, 'gps_points', 1).catch(() => {});
+    }
 
     const geofenceEvents = await checkGeofences(driver.id, lat, lng, assignment?.shipmentId);
 

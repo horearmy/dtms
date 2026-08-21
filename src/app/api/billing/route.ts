@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'planCode wajib' }, { status: 400 });
     }
 
-    const validCodes = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
+    const validCodes = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
     if (!validCodes.includes(planCode)) {
       return NextResponse.json({ error: 'Plan tidak valid' }, { status: 400 });
     }

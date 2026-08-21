@@ -157,17 +157,30 @@ async function main() {
   await prisma.company.deleteMany();
   await prisma.tenant.deleteMany();
 
-  // --- Plans ---
+  // --- Plans (5-tier, canonical — keep in sync with src/lib/billing.ts) ---
   const planData = [
-    { name: 'Free', code: 'FREE', description: 'Coba gratis selamanya', priceMonthly: 0, priceYearly: 0, maxUsers: 2, maxDrivers: 5, maxShipments: 50, maxStorageMb: 50, features: ['basic_tracking', 'dispatch'], sortOrder: 0 },
-    { name: 'Starter', code: 'STARTER', description: 'Untuk bisnis kecil', priceMonthly: 199000, priceYearly: 1990000, maxUsers: 5, maxDrivers: 15, maxShipments: 500, maxStorageMb: 500, features: ['basic_tracking', 'dispatch', 'reports'], sortOrder: 1 },
-    { name: 'Professional', code: 'PRO', description: 'Untuk tim operasional', priceMonthly: 499000, priceYearly: 4990000, maxUsers: 20, maxDrivers: 50, maxShipments: 5000, maxStorageMb: 2000, features: ['basic_tracking', 'dispatch', 'reports', 'sla', 'eta', 'control_tower', 'api', 'webhooks'], sortOrder: 2 },
-    { name: 'Enterprise', code: 'ENTERPRISE', description: 'Untuk perusahaan besar', priceMonthly: 1499000, priceYearly: 14990000, maxUsers: -1, maxDrivers: -1, maxShipments: -1, maxStorageMb: -1, features: ['basic_tracking', 'dispatch', 'reports', 'sla', 'eta', 'control_tower', 'api', 'webhooks', 'integrations', 'priority_support'], sortOrder: 3 },
+    { name: 'Free', code: 'FREE', description: 'Coba gratis selamanya', priceMonthly: 0, priceYearly: 0, maxUsers: 3, maxDrivers: 5, maxShipments: 50, maxStorageMb: 50, maxBranches: 1, maxHubs: 0, maxOrganizations: 1, maxApiCallsPerMin: 0, trialDays: 0, features: ['basic_tracking', 'dispatch'], sortOrder: 0 },
+    { name: 'Starter', code: 'STARTER', description: 'Untuk bisnis kecil', priceMonthly: 199000, priceYearly: 1990000, maxUsers: 5, maxDrivers: 15, maxShipments: 500, maxStorageMb: 500, maxBranches: 2, maxHubs: 2, maxOrganizations: 1, maxApiCallsPerMin: 60, trialDays: 14, features: ['basic_tracking', 'dispatch', 'reports', 'gps_tracking'], sortOrder: 1 },
+    { name: 'Growth', code: 'GROWTH', description: 'Untuk logistik menengah', priceMonthly: 449000, priceYearly: 4290000, maxUsers: 15, maxDrivers: 40, maxShipments: 2000, maxStorageMb: 2048, maxBranches: 10, maxHubs: 10, maxOrganizations: 3, maxApiCallsPerMin: 120, trialDays: 14, features: ['basic_tracking', 'dispatch', 'reports', 'gps_tracking', 'warehouse_management', 'geofencing', 'branch_management'], sortOrder: 2 },
+    { name: 'Professional', code: 'PRO', description: 'Untuk tim operasional', priceMonthly: 899000, priceYearly: 8630000, maxUsers: 50, maxDrivers: 150, maxShipments: 10000, maxStorageMb: 5120, maxBranches: -1, maxHubs: -1, maxOrganizations: -1, maxApiCallsPerMin: 600, trialDays: 30, features: ['basic_tracking', 'dispatch', 'reports', 'gps_tracking', 'warehouse_management', 'geofencing', 'branch_management', 'sla', 'eta', 'control_tower', 'api', 'webhooks', 'daily_reports'], sortOrder: 3 },
+    { name: 'Enterprise', code: 'ENTERPRISE', description: 'Untuk perusahaan besar', priceMonthly: 2499000, priceYearly: 24490000, maxUsers: -1, maxDrivers: -1, maxShipments: -1, maxStorageMb: 20480, maxBranches: -1, maxHubs: -1, maxOrganizations: -1, maxApiCallsPerMin: -1, trialDays: 30, features: ['basic_tracking', 'dispatch', 'reports', 'gps_tracking', 'warehouse_management', 'geofencing', 'branch_management', 'sla', 'eta', 'control_tower', 'api', 'webhooks', 'daily_reports', 'analytics_advanced', 'integrations', 'whatsapp_integration', 'white_label', 'priority_support'], sortOrder: 4 },
   ];
   for (const p of planData) {
     await prisma.plan.upsert({ where: { code: p.code }, update: p, create: p });
   }
-  console.log('Plans seeded');
+
+  // --- Addon packages ---
+  const addonData = [
+    { name: 'Extra GPS Pack', slug: 'extra_gps', description: '+5.000 GPS points per bulan', priceMonthly: 49000, sortOrder: 0 },
+    { name: 'Extra Storage 1GB', slug: 'extra_storage', description: '+1 GB file storage', priceMonthly: 25000, sortOrder: 1 },
+    { name: 'WhatsApp Business', slug: 'whatsapp_business', description: '+200 WhatsApp bulanan', priceMonthly: 99000, sortOrder: 2 },
+    { name: 'API Rate Boost', slug: 'api_rate_boost', description: '+2.000 API calls/menit', priceMonthly: 149000, sortOrder: 3 },
+    { name: 'Multi-Cabang Pack', slug: 'multi_cabang', description: '+20 branch slots', priceMonthly: 199000, sortOrder: 4 },
+  ];
+  for (const a of addonData) {
+    await prisma.planAddon.upsert({ where: { slug: a.slug }, update: a, create: a });
+  }
+  console.log('Plans + Addons seeded');
 
   const tenant = await prisma.tenant.create({
     data: {

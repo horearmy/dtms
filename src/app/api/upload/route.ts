@@ -28,6 +28,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ukuran file maksimal 10MB' }, { status: 400 });
     }
 
+    // Check plan storage limit
+    if (session?.tenantId) {
+      const [storageRow] = await prisma.$queryRaw<[{ bytes: bigint }]>`
+        SELECT COALESCE(SUM(size), 0)::bigint AS bytes
+        FROM "UploadedFile" u
+        JOIN "User" usr ON u."uploadedById" = usr.id
+        WHERE usr."tenantId" = ${session.tenantId}
+      `;
+      const storageUsed = Number(storageRow?.bytes || 0);
+      const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId }, select: { maxStorageMb: true } });
+      const maxBytes = (tenant?.maxStorageMb || 50) * 1024 * 1024;
+      if (maxBytes > 0 && storageUsed + file.size > maxBytes) {
+        return NextResponse.json({ error: 'Batas storage tercapai. Upgrade plan untuk menambah storage.' }, { status: 403 });
+      }
+    }
+
     const tenantId = session?.tenantId || 'public';
     const buf = Buffer.from(await file.arrayBuffer());
 

@@ -41,6 +41,10 @@ model Tenant {
   maxUsers        Int                   @default(5)
   maxDrivers      Int                   @default(10)
   maxShipments    Int                   @default(100)
+  maxBranches     Int                   @default(1)
+  maxHubs         Int                   @default(0)
+  maxOrganizations Int                  @default(1)
+  maxStorageMb    Int                  @default(50)
   active          Boolean               @default(true)
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
@@ -78,6 +82,7 @@ model Tenant {
   whiteLabel      WhiteLabel?
   onboardingSteps TenantOnboarding[]
   healthMetrics   TenantHealthMetric[]
+  tenantAddons    TenantAddon[]
 
   @@index([slug])
   @@index([domain])
@@ -927,22 +932,27 @@ model IntegrationLog {
 // ─── Subscription & Billing ──────────────────────────────
 
 model Plan {
-  id           String   @id @default(cuid())
-  name         String
-  code         String   @unique
-  description  String?
-  priceMonthly Float    @default(0)
-  priceYearly  Float    @default(0)
-  currency     String   @default("IDR")
-  maxUsers     Int      @default(5)
-  maxDrivers   Int      @default(10)
-  maxShipments Int      @default(100)
-  maxStorageMb Int      @default(100)
-  features     Json?
-  active       Boolean  @default(true)
-  sortOrder    Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(cuid())
+  name             String
+  code             String   @unique
+  description      String?
+  priceMonthly     Float    @default(0)
+  priceYearly      Float    @default(0)
+  currency         String   @default("IDR")
+  maxUsers         Int      @default(5)
+  maxDrivers       Int      @default(10)
+  maxShipments     Int      @default(100)
+  maxStorageMb     Int      @default(100)
+  maxBranches      Int      @default(1)
+  maxHubs          Int      @default(0)
+  maxOrganizations Int      @default(1)
+  maxApiCallsPerMin Int     @default(0)
+  trialDays        Int      @default(0)
+  features         Json?
+  active           Boolean  @default(true)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   subscriptions Subscription[]
 }
@@ -1025,7 +1035,38 @@ model UsageRecord {
   periodStart    DateTime
   periodEnd      DateTime
 
+  @@unique([tenantId, metric, periodStart])
   @@index([tenantId, metric])
+}
+
+model PlanAddon {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  priceMonthly Float    @default(0)
+  features     Json?
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  tenantAddons TenantAddon[]
+}
+
+model TenantAddon {
+  id        String    @id @default(cuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  addonId   String
+  addon     PlanAddon @relation(fields: [addonId], references: [id])
+  quantity  Int       @default(1)
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  @@unique([tenantId, addonId])
+  @@index([tenantId])
 }
 
 model Message {

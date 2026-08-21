@@ -173,7 +173,7 @@ type AuditData = string | { oldData?: unknown; newData?: unknown };
 
 export async function guardPlanLimit(
   session: SessionUser | null,
-  resource: 'users' | 'drivers' | 'shipments',
+  resource: 'users' | 'drivers' | 'shipments' | 'branches' | 'hubs' | 'organizations',
 ): Promise<NextResponse | null> {
   if (!session?.tenantId || session.role === 'SUPER_ADMIN') return null;
   const result = await checkPlanLimit(session.tenantId, resource);

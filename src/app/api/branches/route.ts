@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, guardPlanLimit, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
@@ -43,6 +43,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const { session, error } = await guardPermission(PERMISSIONS.BRANCH.CREATE);
   if (error) return error;
+
+  const limitError = await guardPlanLimit(session, 'branches');
+  if (limitError) return limitError;
 
   const body = await req.json();
   const tenantId = session.role === 'SUPER_ADMIN' && body.tenantId ? body.tenantId : session.tenantId;
