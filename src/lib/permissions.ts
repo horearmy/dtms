@@ -163,3 +163,108 @@ export const PERMISSIONS = {
     CREATE: 'daily_report.create',
   },
 } as const;
+
+const P = PERMISSIONS;
+
+export const ROLE_PERMS: Record<string, string[]> = {
+  ADMIN_OPERASIONAL: [
+    P.USER.READ, P.USER.CREATE, P.USER.UPDATE,
+    P.DRIVER.READ, P.DRIVER.CREATE, P.DRIVER.UPDATE, P.DRIVER.ASSIGN,
+    P.VEHICLE.READ, P.VEHICLE.CREATE, P.VEHICLE.UPDATE,
+    P.CUSTOMER.READ, P.CUSTOMER.CREATE, P.CUSTOMER.UPDATE,
+    P.SHIPMENT.READ, P.SHIPMENT.CREATE, P.SHIPMENT.UPDATE, P.SHIPMENT.CANCEL, P.SHIPMENT.ASSIGN, P.SHIPMENT.EXPORT,
+    P.DELIVERY.READ, P.DELIVERY.DISPATCH, P.DELIVERY.START, P.DELIVERY.COMPLETE, P.DELIVERY.FAIL, P.DELIVERY.RESCHEDULE,
+    P.WAREHOUSE.READ, P.WAREHOUSE.SCAN, P.WAREHOUSE.SORT,
+    P.REPORT.VIEW, P.REPORT.EXPORT,
+    P.AUDIT.READ, P.GEOFENCE.READ, P.GEOFENCE.CREATE, P.GEOFENCE.UPDATE,
+    P.NOTIFICATION.READ, P.NOTIFICATION.SEND,
+    P.ORGANIZATION.READ, P.ORGANIZATION.CREATE, P.ORGANIZATION.UPDATE,
+    P.REGION.READ, P.REGION.CREATE, P.REGION.UPDATE,
+    P.BRANCH.READ, P.BRANCH.CREATE, P.BRANCH.UPDATE,
+    P.DEPARTMENT.READ, P.DEPARTMENT.CREATE, P.DEPARTMENT.UPDATE,
+    P.HUB.READ, P.HUB.CREATE, P.HUB.UPDATE,
+    P.SETTINGS.READ, P.SETTINGS.UPDATE, P.SETTINGS.DELETE,
+    P.BILLING.READ, P.BILLING.MANAGE,
+    P.SLA.READ, P.SLA.CREATE, P.SLA.UPDATE, P.SLA.DELETE,
+    P.EXCEPTION.READ, P.EXCEPTION.CREATE, P.EXCEPTION.UPDATE, P.EXCEPTION.ASSIGN,
+    P.ANALYTICS.VIEW, P.CONTROL_TOWER.VIEW,
+    P.DISPATCH.VIEW, P.DISPATCH.ASSIGN,
+    P.INTEGRATION.READ, P.INTEGRATION.CREATE,
+    P.WEBHOOK.READ, P.WEBHOOK.CREATE,
+    P.API_KEY.READ, P.API_KEY.CREATE,
+    P.GPS.SEND, P.GPS.READ, P.FILE.READ, P.FILE.UPLOAD,
+    P.DAILY_REPORT.READ, P.DAILY_REPORT.CREATE,
+  ],
+  DISPATCHER: [
+    P.SHIPMENT.READ, P.SHIPMENT.UPDATE,
+    P.DRIVER.READ, P.DRIVER.ASSIGN, P.VEHICLE.READ,
+    P.DELIVERY.READ, P.DELIVERY.DISPATCH, P.DELIVERY.START, P.DELIVERY.COMPLETE, P.DELIVERY.FAIL, P.DELIVERY.RESCHEDULE,
+    P.CUSTOMER.READ, P.WAREHOUSE.READ, P.REPORT.VIEW, P.NOTIFICATION.READ, P.NOTIFICATION.SEND,
+  ],
+  WAREHOUSE: [
+    P.SHIPMENT.READ, P.SHIPMENT.UPDATE,
+    P.WAREHOUSE.READ, P.WAREHOUSE.SCAN, P.WAREHOUSE.SORT,
+    P.DRIVER.READ, P.CUSTOMER.READ, P.REPORT.VIEW,
+  ],
+  SUPERVISOR: [
+    P.SHIPMENT.READ, P.DRIVER.READ, P.DRIVER.UPDATE,
+    P.VEHICLE.READ, P.VEHICLE.UPDATE,
+    P.DELIVERY.READ, P.WAREHOUSE.READ, P.REPORT.VIEW, P.REPORT.EXPORT, P.AUDIT.READ, P.NOTIFICATION.READ,
+  ],
+  MANAGEMENT: [
+    P.SHIPMENT.READ, P.SHIPMENT.EXPORT, P.DRIVER.READ, P.VEHICLE.READ, P.CUSTOMER.READ,
+    P.DELIVERY.READ, P.WAREHOUSE.READ, P.REPORT.VIEW, P.REPORT.EXPORT, P.NOTIFICATION.READ,
+  ],
+  CUSTOMER_SERVICE: [
+    P.SHIPMENT.READ, P.SHIPMENT.UPDATE,
+    P.CUSTOMER.READ, P.CUSTOMER.CREATE, P.CUSTOMER.UPDATE,
+    P.DELIVERY.READ, P.DELIVERY.RESCHEDULE, P.NOTIFICATION.READ, P.NOTIFICATION.SEND, P.REPORT.VIEW,
+  ],
+  DRIVER: [
+    P.SHIPMENT.READ, P.DELIVERY.READ, P.DELIVERY.START, P.DELIVERY.COMPLETE, P.DELIVERY.FAIL,
+    P.WAREHOUSE.READ, P.WAREHOUSE.SCAN,
+  ],
+  CUSTOMER: [P.SHIPMENT.READ, P.NOTIFICATION.READ],
+};
+
+import { prisma } from './prisma';
+
+export async function ensureTenantPermissions(tenantId: string) {
+  const allCodes = new Set<string>();
+  Object.values(ROLE_PERMS).forEach(perms => perms.forEach(p => allCodes.add(p)));
+
+  const permMap: Record<string, string> = {};
+  for (const code of allCodes) {
+    const [resource, action] = code.split('.');
+    const perm = await prisma.permission.upsert({
+      where: { code },
+      update: {},
+      create: { code, resource, action, label: `${resource}.${action}` },
+    });
+    permMap[code] = perm.id;
+  }
+
+  const existing = await prisma.rolePermission.findMany({
+    where: { tenantId },
+    select: { permissionId: true, role: true },
+  });
+  const existingSet = new Set(existing.map(e => `${e.role}:${e.permissionId}`));
+
+  const toCreate: { permissionId: string; role: string; tenantId: string }[] = [];
+  for (const [role, perms] of Object.entries(ROLE_PERMS)) {
+    for (const code of perms) {
+      const permId = permMap[code];
+      if (!permId) continue;
+      if (!existingSet.has(`${role}:${permId}`)) {
+        toCreate.push({ permissionId: permId, role, tenantId });
+      }
+    }
+  }
+
+  if (toCreate.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await prisma.rolePermission.createMany({ data: toCreate as any, skipDuplicates: true });
+  }
+
+  return toCreate.length;
+}

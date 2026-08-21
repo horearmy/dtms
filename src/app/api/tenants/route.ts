@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { ensureTenantPermissions } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -108,6 +109,8 @@ export async function POST(req: NextRequest) {
       maxShipments: maxShipments ?? 100,
     },
   });
+
+  await ensureTenantPermissions(tenant.id);
 
   return NextResponse.json(tenant, { status: 201 });
 }
