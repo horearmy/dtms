@@ -78,6 +78,12 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
   const groups: NavGroup[] = isSuperAdmin
     ? [
         {
+          title: 'DASHBOARD',
+          items: [
+            { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+          ],
+        },
+        {
           title: 'TENANT MANAGEMENT',
           items: [
             { href: '/tenants', label: 'Tenants', icon: <Building2 size={18} /> },
