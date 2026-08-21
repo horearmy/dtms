@@ -36,6 +36,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/settings/profile': 'Profil Perusahaan',
   '/security': 'Security Dashboard',
   '/notifications': 'Notifikasi',
+  '/warehouses': 'Gudang',
+  '/roles': 'Roles & Permissions',
 };
 
 type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null;

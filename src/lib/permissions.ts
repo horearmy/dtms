@@ -49,9 +49,11 @@ export const PERMISSIONS = {
   },
   WAREHOUSE: {
     READ: 'warehouse.read',
+    CREATE: 'warehouse.create',
+    UPDATE: 'warehouse.update',
+    DELETE: 'warehouse.delete',
     SCAN: 'warehouse.scan',
     SORT: 'warehouse.sort',
-    UPDATE: 'warehouse.update',
   },
   REPORT: {
     VIEW: 'report.view',

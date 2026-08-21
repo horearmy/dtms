@@ -30,6 +30,7 @@ import {
   MessageSquare,
   Network,
   Globe,
+  Warehouse,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -92,6 +93,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
           title: 'SYSTEM',
           items: [
             { href: '/security', label: 'Security', icon: <Shield size={18} /> },
+            { href: '/roles', label: 'Roles & Permissions', icon: <Shield size={18} /> },
             { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
           ],
         },
@@ -113,6 +115,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
             { href: '/customers', label: 'Pelanggan', icon: <Users size={18} /> },
             { href: '/drivers', label: 'Kurir', icon: <Truck size={18} /> },
             { href: '/vehicles', label: 'Kendaraan', icon: <Car size={18} /> },
+            { href: '/warehouses', label: 'Gudang', icon: <Warehouse size={18} /> },
             { href: '/map', label: 'Live Tracking Map', icon: <Radar size={18} /> },
           ],
         },
@@ -138,6 +141,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
             { href: '/integrations', label: 'Integrations', icon: <Plug size={18} />, locked: !hasFeature('integrations'), feature: 'integrations' },
             { href: '/settings/whatsapp', label: 'Pengaturan', icon: <Settings size={18} /> },
             ...(showUsers ? [{ href: '/settings/profile', label: 'Profil Perusahaan', icon: <Building2 size={18} /> }] : []),
+            ...(showUsers ? [{ href: '/roles', label: 'Roles & Permissions', icon: <Shield size={18} /> }] : []),
             { href: '/audit', label: 'Audit Log', icon: <Zap size={18} /> },
             { href: '/billing', label: 'Billing', icon: <CreditCard size={18} /> },
           ],
