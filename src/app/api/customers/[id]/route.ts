@@ -26,8 +26,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           address: body.address,
           city: body.city,
           postalCode: body.postalCode,
-          latitude: toNum(body.latitude),
-          longitude: toNum(body.longitude),
+          latitude: body.latitude != null ? toNum(body.latitude) : undefined,
+          longitude: body.longitude != null ? toNum(body.longitude) : undefined,
         },
       });
       await logAudit(

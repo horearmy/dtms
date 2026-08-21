@@ -54,10 +54,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           capacity: body.capacity != null ? Number(body.capacity) : undefined,
           status: body.status,
           totalDistanceKm: body.totalDistanceKm != null ? Number(body.totalDistanceKm) : undefined,
-          photoFront: body.photoFront || null,
-          photoBack: body.photoBack || null,
-          photoRight: body.photoRight || null,
-          photoLeft: body.photoLeft || null,
+          photoFront: body.photoFront != null ? (body.photoFront || null) : undefined,
+          photoBack: body.photoBack != null ? (body.photoBack || null) : undefined,
+          photoRight: body.photoRight != null ? (body.photoRight || null) : undefined,
+          photoLeft: body.photoLeft != null ? (body.photoLeft || null) : undefined,
         },
       });
       await logAudit(

@@ -59,8 +59,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     if (session?.role === 'DRIVER') {
       const driver = await prisma.driver.findUnique({ where: { userId: session.id } });
+      if (!driver) {
+        return NextResponse.json({ error: 'Profil driver tidak ditemukan' }, { status: 403 });
+      }
       const assignment = await prisma.deliveryAssignment.findFirst({
-        where: { shipmentId: id, driverId: driver?.id },
+        where: { shipmentId: id, driverId: driver.id },
       });
       if (!assignment) {
         return NextResponse.json({ error: 'Shipment ini bukan tugas Anda' }, { status: 403 });

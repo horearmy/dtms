@@ -82,39 +82,38 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      let userId: string | undefined;
-      if (username) {
-        const existing = await prisma.user.findFirst({ where: { username, tenantId: session?.tenantId ?? null } });
-        if (existing) {
-          return NextResponse.json(
-            { error: `Username "${username}" sudah terdaftar. Pilih username lain.` },
-            { status: 400 }
-          );
+      const driver = await prisma.$transaction(async (tx) => {
+        let userId: string | undefined;
+        if (username) {
+          const existing = await tx.user.findFirst({ where: { username, tenantId: session?.tenantId ?? null } });
+          if (existing) {
+            throw new Error('USERNAME_DUPLICATE');
+          }
+          const user = await tx.user.create({
+            data: {
+              name: body.name,
+              username,
+              passwordHash: bcrypt.hashSync(password, BCRYPT_COST),
+              role: 'DRIVER',
+              status: 'ACTIVE',
+              phone: body.phone,
+              tenantId: session?.tenantId ?? null,
+              pwdVersion: 1,
+              mustChangePassword: false,
+            },
+          });
+          userId = user.id;
         }
-        const user = await prisma.user.create({
+        return tx.driver.create({
           data: {
+            employeeId: body.employeeId,
             name: body.name,
-            username,
-            passwordHash: bcrypt.hashSync(password, BCRYPT_COST),
-            role: 'DRIVER',
-            status: 'ACTIVE',
             phone: body.phone,
-            tenantId: session?.tenantId ?? null,
-            pwdVersion: 1,
-            mustChangePassword: false,
+            photo: body.photo || null,
+            status: body.status || 'ACTIVE',
+            ...(userId ? { userId } : {}),
           },
         });
-        userId = user.id;
-      }
-      const driver = await prisma.driver.create({
-        data: {
-          employeeId: body.employeeId,
-          name: body.name,
-          phone: body.phone,
-          photo: body.photo || null,
-          status: body.status || 'ACTIVE',
-          ...(userId ? { userId } : {}),
-        },
       });
       await logAudit(
         session,
@@ -125,7 +124,14 @@ export async function POST(req: NextRequest) {
       );
       return NextResponse.json(driver, { status: 201 });
     } catch (e) {
-      return NextResponse.json({ error: 'Employee ID sudah terdaftar' }, { status: 400 });
+      const msg = e instanceof Error ? e.message : '';
+      if (msg === 'USERNAME_DUPLICATE') {
+        return NextResponse.json({ error: `Username "${username}" sudah terdaftar. Pilih username lain.` }, { status: 400 });
+      }
+      if (msg.includes('Unique constraint') || msg.includes('unique constraint')) {
+        return NextResponse.json({ error: 'Employee ID sudah terdaftar' }, { status: 400 });
+      }
+      return NextResponse.json({ error: 'Gagal menyimpan driver' }, { status: 500 });
     }
   });
 }

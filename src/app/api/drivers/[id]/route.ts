@@ -127,7 +127,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (password) {
         const hash = bcrypt.hashSync(password, BCRYPT_COST);
         if (driver.userId) {
-          await prisma.user.update({ where: { id: driver.userId }, data: { passwordHash: hash } });
+          await prisma.user.update({ where: { id: driver.userId }, data: { passwordHash: hash, pwdVersion: { increment: 1 } } });
         } else {
           if (!username) {
             return NextResponse.json({ error: 'Username wajib diisi untuk membuat akun login' }, { status: 400 });

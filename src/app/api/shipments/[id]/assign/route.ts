@@ -78,11 +78,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    await prisma.deliveryAssignment.deleteMany({ where: { shipmentId: id } });
-
-    const assignment = await prisma.deliveryAssignment.create({
-      data: { shipmentId: id, driverId, vehicleId: vehicleId || null },
+    await prisma.$transaction(async (tx) => {
+      await tx.deliveryAssignment.deleteMany({ where: { shipmentId: id } });
+      await tx.deliveryAssignment.create({
+        data: { shipmentId: id, driverId, vehicleId: vehicleId || null },
+      });
     });
+
+    const assignment = await prisma.deliveryAssignment.findFirst({ where: { shipmentId: id, driverId } });
 
     if (isWhatsAppEnabled() && driver.phone) {
       try {

@@ -48,6 +48,7 @@ export async function GET() {
           vehicle: { select: { id: true, vehicleNumber: true, type: true, capacity: true } },
         },
         orderBy: { assignedAt: 'desc' },
+        take: 50,
       }),
     ]);
 
@@ -70,30 +71,50 @@ export async function POST(req: NextRequest) {
     const shipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
     if (!shipment) return NextResponse.json({ error: 'Shipment tidak ditemukan' }, { status: 404 });
 
+    const VALID_DISPATCH_STATUSES = ['WAREHOUSE_RECEIVED', 'SORTING', 'ORDER_CREATED'];
+    if (!VALID_DISPATCH_STATUSES.includes(shipment.status)) {
+      return NextResponse.json({ error: `Shipment dengan status ${shipment.status} tidak dapat didispatch` }, { status: 400 });
+    }
+
     const driver = await prisma.driver.findUnique({ where: { id: driverId } });
     if (!driver) return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });
+
+    if (vehicleId) {
+      const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
+      if (!vehicle) return NextResponse.json({ error: 'Kendaraan tidak ditemukan' }, { status: 404 });
+      if (vehicle.status === 'MAINTENANCE') {
+        return NextResponse.json({ error: `Kendaraan ${vehicle.vehicleNumber} sedang MAINTENANCE` }, { status: 400 });
+      }
+      if (vehicle.returning) {
+        return NextResponse.json({ error: `Kendaraan ${vehicle.vehicleNumber} sedang kembali ke gudang` }, { status: 400 });
+      }
+    }
 
     const existing = await prisma.deliveryAssignment.findFirst({ where: { shipmentId, driverId } });
     if (existing) return NextResponse.json({ error: 'Shipment sudah ditugaskan ke driver ini' }, { status: 409 });
 
-    const assignment = await prisma.deliveryAssignment.create({
-      data: {
-        shipmentId,
-        driverId,
-        vehicleId: vehicleId || null,
-      },
-      include: {
-        shipment: { select: { trackingNumber: true } },
-        driver: { select: { name: true } },
-        vehicle: { select: { vehicleNumber: true } },
-      },
+    const assignment = await prisma.$transaction(async (tx) => {
+      const a = await tx.deliveryAssignment.create({
+        data: {
+          shipmentId,
+          driverId,
+          vehicleId: vehicleId || null,
+        },
+        include: {
+          shipment: { select: { trackingNumber: true } },
+          driver: { select: { name: true } },
+          vehicle: { select: { vehicleNumber: true } },
+        },
+      });
+
+      await tx.shipment.update({ where: { id: shipmentId }, data: { status: 'DISPATCHED' } });
+
+      if (vehicleId) {
+        await tx.vehicle.update({ where: { id: vehicleId }, data: { status: 'IN_USE' } });
+      }
+
+      return a;
     });
-
-    await prisma.shipment.update({ where: { id: shipmentId }, data: { status: 'DISPATCHED' } });
-
-    if (vehicleId) {
-      await prisma.vehicle.update({ where: { id: vehicleId }, data: { status: 'IN_USE' } });
-    }
 
     const channel = session?.tenantId ? `tenant:${session.tenantId}` : 'global';
     broadcast(channel, 'dispatch:created', {

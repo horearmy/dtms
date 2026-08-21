@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guardPermission, logAudit, runWithTenant, guardPlanLimit } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant, guardPlanLimit, safeJson } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { coordForCity } from '@/lib/constants';
 import { slaDeadlineFor } from '@/lib/eta';
@@ -50,10 +50,12 @@ export async function POST(req: NextRequest) {
   const limitError = await guardPlanLimit(session, 'shipments');
   if (limitError) return limitError;
   return runWithTenant(session?.tenantId ?? null, async () => {
-    const body = await req.json();
+    const { body, error: bodyErr } = await safeJson(req);
+    if (bodyErr) return bodyErr;
 
-    if (!body.weight) {
-      return NextResponse.json({ error: 'Berat wajib diisi' }, { status: 400 });
+    const weight = Number(body.weight);
+    if (!body.weight || !Number.isFinite(weight) || weight <= 0) {
+      return NextResponse.json({ error: 'Berat wajib diisi dan harus lebih dari 0' }, { status: 400 });
     }
 
     // Daftar perjalanan (stops). Bila tidak dikirim, dibentuk dari sender+receiver lama.
@@ -107,7 +109,8 @@ export async function POST(req: NextRequest) {
 
       const origin = senderStop.label;
       const destination = lastStop.label;
-      const serviceType = body.serviceType || 'REGULAR';
+      const validServiceTypes = ['REGULAR', 'NEXT_DAY', 'SAME_DAY'];
+      const serviceType = validServiceTypes.includes(String(body.serviceType)) ? String(body.serviceType) as 'REGULAR' | 'NEXT_DAY' | 'SAME_DAY' : 'REGULAR';
 
       const shipment = await tx.shipment.create({
         data: {
@@ -121,20 +124,20 @@ export async function POST(req: NextRequest) {
           originLng: senderStop.longitude,
           destLat: lastStop.latitude,
           destLng: lastStop.longitude,
-          weight: Number(body.weight),
+          weight,
           volume: body.volume ? Number(body.volume) : null,
           serviceType,
           fragile: !!body.fragile,
-          itemName: body.itemName || 'Paket',
+          itemName: String(body.itemName || 'Paket'),
           itemCount: Number(body.itemCount) || 1,
-          itemCategory: body.itemCategory || null,
+          itemCategory: body.itemCategory ? String(body.itemCategory) : null,
           itemValue: body.itemValue ? Number(body.itemValue) : null,
           slaDeadline: slaDeadlineFor(serviceType, new Date()),
-          deliveryTarget: body.deliveryTarget ? new Date(body.deliveryTarget) : null,
+          deliveryTarget: body.deliveryTarget ? new Date(String(body.deliveryTarget)) : null,
           stops: { create: stopsData },
-          items: body.items?.length
-            ? { create: body.items.map((it: { itemName: string; quantity: number; weight?: number; dimension?: string }) => ({ itemName: it.itemName, quantity: Number(it.quantity) || 1, weight: it.weight ? Number(it.weight) : null, dimension: it.dimension || null })) }
-            : { create: { itemName: body.itemName || 'Paket', quantity: Number(body.itemCount) || 1, weight: Number(body.weight) } },
+          items: Array.isArray(body.items) && body.items.length
+            ? { create: (body.items as Array<Record<string, unknown>>).map((it) => ({ itemName: String(it.itemName || 'Paket'), quantity: Number(it.quantity) || 1, weight: it.weight != null ? Number(it.weight) : null, dimension: it.dimension ? String(it.dimension) : null })) }
+            : { create: { itemName: String(body.itemName || 'Paket'), quantity: Number(body.itemCount) || 1, weight } },
         },
       });
       await tx.trackingEvent.create({
