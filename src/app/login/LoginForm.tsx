@@ -12,6 +12,7 @@ function LoginFormInner() {
   const search = useSearchParams();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenant, setSelectedTenant] = useState('');
+  const [tenantSearch, setTenantSearch] = useState('');
   const [superAdminMode, setSuperAdminMode] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -114,17 +115,49 @@ function LoginFormInner() {
             {tenants.length > 1 && !superAdminMode && (
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[#101828]">Perusahaan</label>
-                <select
-                  value={selectedTenant}
-                  onChange={(e) => setSelectedTenant(e.target.value)}
-                  required
-                  className="w-full rounded-lg border border-[#E4E7EC] bg-white px-3 py-2.5 text-sm text-[#101828] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
-                >
-                  <option value="">-- Pilih Perusahaan --</option>
-                  {tenants.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
+                {tenants.length > 30 ? (
+                  <>
+                    <input
+                      type="text"
+                      value={tenantSearch}
+                      onChange={(e) => { setTenantSearch(e.target.value); setSelectedTenant(''); }}
+                      placeholder="Ketik nama perusahaan..."
+                      className="w-full rounded-lg border border-[#E4E7EC] bg-white px-3 py-2.5 text-sm text-[#101828] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
+                    />
+                    {tenantSearch && (
+                      <div className="relative mt-1 max-h-48 overflow-y-auto rounded-lg border border-[#E4E7EC] bg-white shadow-lg">
+                        {tenants
+                          .filter((t) => t.name.toLowerCase().includes(tenantSearch.toLowerCase()))
+                          .slice(0, 50)
+                          .map((t) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => { setSelectedTenant(t.id); setTenantSearch(t.name); }}
+                              className={`w-full px-3 py-2 text-left text-sm hover:bg-[#F7F9FC] ${selectedTenant === t.id ? 'bg-[#E7F0FF] font-semibold text-[#0D6EFD]' : 'text-[#101828]'}`}
+                            >
+                              {t.name}
+                            </button>
+                          ))}
+                        {tenants.filter((t) => t.name.toLowerCase().includes(tenantSearch.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-2 text-sm text-[#667085]">Perusahaan tidak ditemukan</div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <select
+                    value={selectedTenant}
+                    onChange={(e) => setSelectedTenant(e.target.value)}
+                    required
+                    className="w-full rounded-lg border border-[#E4E7EC] bg-white px-3 py-2.5 text-sm text-[#101828] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
+                  >
+                    <option value="">-- Pilih Perusahaan --</option>
+                    {tenants.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
             {tenants.length === 1 && !superAdminMode && <input type="hidden" value={tenants[0].id} />}
