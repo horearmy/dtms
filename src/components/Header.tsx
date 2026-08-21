@@ -41,6 +41,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/organizations': 'Organizations',
   '/regions': 'Regions',
   '/branches': 'Branches',
+  '/departments': 'Departemen',
+  '/hubs': 'Hub',
 };
 
 type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null;

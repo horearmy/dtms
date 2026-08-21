@@ -90,6 +90,18 @@ export const PERMISSIONS = {
     UPDATE: 'branch.update',
     DELETE: 'branch.delete',
   },
+  DEPARTMENT: {
+    READ: 'department.read',
+    CREATE: 'department.create',
+    UPDATE: 'department.update',
+    DELETE: 'department.delete',
+  },
+  HUB: {
+    READ: 'hub.read',
+    CREATE: 'hub.create',
+    UPDATE: 'hub.update',
+    DELETE: 'hub.delete',
+  },
   SETTINGS: {
     READ: 'settings.read',
     UPDATE: 'settings.update',
