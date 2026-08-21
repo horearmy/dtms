@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
       const tenantFilter = session?.tenantId
         ? { OR: [
             { shipment: { tenantId: session.tenantId } },
-            { userId: { not: null } },
+            { userId: session!.id },
           ] }
-        : {};
+        : { userId: session!.id };
       await prisma.notification.updateMany({ where: { ...tenantFilter, status: 'UNREAD' }, data: { status: 'READ' } });
     }
 

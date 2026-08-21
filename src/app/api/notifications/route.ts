@@ -26,7 +26,7 @@ export async function GET() {
       const tenantFilter = session?.tenantId
         ? { OR: [
             { shipment: { tenantId: session.tenantId } },
-            { userId: { not: null } },
+            { userId: session!.id },
           ] }
         : { userId: session!.id };
       items = await prisma.notification.findMany({
