@@ -29,6 +29,7 @@ export default function DriversPage() {
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Driver | null>(null);
   const [form, setForm] = useState({ employeeId: '', name: '', phone: '', photo: null as string | null, status: 'ACTIVE', username: '', password: '' });
+  const [usernameEdited, setUsernameEdited] = useState(false);
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -49,6 +50,7 @@ export default function DriversPage() {
   function openNew() {
     setEdit(null);
     setForm({ employeeId: nextEmployeeId, name: '', phone: '', photo: null, status: 'ACTIVE', username: '', password: '' });
+    setUsernameEdited(false);
     setMsg('');
     setOpen(true);
   }
@@ -63,6 +65,7 @@ export default function DriversPage() {
       username: d.user?.username || '',
       password: '',
     });
+    setUsernameEdited(true);
     setMsg('');
     setOpen(true);
   }
@@ -177,7 +180,14 @@ export default function DriversPage() {
                   <input required value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className={inputCls} placeholder="DRV-XXX" />
                 </Field>
                 <Field label="Nama" required>
-                  <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
+                  <input required value={form.name} onChange={(e) => {
+                    const name = e.target.value;
+                    const updates: typeof form = { ...form, name };
+                    if (!usernameEdited) {
+                      updates.username = name.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/(^\.|\.$)/g, '');
+                    }
+                    setForm(updates);
+                  }} className={inputCls} />
                 </Field>
               </div>
               <div>
@@ -202,7 +212,7 @@ export default function DriversPage() {
                   ) : (
                     <input
                       value={form.username}
-                      onChange={(e) => setForm({ ...form, username: e.target.value })}
+                      onChange={(e) => { setUsernameEdited(true); setForm({ ...form, username: e.target.value }); }}
                       className={inputCls}
                       placeholder={edit ? 'ketik utk buat akun' : 'mis. driver3'}
                     />
