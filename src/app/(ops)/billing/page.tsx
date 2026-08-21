@@ -120,6 +120,7 @@ function BillingPageInner() {
   const [cancelling, setCancelling] = useState(false);
   const [cancellingConfirm, setCancellingConfirm] = useState(false);
   const [addons, setAddons] = useState<Addon[]>([]);
+  const [purchasingAddon, setPurchasingAddon] = useState<string | null>(null);
 
   const currentPlanCode = subscription?.plan?.code || 'FREE';
   const trialEndsAt = subscription?.trialEndsAt ? new Date(subscription.trialEndsAt) : null;
@@ -165,6 +166,19 @@ function BillingPageInner() {
       }
     }
   }, [upgradeFeature, plans, currentPlanCode]);
+
+  const handlePurchaseAddon = async (addonId: string) => {
+    setPurchasingAddon(addonId);
+    try {
+      const res = await fetch('/api/billing/addons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ addonId }),
+      });
+      if (res.ok) fetchData();
+    } catch { /* ignore */ }
+    setPurchasingAddon(null);
+  };
 
   const handleSubscribe = async (planCode: string) => {
     setSubscribing(planCode);
@@ -395,7 +409,13 @@ function BillingPageInner() {
               <p className="mt-1 text-xs text-gray-500">{addon.description}</p>
               <div className="mt-3 flex items-end justify-between">
                 <span className="text-lg font-bold text-gray-900">Rp {addon.priceMonthly.toLocaleString('id-ID')}<span className="text-xs text-gray-400">/bln</span></span>
-                <button className="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Tambah</button>
+                <button
+                  onClick={() => handlePurchaseAddon(addon.id)}
+                  disabled={purchasingAddon === addon.id}
+                  className="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {purchasingAddon === addon.id ? 'Memproses...' : 'Tambah'}
+                </button>
               </div>
             </div>
           ))}
@@ -493,9 +513,10 @@ function LimitRow({ value, label }: { value: string | number; label: string }) {
 }
 
 function UsageBar({ label, used, max }: { label: string; used: number; max: number }) {
-  const pct = max < 0 ? 10 : Math.min(100, (used / max) * 100);
-  const isWarning = pct > 80;
   const isUnlimited = max < 0;
+  const isZero = max === 0;
+  const pct = isUnlimited ? 10 : isZero ? 0 : Math.min(100, (used / max) * 100);
+  const isWarning = pct > 80;
 
   return (
     <div>

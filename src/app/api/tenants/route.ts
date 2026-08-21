@@ -5,7 +5,7 @@ import { ensureTenantPermissions } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
-  if (!session || !['SUPER_ADMIN', 'ADMIN_OPERASIONAL'].includes(session.role)) {
+  if (!session || session.role !== 'SUPER_ADMIN') {
     return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
   }
 

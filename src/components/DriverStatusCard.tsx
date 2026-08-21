@@ -47,8 +47,10 @@ export default function DriverStatusCard() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const res = await fetch('/api/driver/status');
-      if (res.ok && !cancelled) setData(await res.json());
+      try {
+        const res = await fetch('/api/driver/status');
+        if (res.ok && !cancelled) setData(await res.json());
+      } catch {}
       if (!cancelled) setLoading(false);
     }
     load();

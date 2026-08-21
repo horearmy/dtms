@@ -144,6 +144,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
               role: 'DRIVER',
               status: 'ACTIVE',
               phone: body.phone || driver.phone,
+              tenantId: session?.tenantId ?? null,
               pwdVersion: 1,
               mustChangePassword: false,
             },
@@ -166,8 +167,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         newData: { id: updated.id, name: updated.name, phone: updated.phone, status: updated.status },
       }, req);
       return NextResponse.json(updated);
-    } catch {
-      return NextResponse.json({ error: 'Driver tidak ditemukan' }, { status: 404 });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Gagal menyimpan';
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
   });
 }
@@ -179,6 +181,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   return runWithTenant(session?.tenantId ?? null, async () => {
     try {
       const before = await prisma.driver.findUnique({ where: { id } });
+      if (before?.userId) {
+        await prisma.user.update({ where: { id: before.userId }, data: { status: 'INACTIVE' } });
+      }
       await prisma.driver.delete({ where: { id } });
       await logAudit(session, 'DELETE_DRIVER', 'DRIVER', { oldData: before }, req);
     } catch {

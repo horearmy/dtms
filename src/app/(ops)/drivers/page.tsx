@@ -77,16 +77,21 @@ export default function DriversPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const res = await fetch(edit ? `/api/drivers/${edit.id}` : '/api/drivers', {
-      method: edit ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
+    setMsg('');
+    try {
+      const res = await fetch(edit ? `/api/drivers/${edit.id}` : '/api/drivers', {
+        method: edit ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) return setMsg(data.error || 'Gagal menyimpan');
+      setOpen(false);
+      await load();
+    } catch {
+      setMsg('Gagal terhubung ke server');
+    }
     setLoading(false);
-    if (!res.ok) return setMsg(data.error || 'Gagal menyimpan');
-    setOpen(false);
-    await load();
   }
   async function remove(d: Driver) {
     if (!confirm(`Hapus driver "${d.name}"?`)) return;

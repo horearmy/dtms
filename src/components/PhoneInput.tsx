@@ -72,7 +72,9 @@ export default function PhoneInput({ value, onChange, className = '', placeholde
   }
 
   function handleNumberChange(val: string) {
-    const digits = val.replace(/\D/g, '').slice(0, country.maxLen);
+    let digits = val.replace(/\D/g, '');
+    if (digits.startsWith('0')) digits = digits.replace(/^0+/, '');
+    digits = digits.slice(0, country.maxLen);
     onChange(country.dial + digits);
   }
 

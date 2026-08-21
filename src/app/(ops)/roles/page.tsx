@@ -39,9 +39,11 @@ export default function RolesPage() {
         const d = await res.json();
         setData(d);
         if (d.roles.length > 0) {
-          const first = d.roles.find((r: RoleData) => r.role === 'ADMIN_OPERASIONAL') || d.roles[0];
-          setActiveRole(first.role);
-          setGranted(new Set(first.permissions.filter((p: Perm) => p.granted).map((p: Perm) => p.code)));
+          setActiveRole(prev => {
+            if (prev && d.roles.find((r: RoleData) => r.role === prev)) return prev;
+            const first = d.roles.find((r: RoleData) => r.role === 'ADMIN_OPERASIONAL') || d.roles[0];
+            return first.role;
+          });
         }
       }
     } catch {}
@@ -49,6 +51,12 @@ export default function RolesPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!data) return;
+    const rd = data.roles.find((r: RoleData) => r.role === activeRole);
+    if (rd) setGranted(new Set(rd.permissions.filter((p: Perm) => p.granted).map((p: Perm) => p.code)));
+  }, [activeRole, data]);
 
   const roleData = data?.roles.find((r) => r.role === activeRole);
 

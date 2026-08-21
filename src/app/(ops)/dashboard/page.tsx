@@ -22,8 +22,9 @@ export default async function DashboardPage() {
   const data = await runWithTenant(session?.tenantId ?? null, async () => {
     const tenantFilter = session?.tenantId ? { tenantId: session.tenantId } : {};
 
-    const [totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches] = await Promise.all([
+    const [totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches] = await Promise.all([
       prisma.shipment.count({ where: { createdAt: { gte: todayStart } } }),
+      prisma.shipment.count(),
       prisma.shipment.findMany({
         where: { status: { notIn: ['DELIVERED', 'RETURNED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'] } },
         include: { sender: true, receiver: true, assignments: { include: { driver: true } } }
@@ -83,10 +84,10 @@ export default async function DashboardPage() {
       }),
     ]);
 
-    return { totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches };
+    return { totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches };
   });
 
-  const { totalToday, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches } = data;
+  const { totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches } = data;
 
   // SLA monitoring
   let slaRisk = 0;
@@ -108,7 +109,7 @@ export default async function DashboardPage() {
 
   const byStatus: Record<string, number> = {};
   shipments.forEach((s) => (byStatus[s.status] = (byStatus[s.status] || 0) + 1));
-  const total = shipments.length;
+  const total = totalCount;
   const successRate = total > 0 ? Math.round((deliveredCount / total) * 100) : 0;
   const failedRate = total > 0 ? Math.round((failedCount / total) * 100) : 0;
 
