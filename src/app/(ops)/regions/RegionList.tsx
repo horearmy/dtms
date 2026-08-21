@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import LocationPicker, { type PickedLocation } from '@/components/LocationPicker';
 
 type Region = {
   id: string;
@@ -113,7 +114,7 @@ export default function RegionList() {
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
             <h3 className="mb-4 text-lg font-semibold">{editRegion ? 'Edit Region' : 'Buat Region'}</h3>
             {error && <div className="mb-3 rounded bg-red-50 p-2 text-sm text-red-600">{error}</div>}
             <form onSubmit={save} className="space-y-3">
@@ -138,15 +139,13 @@ export default function RegionList() {
                 <label className="mb-1 block text-sm font-medium text-gray-700">Deskripsi</label>
                 <textarea className="w-full rounded-lg border px-3 py-2 text-sm" rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Latitude</label>
-                  <input className="w-full rounded-lg border px-3 py-2 text-sm" type="number" step="any" value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Longitude</label>
-                  <input className="w-full rounded-lg border px-3 py-2 text-sm" type="number" step="any" value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} />
-                </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Lokasi Region</label>
+                <LocationPicker
+                  value={{ lat: form.latitude ? Number(form.latitude) : null, lng: form.longitude ? Number(form.longitude) : null, address: '', city: '', postalCode: '' }}
+                  onChange={(loc: PickedLocation) => setForm({ ...form, latitude: loc.lat?.toString() || '', longitude: loc.lng?.toString() || '' })}
+                  mapHeight="h-64"
+                />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => setShowForm(false)} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">Batal</button>
