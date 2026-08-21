@@ -2,6 +2,7 @@ import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
 import { logger } from './logger';
 import { createSubscription } from './billing';
+import { BCRYPT_COST } from './security';
 
 interface ProvisionResult {
   tenantId: string;
@@ -18,7 +19,7 @@ export async function provisionTenant(requestId: string): Promise<ProvisionResul
 
   const slug = generateSlug(request.company);
   const adminPassword = generatePassword();
-  const passwordHash = await bcrypt.hash(adminPassword, 10);
+  const passwordHash = await bcrypt.hash(adminPassword, BCRYPT_COST);
 
   const log = logger.child('provisioning');
 

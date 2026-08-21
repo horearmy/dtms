@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from './prisma';
 
+export const BCRYPT_COST = 12;
 const MAX_USER_FAILURES = Number(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const MAX_IP_FAILURES = Number(process.env.MAX_IP_FAILURES) || 20;
 const WINDOW_MIN = 15;

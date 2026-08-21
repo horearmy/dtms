@@ -4,7 +4,7 @@ import type { Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant, guardPlanLimit } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
-import { generateRandomPassword } from '@/lib/security';
+import { generateRandomPassword, BCRYPT_COST } from '@/lib/security';
 import { sendTextMessage, toE164, isWhatsAppEnabled } from '@/lib/whatsapp';
 
 const ASSIGNABLE_ROLES: string[] = [
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   return runWithTenant(session?.tenantId ?? null, async () => {
     const plainPassword = generateRandomPassword(12);
-    const hash = bcrypt.hashSync(plainPassword, 10);
+    const hash = bcrypt.hashSync(plainPassword, BCRYPT_COST);
 
     try {
       const user = await prisma.user.create({

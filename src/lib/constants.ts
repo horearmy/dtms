@@ -92,7 +92,10 @@ export const NEXT_STATUS: Record<string, string> = {
 export function generateTrackingNumber() {
   const now = new Date();
   const ymd = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const seq = String(100000 + Math.floor(Math.random() * 899999));
+  const bytes = new Uint8Array(4);
+  globalThis.crypto.getRandomValues(bytes);
+  const num = (bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]) >>> 0;
+  const seq = String(100000 + (num % 900000));
   return `DTMS-${ymd}-${seq}`;
 }
 

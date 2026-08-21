@@ -9,9 +9,11 @@ export async function GET() {
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
+    const tenantFilter = session?.tenantId ? { tenantId: session.tenantId } : {};
     const [unassignedShipments, availableDrivers, availableVehicles, activeAssignments] = await Promise.all([
       prisma.shipment.findMany({
         where: {
+          ...tenantFilter,
           status: { in: ['WAREHOUSE_RECEIVED', 'SORTING', 'ORDER_CREATED'] },
           assignments: { none: {} },
         },
@@ -20,18 +22,23 @@ export async function GET() {
       }),
       prisma.driver.findMany({
         where: {
+          ...tenantFilter,
           status: 'ACTIVE',
           assignments: { none: { shipment: { status: { in: ['DISPATCHED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'] } } } },
         },
         take: 50,
       }),
       prisma.vehicle.findMany({
-        where: { status: 'AVAILABLE' },
+        where: {
+          ...tenantFilter,
+          status: 'AVAILABLE',
+        },
         take: 50,
       }),
       prisma.deliveryAssignment.findMany({
         where: {
           shipment: {
+            ...tenantFilter,
             status: { in: ['DISPATCHED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'] },
           },
         },

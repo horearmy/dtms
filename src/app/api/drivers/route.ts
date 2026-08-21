@@ -6,7 +6,7 @@ import { guardPermission, logAudit, runWithTenant, guardPlanLimit } from '@/lib/
 import { PERMISSIONS } from '@/lib/permissions';
 import { driverScore } from '@/lib/scoring';
 import { ON_ROAD_STATUSES } from '@/lib/constants';
-import { validatePassword } from '@/lib/security';
+import { validatePassword, BCRYPT_COST } from '@/lib/security';
 
 export async function GET(req: NextRequest) {
   const { session, error } = await guardPermission(PERMISSIONS.DRIVER.READ);
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
           data: {
             name: body.name,
             username,
-            passwordHash: bcrypt.hashSync(password, 10),
+            passwordHash: bcrypt.hashSync(password, BCRYPT_COST),
             role: 'DRIVER',
             status: 'ACTIVE',
             phone: body.phone,

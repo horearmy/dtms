@@ -8,6 +8,19 @@ import { uploadFile, getFileUrl } from '@/lib/storage';
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_BYTES = 10 * 1024 * 1024;
 
+const MAGIC_BYTES: Record<string, number[][]> = {
+  'image/jpeg': [[0xff, 0xd8, 0xff]],
+  'image/png': [[0x89, 0x50, 0x4e, 0x47]],
+  'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF header
+  'application/pdf': [[0x25, 0x50, 0x44, 0x46]], // %PDF
+};
+
+function verifyMimeType(buf: Buffer, declaredType: string): boolean {
+  const signatures = MAGIC_BYTES[declaredType];
+  if (!signatures) return false;
+  return signatures.some(sig => sig.every((byte, i) => buf[i] === byte));
+}
+
 export async function POST(req: NextRequest) {
   const { session, error } = await guardPermission(PERMISSIONS.FILE.UPLOAD);
   if (error) return error;
@@ -46,6 +59,10 @@ export async function POST(req: NextRequest) {
 
     const tenantId = session?.tenantId || 'public';
     const buf = Buffer.from(await file.arrayBuffer());
+
+    if (!verifyMimeType(buf, file.type)) {
+      return NextResponse.json({ error: 'File content tidak sesuai dengan tipe yang dideklarasikan' }, { status: 400 });
+    }
 
     const result = await uploadFile({
       tenantId,

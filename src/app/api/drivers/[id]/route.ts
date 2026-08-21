@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { ON_ROAD_STATUSES } from '@/lib/constants';
-import { validatePassword } from '@/lib/security';
+import { validatePassword, BCRYPT_COST } from '@/lib/security';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -125,7 +125,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     try {
       if (password) {
-        const hash = bcrypt.hashSync(password, 10);
+        const hash = bcrypt.hashSync(password, BCRYPT_COST);
         if (driver.userId) {
           await prisma.user.update({ where: { id: driver.userId }, data: { passwordHash: hash } });
         } else {

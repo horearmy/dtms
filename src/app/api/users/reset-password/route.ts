@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
-import { generateRandomPassword } from '@/lib/security';
+import { generateRandomPassword, BCRYPT_COST } from '@/lib/security';
 import { sendTextMessage, toE164, isWhatsAppEnabled } from '@/lib/whatsapp';
 
 export async function POST(req: NextRequest) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     const newPassword = generateRandomPassword(12);
-    const hash = bcrypt.hashSync(newPassword, 10);
+    const hash = bcrypt.hashSync(newPassword, BCRYPT_COST);
 
     const updated = await prisma.user.update({
       where: { id: userId },

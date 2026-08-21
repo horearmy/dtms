@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { getSession, setSession } from '@/lib/auth';
 import { logAudit, runWithTenant } from '@/lib/api-guard';
-import { validatePassword } from '@/lib/security';
+import { validatePassword, BCRYPT_COST } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password baru harus berbeda dari password lama' }, { status: 400 });
     }
 
-    const hash = bcrypt.hashSync(newPassword, 10);
+    const hash = bcrypt.hashSync(newPassword, BCRYPT_COST);
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {

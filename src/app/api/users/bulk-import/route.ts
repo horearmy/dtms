@@ -4,7 +4,7 @@ import type { Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant, guardPlanLimit } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
-import { generateRandomPassword } from '@/lib/security';
+import { generateRandomPassword, BCRYPT_COST } from '@/lib/security';
 
 const ASSIGNABLE_ROLES: string[] = [
   'SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER', 'WAREHOUSE',
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
           data: {
             name,
             username: username.toLowerCase(),
-            passwordHash: bcrypt.hashSync(password, 10),
+            passwordHash: bcrypt.hashSync(password, BCRYPT_COST),
             role: role as Role,
             phone: phone || null,
             tenantId,

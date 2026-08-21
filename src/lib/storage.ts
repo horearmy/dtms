@@ -37,7 +37,7 @@ interface UploadOptions {
 
 // ─── Public API ──────────────────────────────────────────
 export async function uploadFile(opts: UploadOptions): Promise<StorageResult> {
-  const key = buildKey(opts.tenantId, opts.category, opts.entityId, opts.fileName);
+  const key = buildKey(opts.tenantId, opts.category, opts.entityId, opts.fileName, opts.mimeType);
   const checksum = crypto.createHash('sha256').update(opts.buffer).digest('hex');
 
   if (STORAGE_TYPE === 's3') {
@@ -61,11 +61,34 @@ export function getFileUrl(key: string): string {
 }
 
 // ─── Key Builder ─────────────────────────────────────────
-function buildKey(tenantId: string, category: string, entityId: string | undefined, fileName: string): string {
-  const ext = path.extname(fileName);
+const SAFE_SEGMENT = /^[a-z0-9_-]+$/i;
+const EXT_MIME_MAP: Record<string, string[]> = {
+  '.jpg': ['image/jpeg'], '.jpeg': ['image/jpeg'],
+  '.png': ['image/png'], '.webp': ['image/webp'],
+  '.pdf': ['application/pdf'],
+};
+
+function sanitizeSegment(value: string, fallback: string): string {
+  const cleaned = value.replace(/[^a-zA-Z0-9_-]/g, '');
+  return cleaned || fallback;
+}
+
+function validateExtension(fileName: string, mimeType: string): string {
+  const ext = path.extname(fileName).toLowerCase();
+  const allowed = EXT_MIME_MAP[ext];
+  if (!allowed || !allowed.includes(mimeType)) {
+    return '.bin';
+  }
+  return ext;
+}
+
+function buildKey(tenantId: string, category: string, entityId: string | undefined, fileName: string, mimeType: string): string {
+  const safeCategory = sanitizeSegment(category, 'general');
+  const safeEntityId = entityId ? sanitizeSegment(entityId, 'general') : 'general';
+  const ext = validateExtension(fileName, mimeType);
   const hash = crypto.randomBytes(8).toString('hex');
   const date = new Date().toISOString().slice(0, 10);
-  return `tenant/${tenantId}/${category}/${date}/${entityId || 'general'}/${hash}${ext}`;
+  return `tenant/${tenantId}/${safeCategory}/${date}/${safeEntityId}/${hash}${ext}`;
 }
 
 // ─── Local Storage ───────────────────────────────────────

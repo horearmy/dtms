@@ -74,7 +74,7 @@ function addSecurityHeaders(res: NextResponse): NextResponse {
   res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   res.headers.set('Content-Security-Policy', [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://*.google.com https://*.basemaps.cartocdn.com",
     "media-src 'self' blob:",
@@ -173,7 +173,7 @@ export async function middleware(req: NextRequest) {
   const isDriverRoute = pathname === '/driver' || pathname.startsWith('/driver/');
   const isOpsDash = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
   const isUsersRoute = pathname === '/users' || pathname.startsWith('/users/');
-  const isSuperAdminOnlyRoute = pathname === '/tenants' || pathname.startsWith('/tenants/') || pathname === '/demo-requests' || pathname.startsWith('/demo-requests/') || pathname === '/audit' || pathname.startsWith('/audit/') || pathname === '/account' || pathname.startsWith('/account/') || pathname === '/komunikasi' || pathname.startsWith('/komunikasi/') || pathname === '/global-control-tower' || pathname.startsWith('/global-control-tower/');
+  const isSuperAdminOnlyRoute = pathname === '/tenants' || pathname.startsWith('/tenants/') || pathname === '/demo-requests' || pathname.startsWith('/demo-requests/') || pathname === '/audit' || pathname.startsWith('/audit/') || pathname === '/account' || pathname.startsWith('/account/') || pathname === '/komunikasi' || pathname.startsWith('/komunikasi/') || pathname === '/global-control-tower' || pathname.startsWith('/global-control-tower/') || pathname === '/security' || pathname.startsWith('/security/');
   const isOperationalRoute = !isSuperAdminOnlyRoute && !isDriverRoute && pathname !== '/tracking' && pathname !== '/login' && !pathname.startsWith('/tracking/') && !pathname.startsWith('/api/') && pathname !== '/billing' && !pathname.startsWith('/billing/');
 
   try {
@@ -265,5 +265,20 @@ export const config = {
     '/health/:path*',
     '/billing/:path*',
     '/integrations/:path*',
+    '/analytics/:path*',
+    '/branches/:path*',
+    '/departments/:path*',
+    '/hubs/:path*',
+    '/hierarchy/:path*',
+    '/notifications/:path*',
+    '/organizations/:path*',
+    '/regions/:path*',
+    '/roles/:path*',
+    '/warehouses/:path*',
+    '/komunikasi/:path*',
+    '/global-control-tower/:path*',
+    '/tenant-health/:path*',
+    '/tenant-onboarding/:path*',
+    '/security/:path*',
   ],
 };

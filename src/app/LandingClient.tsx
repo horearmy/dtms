@@ -81,7 +81,7 @@ export default function LandingClient() {
         </div>
       </section>
 
-      <section id="features" className="px-4 py-20 sm:px-6 lg:px-8">
+      <section id="features" className="scroll-mt-20 px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">Fitur Lengkap untuk Logistik Modern</h2>
@@ -149,7 +149,7 @@ export default function LandingClient() {
         </div>
       </section>
 
-      <section id="pricing" className="px-4 py-20 sm:px-6 lg:px-8">
+      <section id="pricing" className="scroll-mt-20 px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">Harga yang Fleksibel</h2>
@@ -157,7 +157,7 @@ export default function LandingClient() {
               Mulai gratis, upgrade sesuai kebutuhan. Tidak ada biaya tersembunyi.
             </p>
           </div>
-          <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             {PRICING_PLANS.map((plan) => (
               <div
                 key={plan.name}
@@ -204,7 +204,7 @@ export default function LandingClient() {
         </div>
       </section>
 
-      <section id="demo" className="bg-gray-50 px-4 py-20 sm:px-6 lg:px-8">
+      <section id="demo" className="scroll-mt-20 bg-gray-50 px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>

@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { setSession } from '@/lib/auth';
 import { logAudit, runWithTenant } from '@/lib/api-guard';
-import { validatePassword } from '@/lib/security';
+import { validatePassword, BCRYPT_COST } from '@/lib/security';
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   const user = resetToken.user;
-  const hash = bcrypt.hashSync(newPassword, 10);
+  const hash = bcrypt.hashSync(newPassword, BCRYPT_COST);
 
   return runWithTenant(user.tenantId, async () => {
     await prisma.$transaction([

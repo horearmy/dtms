@@ -4,7 +4,7 @@ import type { Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
-import { validatePassword } from '@/lib/security';
+import { validatePassword, BCRYPT_COST } from '@/lib/security';
 
 const ASSIGNABLE_ROLES: string[] = [
   'SUPER_ADMIN',
@@ -62,7 +62,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         status,
       };
       if (password) {
-        data.passwordHash = bcrypt.hashSync(password, 10);
+        data.passwordHash = bcrypt.hashSync(password, BCRYPT_COST);
         data.pwdVersion = { increment: 1 };
         data.mustChangePassword = false;
         data.lastPasswordChange = new Date();

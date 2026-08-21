@@ -58,12 +58,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ resi
     vehicle: shipment.assignments[0]?.vehicle?.vehicleNumber || null,
     createdAt: shipment.createdAt,
     eta,
-    pod: shipment.pods[0] || null,
     timeline: shipment.events.map((e) => ({
       status: e.status,
       notes: e.notes,
-      lat: e.latitude,
-      lng: e.longitude,
       createdAt: e.createdAt,
     })),
   });
