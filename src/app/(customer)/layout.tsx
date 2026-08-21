@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Package, MapPin, FileText, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,13 @@ const nav = [
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/');
+    router.refresh();
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -22,9 +29,9 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">C</div>
           <span className="text-sm font-bold text-gray-900">DTMS Customer Portal</span>
         </div>
-        <Link href="/api/auth/logout" className="rounded-lg p-2 text-gray-400 hover:bg-gray-100">
+        <button onClick={logout} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100">
           <LogOut size={18} />
-        </Link>
+        </button>
       </div>
 
       <main className="pb-20">{children}</main>
