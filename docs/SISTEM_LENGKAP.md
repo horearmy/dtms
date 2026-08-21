@@ -25,6 +25,8 @@
 16. [Konfigurasi & Environment](#16-konfigurasi--environment)
 17. [Keamanan (OWASP Top 10)](#17-keamanan-owasp-top-10)
 18. [Deployment & Operasional](#18-deployment--operasional)
+19. [Stress Testing & Performance](#19-stress-testing--performance)
+20. [Changelog & Git History](#20-changelog--git-history)
 
 ---
 
@@ -1446,11 +1448,13 @@ npx vitest run src/integration/__tests__/auth.test.ts
 
 | Script | Fungsi |
 |--------|--------|
+| `stress-burst.ts` | Stress test: 1M+ hierarchi + 1M+ region + tracking events |
+| `perf-query.ts` | Direct DB query performance test (27 queries) |
+| `perf-stress.ts` | API endpoint performance test (perlu dev server) |
 | `bulk-seed.ts` | Bulk data seeding (10K tenants, 10M records) |
 | `burst-drivers.ts` | GPS burst testing |
 | `clear-attempts.js` | Hapus semua LoginAttempt records |
 | `clear-attempts.ts` | TypeScript version |
-| `perf-stress.ts` | Performance stress testing |
 | `alert-scheduler.js` | SLA & GPS alert daemon |
 | `send-whatsapp-test.js` | Test WhatsApp sending |
 | `test-billing.js` | Test billing flow |
@@ -1660,6 +1664,158 @@ npm run alerts:scheduler
 
 # Performance stress test
 npx tsx scripts/perf-stress.ts
+```
+
+---
+
+---
+
+## 19. Stress Testing & Performance
+
+### 19.1 Overview
+
+DTMS dilengkapi script stress test untuk menguji performa database dan API pada skala besar (10M+ records). Testing dilakukan langsung terhadap PostgreSQL tanpa perlu dev server.
+
+### 19.2 Scripts
+
+| Script | Fungsi | Output |
+|--------|--------|--------|
+| `scripts/stress-burst.ts` | Bulk data seeding: 1M+ hierarchi, 1M+ region, tracking events | 10M+ rows across 8 tabel |
+| `scripts/perf-query.ts` | Direct DB query performance test (27 queries) | Latency metrics (p50, p95, avg) |
+| `scripts/perf-stress.ts` | API endpoint stress test (requires dev server) | HTTP response times |
+
+### 19.3 Configuration
+
+Environment variables untuk `stress-burst.ts`:
+
+```env
+# Jumlah hierarchy (Organization + Branch) per tenant
+HIERARCHY_TOTAL=1000000
+
+# Jumlah region per tenant
+REGION_TOTAL=1000000
+
+# Shipment per driver (untuk tracking events)
+SHIPMENTS_PER_DRIVER=5
+```
+
+### 19.4 Usage
+
+```bash
+# Jalankan stress test (bulk seeding)
+npx tsx scripts/stress-burst.ts
+
+# Dengan custom targets
+HIERARCHY_TOTAL=2000000 REGION_TOTAL=500000 npx tsx scripts/stress-burst.ts
+
+# Jalankan query performance test (tanpa dev server)
+npx tsx scripts/perf-query.ts
+
+# Jalankan API stress test (perlu dev server berjalan)
+npx tsx scripts/perf-stress.ts
+```
+
+### 19.5 Current Database Row Counts
+
+| Tabel | Jumlah Baris | Keterangan |
+|-------|-------------|------------|
+| `Organization` | 1,945,476 | Hierarki organisasi |
+| `Branch` | 3,890,740 | Cabang |
+| `Region` | 5,000,001 | Wilayah |
+| `Shipment` | 10,117,653 | Data pengiriman |
+| `Driver` | 10,000,001 | Data driver |
+| `Vehicle` | 10,000,055 | Data kendaraan |
+| `GpsLog` | 10,000,000 | Log GPS |
+| `TrackingEvent` | 509,839 | Event tracking |
+| `Tenant` | 10,057 | Perusahaan |
+| `User` | 10,004 | Pengguna |
+
+### 19.6 Query Performance Results
+
+Hasil benchmark dari `perf-query.ts` (PostgreSQL langsung):
+
+| Kategori | Jumlah | Rata-rata | Keterangan |
+|----------|--------|-----------|------------|
+| Fast (< 100ms) | 22/27 queries | < 2ms (tenant-scoped) | Semua query tenant-scoped sub-2ms |
+| Medium (100-500ms) | 1/27 | ~200ms | Aggregate dengan filter |
+| Slow (> 500ms) | 4/27 | 1-5s | Aggregate GROUP BY pada 10M+ rows |
+
+**Query tercepat:**
+- Tenant-scoped `findMany`: < 1ms
+- Tenant-scoped `count`: < 1ms
+- `findUnique` by ID: < 1ms
+
+**Query terlambat:**
+- `GROUP BY status` pada 10M+ shipments: ~5s (tanpa index)
+- `GROUP BY serviceType` + `COUNT`: ~3s
+- Aggregate tanpa tenant filter: ~2-5s
+- **Rekomendasi**: Buat materialized views atau indexes khusus untuk aggregate queries
+
+### 19.7 Stress Test Execution Flow
+
+```
+Phase 1: Hierarchy Seeding (Organization + Branch)
+  → 1,000,000 records
+  → Batch: 5,000 per insert
+  → Duration: ~3 menit
+  → Output: Organization + Branch per tenant
+
+Phase 2: Region Seeding
+  → 1,000,000 records
+  → Batch: 5,000 per insert
+  → Duration: ~2 menit
+  → Output: Region per tenant
+
+Phase 3: Tracking Events
+  → Query existing shipments without events
+  → Create TrackingEvent + DeliveryAssignment
+  → Batch: 2,000 per insert
+  → Duration: ~10 menit
+  → Output: Tracking events untuk existing shipments
+```
+
+### 19.8 Performance Optimizations Applied
+
+| Optimasi | Lokasi | Dampak |
+|----------|--------|--------|
+| Paginated `/api/tenants` | `src/app/api/tenants/route.ts` | Hindari load 10K+ tenants |
+| Dashboard `take` limits | `src/app/(ops)/dashboard/page.tsx` | Batasi query result |
+| Notification tenant scoping | `src/app/api/notifications/route.ts` | Filter per tenant |
+| Dynamic `GlobalMap` import | `src/components/` | Code splitting Leaflet |
+| Middleware route updates | `src/middleware.ts` | Super Admin dashboard access |
+
+### 19.9 Known Performance Issues
+
+| Issue | Severity | Solusi |
+|-------|----------|--------|
+| Aggregate GROUP BY pada 10M+ rows | Medium | Materialized views atau indexes khusus |
+| Dashboard queries untuk Super Admin (tanpa tenant filter) | Low | `take` limits sudah diterapkan |
+| In-memory rate limiting | Low | Perlu Redis untuk multi-instance |
+
+---
+
+## 20. Changelog & Git History
+
+### Recent Commits (Agustus 2026)
+
+| Commit | Deskripsi |
+|--------|-----------|
+| `0194941` | fix: add Dashboard link to Super Admin sidebar |
+| `2cd2543` | fix: add /dashboard to isSuperAdminOnlyRoute |
+| `193817f` | feat: add DB query performance test script |
+| `a23bd99` | feat: stress test script (1M hierarchies + 1M regions) |
+| `923a01c` | perf: paginated tenants, dashboard limits, notification scoping |
+| `787daff` | feat: billing UI rewrite (5 tiers, trial banner, addons) |
+| `32f2f3b` | fix: logout redirects to landing page |
+| `a701116` | feat: unified hierarchy dashboard |
+| `0ef8bb0` | fix: permissions seeded for all tenants |
+| `6fc1c6f` | fix: comprehensive bug audit (12 fixes) |
+
+### Git Remote
+
+```
+Origin: https://github.com/horearmy/dtms.git
+Branch: main
 ```
 
 ---
