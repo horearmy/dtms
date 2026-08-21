@@ -42,9 +42,10 @@ export default function TenantProfilePage() {
     try {
       const sessionRes = await fetch('/api/auth/me');
       if (!sessionRes.ok) { setError('Sesi tidak valid'); setLoading(false); return; }
-      const session = await sessionRes.json();
-      if (!session.tenantId) { setError('Akun tidak terkait tenant'); setLoading(false); return; }
-      const res = await fetch(`/api/tenants/${session.tenantId}`);
+      const me = await sessionRes.json();
+      const tenantId = me.user?.tenantId;
+      if (!tenantId) { setError('Akun tidak terkait tenant'); setLoading(false); return; }
+      const res = await fetch(`/api/tenants/${tenantId}`);
       if (res.ok) {
         const t = await res.json();
         setProfile(t);
@@ -55,7 +56,7 @@ export default function TenantProfilePage() {
           timezone: t.timezone || 'Asia/Jakarta', locale: t.locale || 'id-ID', currency: t.currency || 'IDR', domain: t.domain || '',
         });
         try {
-          const wlRes = await fetch(`/api/tenants/${session.tenantId}/white-label`);
+          const wlRes = await fetch(`/api/tenants/${tenantId}/white-label`);
           if (wlRes.ok) { const wl = await wlRes.json(); setForm(f => ({ ...f, appName: wl.appName || '' })); setWlLoaded(true); }
         } catch {}
       }
