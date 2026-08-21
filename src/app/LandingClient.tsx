@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { FEATURES, STATS, PRICING_PLANS } from '@/lib/landing-data';
 import DemoRequestForm from './DemoRequestForm';
-import LoginModal from './LoginModal';
+
+const LoginModal = lazy(() => import('./LoginModal'));
 
 export default function LandingClient() {
   const [showLogin, setShowLogin] = useState(false);
@@ -157,11 +158,11 @@ export default function LandingClient() {
               Mulai gratis, upgrade sesuai kebutuhan. Tidak ada biaya tersembunyi.
             </p>
           </div>
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {PRICING_PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative rounded-2xl border-2 p-8 transition ${
+                className={`relative rounded-2xl border-2 p-6 transition xl:p-8 ${
                   plan.popular
                     ? 'border-[#0D6EFD] shadow-lg'
                     : 'border-[#E4E7EC] hover:border-[#0D6EFD]'
@@ -175,10 +176,10 @@ export default function LandingClient() {
                 <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
                 <p className="mt-2 text-sm text-gray-500">{plan.description}</p>
                 <div className="mt-6">
-                  <span className="text-4xl font-extrabold text-gray-900">{plan.price}</span>
+                  <span className="text-3xl font-extrabold text-gray-900 xl:text-4xl">{plan.price}</span>
                   {plan.period && <span className="text-sm text-gray-500">/{plan.period}</span>}
                 </div>
-                <ul className="mt-8 space-y-3">
+                <ul className="mt-6 space-y-2 xl:mt-8 xl:space-y-3">
                   {plan.features.map((feat) => (
                     <li key={feat} className="flex items-center gap-3 text-sm text-gray-600">
                       <svg className="h-4 w-4 flex-shrink-0 text-[#0D6EFD]" fill="currentColor" viewBox="0 0 20 20">
@@ -190,7 +191,7 @@ export default function LandingClient() {
                 </ul>
                 <a
                   href="#demo"
-                  className={`mt-8 block w-full rounded-xl py-3 text-center text-sm font-semibold transition ${
+                  className={`mt-6 block w-full rounded-xl py-3 text-center text-sm font-semibold transition xl:mt-8 ${
                     plan.popular
                       ? 'bg-[#0D6EFD] text-white hover:bg-[#0B5FD5]'
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -277,7 +278,11 @@ export default function LandingClient() {
         </div>
       </footer>
 
-      <LoginModal open={showLogin} onClose={() => setShowLogin(false)} />
+      {showLogin && (
+        <Suspense>
+          <LoginModal open={showLogin} onClose={() => setShowLogin(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }
