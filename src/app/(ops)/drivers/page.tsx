@@ -32,6 +32,7 @@ export default function DriversPage() {
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [nextEmployeeId, setNextEmployeeId] = useState('DRV-001');
   const pageSize = 20;
 
   const load = useCallback(async () => {
@@ -40,13 +41,14 @@ export default function DriversPage() {
       const data = await res.json();
       setItems(data.items);
       setTotal(data.total);
+      if (data.nextEmployeeId) setNextEmployeeId(data.nextEmployeeId);
     }
   }, [page]);
   useEffect(() => { load(); }, [load]);
 
   function openNew() {
     setEdit(null);
-    setForm({ employeeId: '', name: '', phone: '', photo: null, status: 'ACTIVE', username: '', password: '' });
+    setForm({ employeeId: nextEmployeeId, name: '', phone: '', photo: null, status: 'ACTIVE', username: '', password: '' });
     setMsg('');
     setOpen(true);
   }

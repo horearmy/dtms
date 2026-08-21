@@ -23,6 +23,18 @@ export async function GET(req: NextRequest) {
       include: { user: { select: { username: true } }, _count: { select: { assignments: true } } },
     });
 
+    // Generate next employee ID: DRV-XXX (3-digit zero-padded)
+    const lastDriver = await prisma.driver.findFirst({
+      orderBy: { id: 'desc' },
+      select: { employeeId: true },
+    });
+    let nextNum = total + 1;
+    if (lastDriver?.employeeId) {
+      const match = lastDriver.employeeId.match(/(\d+)$/);
+      if (match) nextNum = Math.max(nextNum, parseInt(match[1], 10) + 1);
+    }
+    const nextEmployeeId = `DRV-${String(nextNum).padStart(3, '0')}`;
+
     const driverIds = drivers.map(d => d.id);
     const [scores, activeTrips] = await Promise.all([
       Promise.all(driverIds.map(id => driverScore(id))),
@@ -41,7 +53,7 @@ export async function GET(req: NextRequest) {
       busy: !!tripMap.get(d.id) || d.returning,
       activeTracking: tripMap.get(d.id) || null,
     }));
-    return NextResponse.json({ items: scored, total, page, pageSize });
+    return NextResponse.json({ items: scored, total, page, pageSize, nextEmployeeId });
   });
 }
 
