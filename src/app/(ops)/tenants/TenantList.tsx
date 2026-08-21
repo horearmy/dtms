@@ -66,7 +66,10 @@ export default function TenantList() {
     try {
       const url = statusFilter ? `/api/tenants?status=${statusFilter}` : '/api/tenants';
       const res = await fetch(url);
-      if (res.ok) setTenants(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setTenants(Array.isArray(data) ? data : data.tenants || []);
+      }
     } catch {}
     setLoading(false);
   }

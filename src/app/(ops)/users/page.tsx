@@ -92,8 +92,9 @@ export default function UsersPage() {
       if (data.isSuperAdmin) {
         const tRes = await fetch('/api/tenants');
         if (tRes.ok) {
-          const tData = await tRes.json();
-          setTenants(tData.map((t: { id: string; name: string }) => ({ id: t.id, name: t.name })));
+          const raw = await tRes.json();
+          const tenantsList = Array.isArray(raw) ? raw : raw.tenants || [];
+          setTenants(tenantsList.map((t: { id: string; name: string }) => ({ id: t.id, name: t.name })));
         }
       }
     }

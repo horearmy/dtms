@@ -19,7 +19,10 @@ export default function TenantHealthDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/api/tenants').then(r => r.json()).then(d => { if (Array.isArray(d)) setTenants(d); }).catch(() => {});
+    fetch('/api/tenants?pageSize=200').then(r => r.json()).then(d => {
+      const list = Array.isArray(d) ? d : d.tenants || [];
+      if (Array.isArray(list)) setTenants(list);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {

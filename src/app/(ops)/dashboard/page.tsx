@@ -26,16 +26,21 @@ export default async function DashboardPage() {
       prisma.shipment.count({ where: { createdAt: { gte: todayStart } } }),
       prisma.shipment.count(),
       prisma.shipment.findMany({
-        where: { status: { notIn: ['DELIVERED', 'RETURNED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'] } },
-        include: { sender: true, receiver: true, assignments: { include: { driver: true } } }
+        where: {
+          status: { notIn: ['DELIVERED', 'RETURNED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'] },
+          ...(session?.tenantId ? { tenantId: session.tenantId } : {}),
+        },
+        include: { sender: true, receiver: true, assignments: { include: { driver: true } } },
+        take: 500,
       }),
-      prisma.shipment.count({ where: { status: 'DELIVERED' } }),
-      prisma.shipment.count({ where: { status: { in: ACTIVE_STATUSES as never[] } } }),
-      prisma.shipment.count({ where: { status: 'DELIVERY_FAILED' } }),
-      prisma.shipment.count({ where: { status: 'RETURNED' } }),
-      prisma.driver.count({ where: { status: 'ACTIVE' } }),
-      prisma.vehicle.count({ where: { status: { in: ['AVAILABLE', 'IN_USE'] } } }),
+      prisma.shipment.count({ where: { status: 'DELIVERED', ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
+      prisma.shipment.count({ where: { status: { in: ACTIVE_STATUSES as never[] }, ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
+      prisma.shipment.count({ where: { status: 'DELIVERY_FAILED', ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
+      prisma.shipment.count({ where: { status: 'RETURNED', ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
+      prisma.driver.count({ where: { status: 'ACTIVE', ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
+      prisma.vehicle.count({ where: { status: { in: ['AVAILABLE', 'IN_USE'] }, ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
       prisma.shipment.findMany({
+        where: session?.tenantId ? { tenantId: session.tenantId } : {},
         orderBy: { createdAt: 'desc' },
         take: 8,
         include: { sender: true, receiver: true, assignments: { include: { driver: true } } },
@@ -46,6 +51,7 @@ export default async function DashboardPage() {
           ...(session?.tenantId ? { shipment: { tenantId: session.tenantId } } : {}),
         },
         select: { shipmentId: true, createdAt: true },
+        take: 200,
       }),
       prisma.trackingEvent.findMany({
         where: {
@@ -53,6 +59,7 @@ export default async function DashboardPage() {
           ...(session?.tenantId ? { shipment: { tenantId: session.tenantId } } : {}),
         },
         select: { shipmentId: true, createdAt: true },
+        take: 200,
       }),
       prisma.geofenceEvent.findMany({
         where: session?.tenantId ? { geofence: { tenantId: session.tenantId } } : {},
@@ -71,9 +78,10 @@ export default async function DashboardPage() {
         orderBy: { createdAt: 'desc' },
         take: 5,
       }),
-      prisma.branch.count({}),
-      prisma.branch.count({ where: { active: true } }),
+      prisma.branch.count({ where: session?.tenantId ? { tenantId: session.tenantId } : {} }),
+      prisma.branch.count({ where: { active: true, ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
       prisma.branch.findMany({
+        where: session?.tenantId ? { tenantId: session.tenantId } : {},
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {

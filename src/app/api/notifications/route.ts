@@ -28,7 +28,7 @@ export async function GET() {
             { shipment: { tenantId: session.tenantId } },
             { userId: { not: null } },
           ] }
-        : {};
+        : { userId: session!.id };
       items = await prisma.notification.findMany({
         where: tenantFilter,
         orderBy: { createdAt: 'desc' },

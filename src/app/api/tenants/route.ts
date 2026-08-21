@@ -10,24 +10,39 @@ export async function GET(req: NextRequest) {
   }
 
   const status = req.nextUrl.searchParams.get('status') || '';
+  const search = req.nextUrl.searchParams.get('search') || '';
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
+  const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get('pageSize') || '50', 10)));
+  const skip = (page - 1) * pageSize;
+
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
+  if (search) where.OR = [
+    { name: { contains: search, mode: 'insensitive' } },
+    { slug: { contains: search, mode: 'insensitive' } },
+    { code: { contains: search, mode: 'insensitive' } },
+  ];
 
-  const tenants = await prisma.tenant.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      _count: { select: { users: true, drivers: true, shipments: true } },
-      subscription: {
-        select: {
-          id: true, status: true, billingCycle: true, currentPeriodStart: true, currentPeriodEnd: true, cancelledAt: true,
-          plan: { select: { code: true, name: true } },
+  const [tenants, total] = await Promise.all([
+    prisma.tenant.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+      include: {
+        _count: { select: { users: true, drivers: true, shipments: true } },
+        subscription: {
+          select: {
+            id: true, status: true, billingCycle: true, currentPeriodStart: true, currentPeriodEnd: true, cancelledAt: true,
+            plan: { select: { code: true, name: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.tenant.count({ where }),
+  ]);
 
-  return NextResponse.json(tenants);
+  return NextResponse.json({ tenants, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 }
 
 export async function POST(req: NextRequest) {

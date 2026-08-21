@@ -35,7 +35,7 @@ export default function KomunikasiPage() {
   useEffect(() => {
     fetch('/api/tenants')
       .then((r) => r.json())
-      .then((data) => setTenants(Array.isArray(data) ? data : data.items || []));
+      .then((data) => setTenants(Array.isArray(data) ? data : data.tenants || []));
   }, []);
 
   const loadMessages = useCallback(async () => {

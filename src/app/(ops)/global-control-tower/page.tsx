@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import dynamic from 'next/dynamic';
 import { formatDateTime } from '@/lib/constants';
 import { Modal, inputCls, btnPrimary, btnGhost } from '@/components/ui';
 import { Activity, Shield, Zap, AlertTriangle, CheckCircle, XCircle, Users, Truck } from 'lucide-react';
+
+const GlobalMap = dynamic(() => import('./GlobalMap'), { ssr: false, loading: () => <div className="flex h-full items-center justify-center bg-gray-50 text-sm text-[#667085]">Memuat peta...</div> });
 
 type TenantThrottle = {
   id: string;
@@ -37,54 +37,6 @@ type TenantStat = {
   driverCount: number;
   pointCount: number;
 };
-
-function HeatmapLayer({ points }: { points: HeatPoint[] }) {
-  const map = useMap();
-  const layerRef = useRef<L.Layer | null>(null);
-  const readyRef = useRef(false);
-
-  useEffect(() => {
-    if (!map || readyRef.current) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).L = L;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
-    try { require('leaflet.heat'); } catch {}
-    readyRef.current = true;
-  }, [map]);
-
-  useEffect(() => {
-    if (!map || !readyRef.current) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const LMod = (window as any).L as typeof L & { heatLayer?: (...args: unknown[]) => L.Layer };
-    if (layerRef.current) {
-      map.removeLayer(layerRef.current);
-    }
-    const heatData: [number, number, number][] = points.map((p) => [p.lat, p.lng, p.intensity]);
-    if (!LMod.heatLayer) return;
-    const heat = LMod.heatLayer(heatData, {
-      radius: 25,
-      blur: 15,
-      maxZoom: 17,
-      max: 1.0,
-      gradient: {
-        0.2: '#2563eb',
-        0.4: '#3b82f6',
-        0.6: '#f59e0b',
-        0.8: '#ef4444',
-        1.0: '#dc2626',
-      },
-    }).addTo(map);
-    layerRef.current = heat;
-    return () => {
-      if (layerRef.current && map) {
-        map.removeLayer(layerRef.current);
-        layerRef.current = null;
-      }
-    };
-  }, [map, points]);
-
-  return null;
-}
 
 export default function GlobalControlTowerPage() {
   const [tenants, setTenants] = useState<TenantThrottle[]>([]);
@@ -293,14 +245,7 @@ export default function GlobalControlTowerPage() {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
         {/* Heatmap */}
         <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white" style={{ height: '500px' }}>
-          <MapContainer center={mapCenter} zoom={5} style={{ height: '100%', width: '100%' }} zoomControl={true}>
-            <TileLayer
-              url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
-              subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
-              attribution="&copy; Google"
-            />
-            <HeatmapLayer points={heatPoints} />
-          </MapContainer>
+          <GlobalMap center={mapCenter} points={heatPoints} />
         </div>
 
         {/* Tenant Throttle Panel */}
