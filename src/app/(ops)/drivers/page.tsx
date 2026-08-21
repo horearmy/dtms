@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
 import PhotoField from '@/components/PhotoField';
 import DriverDetailModal from '@/components/DriverDetailModal';
@@ -30,6 +31,7 @@ export default function DriversPage() {
   const [edit, setEdit] = useState<Driver | null>(null);
   const [form, setForm] = useState({ employeeId: '', name: '', phone: '', photo: null as string | null, status: 'ACTIVE', username: '', password: '' });
   const [usernameEdited, setUsernameEdited] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export default function DriversPage() {
     setEdit(null);
     setForm({ employeeId: nextEmployeeId, name: '', phone: '', photo: null, status: 'ACTIVE', username: '', password: '' });
     setUsernameEdited(false);
+    setShowPassword(false);
     setMsg('');
     setOpen(true);
   }
@@ -66,6 +69,7 @@ export default function DriversPage() {
       password: '',
     });
     setUsernameEdited(true);
+    setShowPassword(false);
     setMsg('');
     setOpen(true);
   }
@@ -187,7 +191,7 @@ export default function DriversPage() {
                       updates.username = name.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/(^\.|\.$)/g, '');
                     }
                     setForm(updates);
-                  }} className={inputCls} />
+                  }} className={inputCls} placeholder="Nama lengkap driver" />
                 </Field>
               </div>
               <div>
@@ -215,17 +219,30 @@ export default function DriversPage() {
                       onChange={(e) => { setUsernameEdited(true); setForm({ ...form, username: e.target.value }); }}
                       className={inputCls}
                       placeholder={edit ? 'ketik utk buat akun' : 'mis. driver3'}
+                      autoComplete="new-username"
+                      name="driver_username"
                     />
                   )}
                 </Field>
                 <Field label={edit && edit.user ? 'Password Baru' : edit ? 'Password (buat akun)' : 'Password Akun'}>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className={inputCls}
-                    placeholder={edit && edit.user ? 'kosongkan jika tidak diganti' : 'min. 8 karakter'}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      className={inputCls + ' pr-9'}
+                      placeholder={edit && edit.user ? 'kosongkan jika tidak diganti' : 'min. 8 karakter'}
+                      autoComplete="new-password"
+                      name="driver_password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#667085] hover:text-[#101828]"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </Field>
               </div>
               <p className="mt-2 text-[11px] text-[#667085]">
