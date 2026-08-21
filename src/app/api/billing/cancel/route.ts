@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { cancelSubscription, generateInvoice, getTenantSubscription } from '@/lib/billing';
+import { setSession } from '@/lib/auth';
 
 // POST — cancel subscription (downgrade to FREE)
 export async function POST(req: NextRequest) {
@@ -12,6 +13,16 @@ export async function POST(req: NextRequest) {
     try {
       const oldSub = await getTenantSubscription(session?.tenantId || '');
       await cancelSubscription(session?.tenantId || '');
+
+      // Re-issue JWT so middleware picks up FREE plan features immediately
+      await setSession({
+        id: session!.id,
+        name: session!.name,
+        username: session!.username,
+        role: session!.role,
+        tenantId: session!.tenantId,
+        branchId: session!.branchId,
+      });
 
       await logAudit(session, 'CANCEL_SUBSCRIPTION', 'BILLING', {
         oldData: oldSub ? { plan: oldSub.plan.code } : null,

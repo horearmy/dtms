@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardPermission, guard, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { getPlans, getTenantSubscription, getUsageSummary, createSubscription } from '@/lib/billing';
+import { setSession } from '@/lib/auth';
 
 // GET — plans + current subscription + usage (any authenticated user)
 export async function GET() {
@@ -40,6 +41,16 @@ export async function POST(req: NextRequest) {
     try {
       const oldSub = await getTenantSubscription(session?.tenantId || '');
       const subscription = await createSubscription(session?.tenantId || '', planCode, billingCycle);
+
+      // Re-issue JWT so middleware picks up new planFeatures immediately
+      await setSession({
+        id: session!.id,
+        name: session!.name,
+        username: session!.username,
+        role: session!.role,
+        tenantId: session!.tenantId,
+        branchId: session!.branchId,
+      });
 
       await logAudit(session, 'SUBSCRIBE_PLAN', 'BILLING', {
         oldData: oldSub ? { plan: oldSub.plan.code } : null,
