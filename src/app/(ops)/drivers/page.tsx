@@ -6,6 +6,7 @@ import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/compon
 import PhotoField from '@/components/PhotoField';
 import DriverDetailModal from '@/components/DriverDetailModal';
 import Pagination from '@/components/Pagination';
+import PhoneInput from '@/components/PhoneInput';
 import { formatDate } from '@/lib/constants';
 
 type Driver = {
@@ -199,7 +200,7 @@ export default function DriversPage() {
               </div>
             </div>
             <Field label="Telepon" required>
-              <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
+              <PhoneInput value={form.phone} onChange={(phone) => setForm({ ...form, phone })} className={inputCls} />
             </Field>
             <Field label="Status">
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputCls}>
