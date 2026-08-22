@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { formatDateTime } from '@/lib/constants';
 import { Modal, inputCls, btnPrimary, btnGhost } from '@/components/ui';
-import { Activity, Shield, Zap, AlertTriangle, CheckCircle, XCircle, Users, Truck } from 'lucide-react';
+import { Activity, Shield, AlertTriangle, CheckCircle, XCircle, Users, Truck, X, Search, MapPin } from 'lucide-react';
+import type { DriverPoint } from './GlobalMap';
 
 const GlobalMap = dynamic(() => import('./GlobalMap'), { ssr: false, loading: () => <div className="flex h-full items-center justify-center bg-gray-50 text-sm text-[#667085]">Memuat peta...</div> });
 
@@ -30,6 +30,7 @@ type HeatPoint = {
   tenantId: string;
   tenantName: string;
   driverName: string;
+  driverId: string;
 };
 
 type TenantStat = {
@@ -62,6 +63,9 @@ export default function GlobalControlTowerPage() {
     currentErrors: number;
     activeIntegrations: number;
   } | null>(null);
+  const [showDriverSidebar, setShowDriverSidebar] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<DriverPoint | null>(null);
+  const [driverSearch, setDriverSearch] = useState('');
 
   const loadTenants = useCallback(async () => {
     try {
@@ -144,6 +148,15 @@ export default function GlobalControlTowerPage() {
   const blockedTenants = tenants.filter((t) => t.rateLimit?.blocked);
   const activeTenants = tenants.filter((t) => (t.rateLimit?.active ?? t.active) && !t.rateLimit?.blocked);
 
+  const filteredDrivers = heatPoints.filter((d) =>
+    driverSearch ? d.driverName.toLowerCase().includes(driverSearch.toLowerCase()) || d.tenantName.toLowerCase().includes(driverSearch.toLowerCase()) : true
+  );
+
+  const groupedByTenant = filteredDrivers.reduce<Record<string, DriverPoint[]>>((acc, d) => {
+    (acc[d.tenantName] = acc[d.tenantName] || []).push(d);
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -166,7 +179,10 @@ export default function GlobalControlTowerPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-        <div className="rounded-xl border border-[#E4E7EC] bg-white p-4">
+        <button
+          onClick={() => { setShowDriverSidebar(!showDriverSidebar); setSelectedDriver(null); setDriverSearch(''); }}
+          className={`rounded-xl border bg-white p-4 text-left transition hover:shadow-md ${showDriverSidebar ? 'border-[#0D6EFD] ring-1 ring-[#0D6EFD]' : 'border-[#E4E7EC]'}`}
+        >
           <div className="flex items-center gap-2 text-xs text-[#667085]">
             <Truck size={14} /> Active Drivers
           </div>
@@ -176,7 +192,7 @@ export default function GlobalControlTowerPage() {
               {trends.driverTrend > 0 ? '+' : ''}{trends.driverTrend}% vs jam lalu
             </div>
           )}
-        </div>
+        </button>
         <div className="rounded-xl border border-[#E4E7EC] bg-white p-4">
           <div className="flex items-center gap-2 text-xs text-[#667085]">
             <Users size={14} /> Active Tenants
@@ -243,9 +259,72 @@ export default function GlobalControlTowerPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-        {/* Heatmap */}
-        <div className="overflow-hidden rounded-xl border border-[#E4E7EC] bg-white" style={{ height: '500px' }}>
-          <GlobalMap center={mapCenter} points={heatPoints} />
+        {/* Heatmap + Driver Sidebar */}
+        <div className="relative overflow-hidden rounded-xl border border-[#E4E7EC] bg-white" style={{ height: '500px' }}>
+          <GlobalMap center={mapCenter} points={heatPoints} selectedDriver={selectedDriver} />
+
+          {/* Driver Sidebar Overlay */}
+          {showDriverSidebar && (
+            <div className="absolute right-0 top-0 z-[1000] flex h-full w-[340px] flex-col border-l border-[#E4E7EC] bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-[#E4E7EC] px-4 py-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#101828]">Driver Aktif</h3>
+                  <p className="text-[10px] text-[#667085]">{heatPoints.length} driver sedang online</p>
+                </div>
+                <button onClick={() => { setShowDriverSidebar(false); setSelectedDriver(null); }} className="rounded-lg p-1.5 text-[#667085] hover:bg-[#F7F9FC] hover:text-[#101828]">
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="border-b border-[#E4E7EC] px-4 py-2">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]" />
+                  <input
+                    type="text"
+                    value={driverSearch}
+                    onChange={(e) => setDriverSearch(e.target.value)}
+                    placeholder="Cari driver atau perusahaan..."
+                    className="w-full rounded-lg border border-[#E4E7EC] bg-[#F7F9FC] py-2 pl-9 pr-3 text-xs text-[#101828] placeholder:text-[#667085] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
+                  />
+                </div>
+              </div>
+
+              {/* Driver List */}
+              <div className="flex-1 overflow-y-auto">
+                {Object.entries(groupedByTenant).length === 0 ? (
+                  <div className="py-10 text-center text-xs text-[#667085]">Tidak ada driver ditemukan</div>
+                ) : (
+                  Object.entries(groupedByTenant).map(([tenant, drivers]) => (
+                    <div key={tenant}>
+                      <div className="sticky top-0 z-10 border-b border-[#E4E7EC] bg-[#F7F9FC] px-4 py-1.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#667085]">{tenant}</span>
+                        <span className="ml-1.5 text-[10px] text-[#667085]">({drivers.length})</span>
+                      </div>
+                      {drivers.map((d) => (
+                        <button
+                          key={d.driverId}
+                          onClick={() => setSelectedDriver(selectedDriver?.driverId === d.driverId ? null : d)}
+                          className={`w-full border-b border-[#E4E7EC] px-4 py-2.5 text-left transition last:border-0 hover:bg-[#F7F9FC] ${selectedDriver?.driverId === d.driverId ? 'bg-[#E7F0FF]' : ''}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${selectedDriver?.driverId === d.driverId ? 'bg-[#0D6EFD] animate-pulse' : 'bg-[#10B981]'}`}>
+                              <MapPin size={12} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-xs font-medium text-[#101828]">{d.driverName}</div>
+                              <div className="text-[10px] text-[#667085]">{d.lat.toFixed(4)}, {d.lng.toFixed(4)}</div>
+                            </div>
+                            <div className={`h-2 w-2 shrink-0 rounded-full ${selectedDriver?.driverId === d.driverId ? 'bg-[#0D6EFD] animate-pulse' : 'bg-[#10B981]'}`} />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tenant Throttle Panel */}

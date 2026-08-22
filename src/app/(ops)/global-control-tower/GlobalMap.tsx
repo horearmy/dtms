@@ -5,9 +5,9 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-type HeatPoint = { lat: number; lng: number; intensity: number; tenantId: string };
+export type DriverPoint = { lat: number; lng: number; intensity: number; tenantId: string; driverId: string; driverName: string; tenantName: string };
 
-function HeatmapLayer({ points }: { points: HeatPoint[] }) {
+function HeatmapLayer({ points }: { points: DriverPoint[] }) {
   const map = useMap();
   const layerRef = useRef<L.Layer | null>(null);
   const readyRef = useRef(false);
@@ -55,7 +55,47 @@ function HeatmapLayer({ points }: { points: HeatPoint[] }) {
   return null;
 }
 
-export default function GlobalMap({ center, points }: { center: [number, number]; points: HeatPoint[] }) {
+function SelectedDriverMarker({ driver }: { driver: DriverPoint | null }) {
+  const map = useMap();
+  const markerRef = useRef<L.Marker | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+    if (markerRef.current) {
+      map.removeLayer(markerRef.current);
+      markerRef.current = null;
+    }
+    if (!driver) return;
+
+    const pulseIcon = L.divIcon({
+      className: '',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+      html: `<div style="position:relative;width:24px;height:24px;">
+        <div style="position:absolute;inset:0;border-radius:50%;background:rgba(14,165,233,0.3);animation:pulse-ring 1.5s ease-out infinite;"></div>
+        <div style="position:absolute;inset:4px;border-radius:50%;background:#0ea5e9;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>
+      </div>`,
+    });
+
+    const marker = L.marker([driver.lat, driver.lng], { icon: pulseIcon })
+      .addTo(map)
+      .bindPopup(`<b>${driver.driverName}</b><br/>${driver.tenantName}`);
+    markerRef.current = marker;
+
+    map.flyTo([driver.lat, driver.lng], 14, { duration: 1 });
+
+    return () => {
+      if (markerRef.current && map) {
+        map.removeLayer(markerRef.current);
+        markerRef.current = null;
+      }
+    };
+  }, [map, driver]);
+
+  return null;
+}
+
+export default function GlobalMap({ center, points, selectedDriver }: { center: [number, number]; points: DriverPoint[]; selectedDriver?: DriverPoint | null }) {
   return (
     <MapContainer center={center} zoom={5} style={{ height: '100%', width: '100%' }} zoomControl={true}>
       <TileLayer
@@ -64,6 +104,7 @@ export default function GlobalMap({ center, points }: { center: [number, number]
         attribution="&copy; Google"
       />
       <HeatmapLayer points={points} />
+      <SelectedDriverMarker driver={selectedDriver ?? null} />
     </MapContainer>
   );
 }

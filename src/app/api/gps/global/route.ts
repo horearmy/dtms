@@ -66,6 +66,7 @@ export async function GET(req: NextRequest) {
         tenantId: log.driver.tenantId!,
         tenantName: log.driver.tenant?.name || 'Unknown',
         driverName: log.driver.name,
+        driverId: log.driver.id,
       }));
 
     const tenantStats = new Map<string, { name: string; driverCount: number; pointCount: number }>();
