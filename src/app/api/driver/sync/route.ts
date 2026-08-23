@@ -59,18 +59,8 @@ export async function POST(req: NextRequest) {
           }
           case 'POD': {
             const p = action.payload;
-            const pod = await prisma.proofOfDelivery.upsert({
-              where: { shipmentId: p.shipmentId as string },
-              update: {
-                receiverName: p.receiverName as string,
-                signature: p.signature as string | undefined,
-                photo: p.photo as string | undefined,
-                latitude: p.latitude as number | undefined,
-                longitude: p.longitude as number | undefined,
-                notes: p.notes as string | undefined,
-                deliveredAt: new Date(action.occurredAt),
-              },
-              create: {
+            const pod = await prisma.proofOfDelivery.create({
+              data: {
                 shipmentId: p.shipmentId as string,
                 receiverName: p.receiverName as string,
                 signature: p.signature as string | undefined,

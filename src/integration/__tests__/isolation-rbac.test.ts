@@ -93,10 +93,10 @@ describe('Tenant Scoping — All list endpoints', () => {
 
 describe('Super Admin — Cross-tenant access', () => {
   it('SA can list all tenants', async () => {
-    const r = await api('GET', '/api/tenants', undefined, superAdmin);
+    const r = await api('GET', '/api/tenants?pageSize=100', undefined, superAdmin);
     expect(r.status).toBe(200);
-    const items = Array.isArray(r.json) ? r.json : r.json.items || [];
-    expect(items.length).toBeGreaterThanOrEqual(10000);
+    const total = r.json.total ?? 0;
+    expect(total).toBeGreaterThanOrEqual(10000);
   }, 30000);
 
   it('SA can access tenant detail', async () => {

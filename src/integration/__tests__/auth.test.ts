@@ -42,7 +42,7 @@ describe('Auth — Login', () => {
   });
 
   it('superadmin login without tenantId → 200', async () => {
-    const r = await api('POST', '/api/auth/login', { username: 'superadmin', password: 'admin123' });
+    const r = await api('POST', '/api/auth/login', { username: 'superadmin', password: process.env.TEST_SA_PASSWORD || 'Admin1234' });
     expect(r.status).toBe(200);
     expect(r.json.role).toBe('SUPER_ADMIN');
   });

@@ -16,8 +16,8 @@ export async function GET(req: NextRequest) {
     const gpsWhere: Record<string, unknown> = { createdAt: { gte: currentStart } };
     const prevGpsWhere: Record<string, unknown> = { createdAt: { gte: prevStart, lt: currentStart } };
     if (!isSuperAdmin) {
-      gpsWhere.driver = { tenantId: session!.tenantId };
-      prevGpsWhere.driver = { tenantId: session!.tenantId };
+      gpsWhere.Driver = { tenantId: session!.tenantId };
+      prevGpsWhere.Driver = { tenantId: session!.tenantId };
     }
 
     const [gpsLogs, prevGpsLogs, blockedCountNow, blockedCountPrev, tenantCountNow, tenantCountPrev] = await Promise.all([

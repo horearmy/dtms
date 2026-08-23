@@ -17,6 +17,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: [".next/**", "node_modules/**", "public/**", "prisma/migrations/**", "scripts/**", "prisma/seed.js", "**/*.test.*"],
+    ignores: ["**/dist/**", "**/.next/**", "**/node_modules/**", "public/**", "prisma/migrations/**", "scripts/**", "prisma/seed.js", "next-env.d.ts", "**/*.config.*", "**/*.test.*"],
   },
 );

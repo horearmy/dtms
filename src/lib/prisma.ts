@@ -26,6 +26,10 @@ const TENANT_SCOPED = new Set([
   'organization', 'region', 'whiteLabel', 'tenantOnboarding', 'tenantHealthMetric',
 ]);
 
+// Model dengan tenantId nullable yang wajib boleh ditulis tanpa konteks tenant
+// (event platform-level: login gagal, aktivitas superadmin, dsb.)
+const FAIL_CLOSED_EXEMPT = new Set(['auditLog']);
+
 function addTenantFilter(args: AnyArgs, tenantId: string): AnyArgs {
   if (!tenantId) return args;
   const existingWhere = args.where ?? {};
@@ -43,6 +47,23 @@ function injectTenantId(data: AnyArgs, tenantId: string): AnyArgs {
   return data;
 }
 
+function assertTenantContext(modelName: string, args: AnyArgs) {
+  // Fail closed: block tenant-scoped writes when no tenant context is set,
+  // unless the caller explicitly sets tenantId in the payload.
+  const data = args?.data;
+  const hasExplicitTenant = data && typeof data === 'object' && !Array.isArray(data) && 'tenantId' in data;
+  if (!hasExplicitTenant) {
+    throw new Error(
+      `TENANT_CONTEXT_MISSING: refusing to write model "${modelName}" without a tenant context. ` +
+      'Wrap the call in runWithTenant(tenantId, ...) or set tenantId explicitly.'
+    );
+  }
+}
+
+export function runWithTenant<T>(tenantId: string | null, fn: () => Promise<T>): Promise<T> {
+  return tenantStore.run(tenantId, fn);
+}
+
 function modelExtension(modelName: string) {
   return {
     // findUnique: run query, then verify tenant ownership on result
@@ -50,31 +71,29 @@ function modelExtension(modelName: string) {
       const result = await query(args);
       if (!result) return null;
       const tenantId = tenantStore.getStore() ?? null;
-      if (!tenantId || !TENANT_SCOPED.has(modelName)) return result;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const r = result as any;
-      if ('tenantId' in r && r.tenantId !== null && r.tenantId !== tenantId) return null;
+      if (tenantId && TENANT_SCOPED.has(modelName)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const r = result as any;
+        if ('tenantId' in r && r.tenantId !== null && r.tenantId !== tenantId) return null;
+      }
       return result;
     },
     async findMany({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
-      return query(addTenantFilter(args, tenantId));
+      return (!tenantId || !TENANT_SCOPED.has(modelName)) ? query(args) : query(addTenantFilter(args, tenantId));
     },
     async findFirst({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
-      return query(addTenantFilter(args, tenantId));
+      return (!tenantId || !TENANT_SCOPED.has(modelName)) ? query(args) : query(addTenantFilter(args, tenantId));
     },
     async count({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
-      return query(addTenantFilter(args, tenantId));
+      return (!tenantId || !TENANT_SCOPED.has(modelName)) ? query(args) : query(addTenantFilter(args, tenantId));
     },
     async create({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
-      return query({ ...args, data: injectTenantId(args.data, tenantId) });
+      if (!tenantId && TENANT_SCOPED.has(modelName) && !FAIL_CLOSED_EXEMPT.has(modelName)) assertTenantContext(modelName, args);
+      return query(!tenantId || !TENANT_SCOPED.has(modelName) ? args : { ...args, data: injectTenantId(args.data, tenantId) });
     },
     async createMany({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
@@ -84,23 +103,19 @@ function modelExtension(modelName: string) {
     },
     async update({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
-      return query(addTenantFilter(args, tenantId));
+      return query((!tenantId || !TENANT_SCOPED.has(modelName)) ? args : addTenantFilter(args, tenantId));
     },
     async updateMany({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
-      return query(addTenantFilter(args, tenantId));
+      return (!tenantId || !TENANT_SCOPED.has(modelName)) ? query(args) : query(addTenantFilter(args, tenantId));
     },
     async delete({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
-      return query(addTenantFilter(args, tenantId));
+      return (!tenantId || !TENANT_SCOPED.has(modelName)) ? query(args) : query(addTenantFilter(args, tenantId));
     },
     async deleteMany({ args, query }: { args: AnyArgs; query: (args: AnyArgs) => Promise<unknown> }) {
       const tenantId = tenantStore.getStore() ?? null;
-      if (!tenantId || !TENANT_SCOPED.has(modelName)) return query(args);
-      return query(addTenantFilter(args, tenantId));
+      return (!tenantId || !TENANT_SCOPED.has(modelName)) ? query(args) : query(addTenantFilter(args, tenantId));
     },
   };
 }

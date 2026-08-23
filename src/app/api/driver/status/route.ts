@@ -76,7 +76,7 @@ export async function GET() {
               createdAt: gps.createdAt,
             }
           : null,
-        active: activeAssignment?.shipment
+        active: activeAssignment?.shipmentId
           ? {
               id: activeAssignment.shipment.id,
               trackingNumber: activeAssignment.shipment.trackingNumber,

@@ -250,14 +250,14 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
       {/* Info cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <InfoCard title="Pengirim">
-          <p className="font-semibold text-[#101828]">{s.sender.name}</p>
+          <p className="font-semibold text-[#101828]">{s.Customer_Shipment_senderIdToCustomer.name}</p>
           <p className="text-xs text-[#667085]">{s.sender.phone}</p>
           <p className="text-xs text-[#667085]">{s.sender.address}, {s.sender.city || ''}</p>
         </InfoCard>
         <InfoCard title="Penerima">
-          <p className="font-semibold text-[#101828]">{s.receiver.name}</p>
-          <p className="text-xs text-[#667085]">{s.receiver.phone}</p>
-          <p className="text-xs text-[#667085]">{s.receiver.address}, {s.receiver.city || ''}</p>
+          <p className="font-semibold text-[#101828]">{s.Customer_Shipment_receiverIdToCustomer.name}</p>
+          <p className="text-xs text-[#667085]">{s.Customer_Shipment_receiverIdToCustomer.phone}</p>
+          <p className="text-xs text-[#667085]">{s.Customer_Shipment_receiverIdToCustomer.address}, {s.Customer_Shipment_receiverIdToCustomer.city || ''}</p>
         </InfoCard>
         <InfoCard title="Pengiriman">
           <div className="space-y-1 text-xs text-[#667085]">
@@ -270,8 +270,8 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         <InfoCard title="Penugasan">
           {assignment ? (
             <div className="space-y-1 text-xs text-[#667085]">
-              <div><b>Driver:</b> {assignment.driver.name}</div>
-              <div><b>Kendaraan:</b> {assignment.vehicle?.vehicleNumber || '-'}</div>
+              <div><b>Driver:</b> {assignment.Driver.name}</div>
+              <div><b>Kendaraan:</b> {assignment.Vehicle?.vehicleNumber || '-'}</div>
               <div><b>Tugas:</b> {formatDateTime(assignment.assignedAt)}</div>
             </div>
           ) : (

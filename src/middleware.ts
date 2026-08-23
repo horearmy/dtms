@@ -91,13 +91,14 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const ip = clientIp(req);
 
-  const PUBLIC_PATHS = ['/', '/login', '/tracking', '/features', '/pricing', '/demo-request', '/track'];
+  const PUBLIC_PATHS = ['/', '/login', '/tracking', '/features', '/pricing', '/demo-request', '/track', '/admin/secure-login'];
   const isPublicPage = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
   const isTrackingApi = pathname.startsWith('/api/tracking/');
   const isTrackingIngest = pathname === '/api/tracking/ingest';
   const isDemoRequestApi = pathname === '/api/demo-request';
   const isTenantListApi = pathname === '/api/auth/tenants';
-  const isPublic = isPublicPage || isTrackingApi || isDemoRequestApi || isTenantListApi;
+  const isSuperadminLoginApi = pathname === '/api/auth/superadmin-login';
+  const isPublic = isPublicPage || isTrackingApi || isDemoRequestApi || isTenantListApi || isSuperadminLoginApi;
 
   if (pathname.startsWith('/api/')) {
     if (isPublic) {
@@ -156,7 +157,10 @@ export async function middleware(req: NextRequest) {
     return addSecurityHeaders(res);
   }
 
-  const token = req.cookies.get(COOKIE_NAME)?.value;
+  // Sesi reguler (dtms_token) atau sesi Super Admin terpisah (dtms_sa_token).
+  // Verifikasi penuh (fingerprint, status user) dilakukan di server via getSession().
+  const token = req.cookies.get(COOKIE_NAME)?.value
+    ?? req.cookies.get('dtms_sa_token')?.value;
   const authHeader = req.headers.get('authorization');
   const isApiKeyRequest = authHeader && authHeader.toLowerCase().startsWith('bearer dtms_');
 

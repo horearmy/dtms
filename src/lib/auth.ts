@@ -83,7 +83,7 @@ async function verifyApiKey(authHeader: string): Promise<SessionUser | null> {
 
   if (!apiKey || !apiKey.active) return null;
   if (apiKey.expiresAt && apiKey.expiresAt < new Date()) return null;
-  if (apiKey.tenant && (!apiKey.tenant.active || apiKey.tenant.status !== 'ACTIVE')) return null;
+  if (apiKey.tenantId && (!apiKey.tenant?.active || apiKey.tenant?.status !== 'ACTIVE')) return null;
 
   await prisma.apiKey.update({
     where: { id: apiKey.id },
@@ -109,6 +109,29 @@ async function verifyApiKey(authHeader: string): Promise<SessionUser | null> {
 
 export async function getSession(): Promise<SessionUser | null> {
   const store = await cookies();
+
+  // Check superadmin secure session first
+  const saToken = store.get('dtms_sa_token')?.value;
+  if (saToken) {
+    const { verifySuperAdminToken, buildFingerprintFromHeaders } = await import('./superadmin-auth');
+    const result = await verifySuperAdminToken(saToken);
+    if (result.valid && result.payload) {
+      const p = result.payload;
+      // Verifikasi fingerprint: token SA terikat pada IP+User-Agent saat login
+      const h = await headers();
+      if (p.fp !== buildFingerprintFromHeaders(h)) {
+        return null;
+      }
+      const user = await prisma.user.findUnique({
+        where: { id: p.id as string },
+        select: { id: true, name: true, username: true, role: true, tenantId: true, branchId: true, status: true, pwdVersion: true },
+      });
+      if (user && user.status === 'ACTIVE' && user.pwdVersion === p.pwd) {
+        return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan: 'FREE', planFeatures: [] };
+      }
+    }
+  }
+
   const token = store.get(COOKIE_NAME)?.value;
 
   if (token) {

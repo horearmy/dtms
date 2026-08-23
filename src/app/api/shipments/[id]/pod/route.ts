@@ -52,9 +52,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     try {
       await prisma.$transaction(async (tx) => {
-        await tx.proofOfDelivery.upsert({
-          where: { shipmentId: id },
-          create: {
+        await tx.proofOfDelivery.create({
+          data: {
             shipmentId: id,
             receiverName: receiverName || shipment.receiver.name,
             signature: signature || null,
@@ -62,14 +61,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             latitude: lat ?? null,
             longitude: lng ?? null,
             notes: notes || null,
-          },
-          update: {
-            receiverName: receiverName || shipment.receiver.name,
-            signature: signature || undefined as string | undefined,
-            photo: photo || undefined as string | undefined,
-            latitude: lat ?? undefined,
-            longitude: lng ?? undefined,
-            notes: notes || undefined as string | undefined,
           },
         });
         await tx.shipment.update({ where: { id }, data: { status: 'DELIVERED' } });

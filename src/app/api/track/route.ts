@@ -53,8 +53,9 @@ export async function GET(req: NextRequest) {
         select: { status: true, notes: true, latitude: true, longitude: true, createdAt: true },
       },
       pods: {
-        select: { receiverName: true, deliveredAt: true, notes: true },
+        orderBy: { deliveredAt: 'desc' },
         take: 1,
+        select: { receiverName: true, deliveredAt: true, notes: true },
       },
     },
   });

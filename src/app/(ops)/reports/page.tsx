@@ -144,7 +144,7 @@ export default async function ReportsPage() {
         <Metric label="Total Shipment" value={totalCount} />
         <Metric label="Delivered" value={deliveries} sub={`${successRate}% sukses`} />
         <Metric label="Gagal Kirim" value={failed} sub={`${failedRate}% dari total`} />
-        <Metric label="Rata-rata Waktu" value={avgHours > 0 ? `${avgHours} jam` : '-'} sub="Order → Delivered" />
+        <Metric label="Rata-rata Waktu" value={avgHours > 0 ? `${avgHours} jam` : '-'} sub="Order â†’ Delivered" />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -181,7 +181,7 @@ export default async function ReportsPage() {
                 <div key={d.id} className="flex items-center justify-between rounded-lg border border-[#E4E7EC] p-3">
                   <div>
                     <div className="text-sm font-semibold text-[#101828]">{d.name}</div>
-                    <div className="text-xs text-[#667085]">{d.employeeId} · {d.stat.delivered} terkirim · {d.stat.failed} gagal · {d.stat.onTime} on-time</div>
+                    <div className="text-xs text-[#667085]">{d.employeeId} Â· {d.stat.delivered} terkirim Â· {d.stat.failed} gagal Â· {d.stat.onTime} on-time</div>
                   </div>
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${scoreColor}`}>
                     {d.stat.score}
@@ -191,13 +191,13 @@ export default async function ReportsPage() {
             })}
             {drivers.length === 0 && <p className="text-sm text-[#667085]">Belum ada driver</p>}
           </div>
-          <p className="mt-3 text-[11px] text-[#667085]">Skor = 50% tingkat penyelesaian + 30% on-time − faktor gagal</p>
+          <p className="mt-3 text-[11px] text-[#667085]">Skor = 50% tingkat penyelesaian + 30% on-time âˆ’ faktor gagal</p>
         </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-          <h2 className="mb-4 text-sm font-bold text-[#101828]">Shipment Trend · 7 Hari</h2>
+          <h2 className="mb-4 text-sm font-bold text-[#101828]">Shipment Trend Â· 7 Hari</h2>
           <div className="flex h-40 items-end gap-2">
             {trend.map((t) => (
               <div key={t.date} className="flex flex-1 flex-col items-center gap-1">
@@ -211,7 +211,7 @@ export default async function ReportsPage() {
         </div>
 
         <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-          <h2 className="mb-4 text-sm font-bold text-[#101828]">Top Destinasi · 7 Hari</h2>
+          <h2 className="mb-4 text-sm font-bold text-[#101828]">Top Destinasi Â· 7 Hari</h2>
           <div className="space-y-2">
             {topDestinations.map(([name, count], i) => (
               <div key={name} className="flex items-center justify-between text-sm">

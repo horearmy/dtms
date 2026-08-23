@@ -14,8 +14,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         maintenanceRecords: { orderBy: { performedAt: 'desc' } },
         assignments: {
           orderBy: { assignedAt: 'desc' },
-          include: {
-            driver: { select: { id: true, name: true, employeeId: true } },
+          include: { driver: { select: { id: true, name: true, employeeId: true } },
             shipment: {
               select: {
                 trackingNumber: true,

@@ -41,8 +41,8 @@ describe('getClientIp', () => {
   const req = (headers: Record<string, string | null>) =>
     ({ headers: { get: (k: string) => (k in headers ? headers[k] : null) } }) as never;
 
-  it('mengambil ip pertama dari x-forwarded-for', () => {
-    expect(getClientIp(req({ 'x-forwarded-for': '203.0.113.5, 10.0.0.1' }))).toBe('203.0.113.5');
+  it('mengambil hop paling kanan dari x-forwarded-for (anti-spoof)', () => {
+    expect(getClientIp(req({ 'x-forwarded-for': '203.0.113.5, 10.0.0.1' }))).toBe('10.0.0.1');
   });
 
   it('fallback ke x-real-ip', () => {

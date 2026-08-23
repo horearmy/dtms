@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       // Scope to current tenant via shipment relation
       const tenantFilter = session?.tenantId
         ? { OR: [
-            { shipment: { tenantId: session.tenantId } },
+            { Shipment: { tenantId: session.tenantId } },
             { userId: session!.id },
           ] }
         : { userId: session!.id };

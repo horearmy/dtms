@@ -28,7 +28,7 @@ type Shipment = {
   sender: { name: string };
   receiver: { name: string };
   stops?: unknown[];
-  assignments: { driver: { name: string }; vehicle: { vehicleNumber: string } | null }[];
+  DeliveryAssignment: { driver: { name: string }; vehicle: { vehicleNumber: string } | null }[];
 };
 
 const STATUS_FILTERS = [
@@ -125,7 +125,7 @@ function ShipmentsInner() {
                   <td className="px-4 py-3 text-[#667085]">{formatNumber(s.weight)} kg</td>
                   <td className="px-4 py-3 text-xs text-[#667085]">{s.serviceType}</td>
                   <td className="px-4 py-3"><StatusBadge status={s.status} /></td>
-                  <td className="px-4 py-3 text-[#667085]">{s.assignments[0]?.driver.name || '-'}</td>
+                  <td className="px-4 py-3 text-[#667085]">{s.DeliveryAssignment[0]?.driver.name || '-'}</td>
                   <td className="px-4 py-3 text-xs text-[#667085]">{formatDateTime(s.createdAt)}</td>
                 </tr>
               ))}

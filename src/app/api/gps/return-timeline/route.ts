@@ -44,8 +44,7 @@ export async function GET(req: NextRequest) {
     const latest = await prisma.deliveryAssignment.findFirst({
       where: { driverId: driver.id },
       orderBy: { assignedAt: 'desc' },
-      select: {
-        shipment: {
+      select: { shipment: {
           select: { origin: true, originLat: true, originLng: true, events: { orderBy: { createdAt: 'desc' }, take: 1 } },
         },
       },

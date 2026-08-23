@@ -9,8 +9,13 @@ const CLEANUP_OLDER_HOURS = 24;
 const EXPONENTIAL_BACKOFF_THRESHOLD = 3;
 
 export function getClientIp(req: NextRequest) {
+  // Ambil hop paling kanan dari X-Forwarded-For (ditambahkan proxy terpercaya kita),
+  // bukan yang pertama (dapat dipalsukan klien).
   const fwd = req.headers.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0].trim();
+  if (fwd) {
+    const parts = fwd.split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1];
+  }
   return req.headers.get('x-real-ip') || 'local';
 }
 

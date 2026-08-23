@@ -36,8 +36,7 @@ export async function GET() {
         take: 50,
       }),
       prisma.deliveryAssignment.findMany({
-        where: {
-          shipment: {
+        where: { shipment: {
             ...tenantFilter,
             status: { in: ['DISPATCHED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'] },
           },

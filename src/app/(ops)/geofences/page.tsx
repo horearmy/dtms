@@ -118,7 +118,7 @@ export default function GeofencesPage() {
                 g.events.map((ev) => (
                   <div key={ev.id} className="flex items-center justify-between text-xs">
                     <span className={ev.eventType === 'ENTER' ? 'font-semibold text-emerald-600' : 'font-semibold text-red-500'}>
-                      {ev.eventType === 'ENTER' ? 'MASUK' : 'KELUAR'} · {ev.driver.name}
+                      {ev.eventType === 'ENTER' ? 'MASUK' : 'KELUAR'} · {ev.driver?.name}
                     </span>
                     <span className="text-[#667085]">{formatDate(ev.createdAt)}</span>
                   </div>

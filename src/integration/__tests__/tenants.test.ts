@@ -16,15 +16,15 @@ beforeAll(async () => {
 
 describe('Tenants — List (GET /api/tenants)', () => {
   it('superadmin → 200 with all tenants', async () => {
-    const r = await api('GET', '/api/tenants', undefined, superAdmin);
+    const r = await api('GET', '/api/tenants?pageSize=100', undefined, superAdmin);
     expect(r.status).toBe(200);
-    const items = Array.isArray(r.json) ? r.json : r.json.items || [];
-    expect(items.length).toBeGreaterThanOrEqual(10000);
+    const total = typeof r.json.total === 'number' ? r.json.total : 0;
+    expect(total).toBeGreaterThanOrEqual(10000);
   }, 30000);
 
-  it('tenant admin can also list tenants', async () => {
+  it('tenant admin cannot list all tenants (SA-only)', async () => {
     const r = await api('GET', '/api/tenants', undefined, tenantA);
-    expect(r.status).toBe(200);
+    expect([401, 403]).toContain(r.status);
   });
 
   it('unauthenticated → 401', async () => {

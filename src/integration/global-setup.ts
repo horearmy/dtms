@@ -12,7 +12,7 @@ const TOKEN_FILE = join(__dirname, '.test-tokens.json');
 const USERS = [
   { key: 'tenantA', username: 'admin00001', password: 'admin123', tenantId: '357011aa-60f3-46cc-b3d6-7b5231c4747f' },
   { key: 'tenantB', username: 'admin00002', password: 'admin123', tenantId: 'f7f63209-f17d-4da5-ac36-65171a291e8b' },
-  { key: 'superAdmin', username: 'superadmin', password: 'admin123', tenantId: undefined },
+  { key: 'superAdmin', username: 'superadmin', password: process.env.TEST_SA_PASSWORD || 'Admin1234', tenantId: undefined },
 ];
 
 async function clearLoginAttempts() {

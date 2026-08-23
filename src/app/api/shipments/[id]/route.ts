@@ -15,8 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         receiver: true,
         items: true,
         assignments: {
-          include: {
-            driver: { include: { gpsLogs: { orderBy: { createdAt: 'desc' }, take: 1 } } },
+          include: { driver: { include: { gpsLogs: { orderBy: { createdAt: 'desc' }, take: 1 } } },
             vehicle: true,
           },
         },

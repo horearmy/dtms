@@ -41,7 +41,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ass
       },
     });
 
-    if (!assignment || !assignment.shipment) {
+    if (!assignment || !assignment.shipmentId) {
       return NextResponse.json({ error: 'Tugas tidak ditemukan' }, { status: 404 });
     }
 

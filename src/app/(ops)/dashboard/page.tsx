@@ -141,14 +141,14 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-[#101828]">Dashboard Operasional</h1>
-        <p className="text-sm text-[#667085]">Ringkasan pengiriman · {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <p className="text-sm text-[#667085]">Ringkasan pengiriman Â· {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Shipment Hari Ini" value={totalToday} sub={`${total} total shipment`} color="bg-white" />
         <StatCard label="Shipment Aktif" value={activeCount} sub="Sedang berjalan" color="bg-white" />
         <StatCard label="Delivered" value={deliveredCount} sub={`${successRate}% sukses`} color="bg-emerald-50" />
-        <StatCard label="Rata-rata Waktu" value={avgHours > 0 ? `${avgHours} jam` : '-'} sub="Order → Delivered" color="bg-white" />
+        <StatCard label="Rata-rata Waktu" value={avgHours > 0 ? `${avgHours} jam` : '-'} sub="Order â†’ Delivered" color="bg-white" />
         <StatCard label="In Transit" value={byStatus['IN_TRANSIT'] || 0} sub="Dalam perjalanan" color="bg-amber-50" />
         <StatCard label="Out for Delivery" value={byStatus['OUT_FOR_DELIVERY'] || 0} sub="Sedang diantar" color="bg-yellow-50" />
         <StatCard label="Gagal Kirim" value={failedCount} sub={`${failedRate}% dari total`} color="bg-red-50" />
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
               <thead>
                 <tr className="border-b bg-[#F7F9FC] text-left text-xs uppercase tracking-wide text-[#667085]">
                   <th className="pb-2 pr-3">Resi</th>
-                  <th className="pb-2 pr-3">Pengirim → Penerima</th>
+                  <th className="pb-2 pr-3">Pengirim â†’ Penerima</th>
                   <th className="pb-2 pr-3">Tujuan</th>
                   <th className="pb-2 pr-3">Status</th>
                   <th className="pb-2">Driver</th>
@@ -181,7 +181,7 @@ export default async function DashboardPage() {
                     <td className="py-2 pr-3 font-mono text-xs text-[#0D6EFD]">
                       <Link href={`/shipments/${s.id}`} className="hover:underline">{s.trackingNumber}</Link>
                     </td>
-                    <td className="py-2 pr-3 text-xs text-[#667085]">{s.sender.name} → {s.receiver.name}</td>
+                    <td className="py-2 pr-3 text-xs text-[#667085]">{s.sender.name} {'→'} {s.receiver.name}</td>
                     <td className="py-2 pr-3 text-xs text-[#667085]">{s.destination}</td>
                     <td className="py-2 pr-3"><StatusBadge status={s.status} /></td>
                     <td className="py-2 text-xs text-[#667085]">{s.assignments[0]?.driver.name || '-'}</td>
@@ -254,7 +254,7 @@ export default async function DashboardPage() {
               {atRiskList.slice(0, 4).map(({ shipment: s, remainingMs }) => (
                 <Link key={s.id} href={`/shipments/${s.id}`} className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs hover:bg-amber-100">
                   <span className="font-mono font-semibold text-amber-800">{s.trackingNumber}</span>
-                  <span className="text-amber-700">At Risk · {s.destination}</span>
+                  <span className="text-amber-700">At Risk Â· {s.destination}</span>
                 </Link>
               ))}
               {slaAlerts.map((n) => (
@@ -280,7 +280,7 @@ export default async function DashboardPage() {
                 <div key={ev.id} className="flex items-center justify-between rounded-lg border border-[#E4E7EC] px-3 py-2 text-xs">
                   <div>
                     <span className={`font-semibold ${ev.eventType === 'ENTER' ? 'text-[#16B364]' : 'text-[#F5222D]'}`}>{ev.eventType === 'ENTER' ? 'MASUK' : 'KELUAR'}</span>
-                    <span className="text-[#667085]"> · {ev.driver.name}</span>
+                    <span className="text-[#667085]"> Â· {ev.driver?.name}</span>
                   </div>
                   <div className="text-right">
                     <div className="font-medium text-[#101828]">{ev.geofence.name}</div>

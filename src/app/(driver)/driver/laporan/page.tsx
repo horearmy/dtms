@@ -123,11 +123,11 @@ function TaskLaporCard({ task, onDone }: { task: Task; onDone: () => void }) {
             <StatusBadge status={s.status} />
           </div>
           <div className="mt-1 text-xs text-[#667085]">
-            Penerima: <b>{s.receiver.name}</b> · {s.receiver.address}, {s.receiver.city}
+            Penerima: <b>{s.receiver.name}</b> Â· {s.receiver.address}, {s.receiver.city}
           </div>
           <div className="text-xs text-[#667085]">
-            Tujuan: {s.destination} · Berat: {formatNumber(s.weight)} kg
-            {task.vehicle ? ` · ${task.vehicle.vehicleNumber}` : ''}
+            Tujuan: {s.destination} Â· Berat: {formatNumber(s.weight)} kg
+            {task.vehicle ? ` Â· ${task.vehicle.vehicleNumber}` : ''}
           </div>
         </div>
         {pod && <span className="rounded-full bg-[#E6F9EF] px-2 py-0.5 text-[11px] font-semibold text-[#16B364]">Laporan terkirim</span>}
@@ -210,7 +210,7 @@ function TaskLaporCard({ task, onDone }: { task: Task; onDone: () => void }) {
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#E6F9EF] p-3">
           <p className="text-sm text-[#16B364]">
             {pod
-              ? `Selesai: diterima ${pod.receiverName} · ${formatDateTime(pod.deliveredAt)}`
+              ? `Selesai: diterima ${pod.receiverName} Â· ${formatDateTime(pod.deliveredAt)}`
               : 'Pengiriman selesai.'}
           </p>
           <Link href={`/driver/tasks/${task.id}`} className={btnGhost + ' !py-1.5'}>Lihat Laporan Resi</Link>
@@ -338,7 +338,7 @@ export default function DriverLaporanPage() {
                 : delivered.length > 0
                   ? `${delivered.length} resi selesai. Kirim laporan kembali ke gudang asal.`
                   : 'Belum ada pengiriman selesai. Laporan kembali tersedia setelah delivery selesai.'}
-              {!returning && returnedAt && ` · Kembali terakhir: ${formatDateTime(returnedAt)}`}
+              {!returning && returnedAt && ` Â· Kembali terakhir: ${formatDateTime(returnedAt)}`}
             </p>
           </div>
           {returning ? (
@@ -390,8 +390,8 @@ export default function DriverLaporanPage() {
               <div className={`mt-2 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold ${gpsResult.on ? 'bg-[#E6F9EF] text-[#16B364]' : 'bg-red-100 text-[#F5222D]'}`}>
                 <span className="h-2 w-2 rounded-full" style={{ background: gpsResult.on ? '#16a34a' : '#dc2626' }} />
                 {gpsResult.on
-                  ? `GPS Aktif · ${gpsResult.lat.toFixed(5)}, ${gpsResult.lng.toFixed(5)} · ${gpsResult.ts}`
-                  : `GPS Mati / Tidak Aktif · ${gpsResult.ts}`}
+                  ? `GPS Aktif Â· ${gpsResult.lat.toFixed(5)}, ${gpsResult.lng.toFixed(5)} Â· ${gpsResult.ts}`
+                  : `GPS Mati / Tidak Aktif Â· ${gpsResult.ts}`}
               </div>
             )}
           </div>

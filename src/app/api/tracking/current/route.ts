@@ -11,18 +11,19 @@ export async function GET() {
 
   return runWithTenant(session?.tenantId ?? null, async () => {
     const tenantCondition = session?.tenantId
-      ? Prisma.sql`AND "tenantId" = ${session.tenantId}`
+      ? Prisma.sql`AND d."tenantId" = ${session.tenantId}`
       : Prisma.sql``;
 
     const rows = await prisma.$queryRaw<
       { driverId: string; vehicleId: string | null; latitude: number; longitude: number; speed: number | null; heading: number | null; battery: number | null; createdAt: Date }[]
     >`
-      SELECT DISTINCT ON ("driverId")
-        "driverId", "vehicleId", "latitude", "longitude", "speed", "heading", "battery", "createdAt"
-      FROM "GpsLog"
-      WHERE "createdAt" > NOW() - INTERVAL '2 hours'
+      SELECT DISTINCT ON (g."driverId")
+        g."driverId", g."vehicleId", g."latitude", g."longitude", g."speed", g."heading", g."battery", g."createdAt"
+      FROM "GpsLog" g
+      JOIN "Driver" d ON d."id" = g."driverId"
+      WHERE g."createdAt" > NOW() - INTERVAL '2 hours'
       ${tenantCondition}
-      ORDER BY "driverId", "createdAt" DESC
+      ORDER BY g."driverId", g."createdAt" DESC
     `;
 
     return NextResponse.json(

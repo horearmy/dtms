@@ -140,7 +140,7 @@ export default function DispatchBoard() {
                   </div>
                   <div className="text-sm text-[#667085]">{a.shipment.destination}</div>
                   <div className="mt-2 flex items-center gap-4 text-xs text-[#667085]">
-                    <span>Driver: <span className="font-medium text-[#101828]">{a.driver.name}</span></span>
+                    <span>driver: <span className="font-medium text-[#101828]">{a.driver.name}</span></span>
                     {a.vehicle && <span>Kendaraan: <span className="font-medium text-[#101828]">{a.vehicle.vehicleNumber}</span></span>}
                     <span>{new Date(a.assignedAt).toLocaleString('id-ID')}</span>
                   </div>

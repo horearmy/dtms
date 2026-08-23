@@ -82,7 +82,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
               createdAt: gps.createdAt,
             }
           : null,
-        active: activeAssignment?.shipment
+        active: activeAssignment?.shipmentId
           ? {
               id: activeAssignment.shipment.id,
               trackingNumber: activeAssignment.shipment.trackingNumber,

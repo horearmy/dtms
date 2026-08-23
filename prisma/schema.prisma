@@ -8,7 +8,7 @@ datasource db {
 }
 
 model ApiKey {
-  id        String    @id
+  id        String    @id @default(cuid())
   tenantId  String
   name      String
   keyHash   String    @unique
@@ -18,13 +18,13 @@ model ApiKey {
   lastUsed  DateTime?
   expiresAt DateTime?
   createdAt DateTime  @default(now())
-  Tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
 
 model AuditLog {
-  id        String   @id
+  id        String   @id @default(cuid())
   userId    String?
   action    String
   module    String
@@ -36,8 +36,8 @@ model AuditLog {
   path      String?
   userAgent String?
   tenantId  String?
-  Tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  User      User?    @relation(fields: [userId], references: [id])
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([createdAt])
   @@index([module])
@@ -46,7 +46,7 @@ model AuditLog {
 }
 
 model Branch {
-  id             String        @id
+  id             String        @id @default(cuid())
   tenantId       String
   companyId      String?
   name           String
@@ -59,17 +59,17 @@ model Branch {
   longitude      Float?
   active         Boolean       @default(true)
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime @updatedAt
   organizationId String?
   regionId       String?
-  Company        Company?      @relation(fields: [companyId], references: [id])
-  Organization   Organization? @relation(fields: [organizationId], references: [id])
-  Region         Region?       @relation(fields: [regionId], references: [id])
-  Tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  Department     Department[]
-  Hub            Hub[]
-  User           User[]
-  Warehouse      Warehouse[]
+  company        Company?      @relation(fields: [companyId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  region         Region?       @relation(fields: [regionId], references: [id])
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  departments     Department[]
+  hubs            Hub[]
+  users           User[]
+  warehouses      Warehouse[]
 
   @@unique([tenantId, code])
   @@index([companyId])
@@ -79,7 +79,7 @@ model Branch {
 }
 
 model Company {
-  id         String       @id
+  id         String       @id @default(cuid())
   tenantId   String
   name       String
   code       String?
@@ -92,17 +92,17 @@ model Company {
   longitude  Float?
   active     Boolean      @default(true)
   createdAt  DateTime     @default(now())
-  updatedAt  DateTime
-  Branch     Branch[]
-  Tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  Department Department[]
+  updatedAt  DateTime @updatedAt
+  branches     Branch[]
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  departments Department[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
 }
 
 model Customer {
-  id                                     String         @id
+  id                                     String         @id @default(cuid())
   name                                   String
   phone                                  String
   email                                  String?
@@ -113,16 +113,16 @@ model Customer {
   latitude                               Float?
   longitude                              Float?
   tenantId                               String?
-  Tenant                                 Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  Shipment_Shipment_receiverIdToCustomer Shipment[]     @relation("Shipment_receiverIdToCustomer")
-  Shipment_Shipment_senderIdToCustomer   Shipment[]     @relation("Shipment_senderIdToCustomer")
-  ShipmentStop                           ShipmentStop[]
+  tenant                                 Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  receivedShipments Shipment[]     @relation("Shipment_receiverIdToCustomer")
+  sentShipments   Shipment[]     @relation("Shipment_senderIdToCustomer")
+  stops                           ShipmentStop[]
 
   @@index([tenantId])
 }
 
 model DailyReport {
-  id               String   @id
+  id               String   @id @default(cuid())
   driverId         String
   reportDate       DateTime
   deliveredCount   Int      @default(0)
@@ -131,22 +131,22 @@ model DailyReport {
   fuelLiter        Float?
   notes            String?
   createdAt        DateTime @default(now())
-  updatedAt        DateTime
-  Driver           Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  updatedAt        DateTime @updatedAt
+  driver           Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   @@unique([driverId, reportDate])
   @@index([reportDate])
 }
 
 model DeliveryAssignment {
-  id         String   @id
+  id         String   @id @default(cuid())
   shipmentId String
   driverId   String
   vehicleId  String?
   assignedAt DateTime @default(now())
-  Driver     Driver   @relation(fields: [driverId], references: [id])
-  Shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  Vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
+  driver     Driver   @relation(fields: [driverId], references: [id])
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
 
   @@index([driverId, assignedAt])
   @@index([shipmentId])
@@ -154,7 +154,7 @@ model DeliveryAssignment {
 }
 
 model DemoRequest {
-  id            String    @id
+  id            String    @id @default(cuid())
   name          String
   email         String
   phone         String?
@@ -164,14 +164,14 @@ model DemoRequest {
   createdAt     DateTime  @default(now())
   provisionedAt DateTime?
   tenantId      String?
-  Tenant        Tenant?   @relation(fields: [tenantId], references: [id])
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id])
 
   @@index([createdAt])
   @@index([status])
 }
 
 model Department {
-  id        String   @id
+  id        String   @id @default(cuid())
   tenantId  String
   companyId String?
   name      String
@@ -179,10 +179,10 @@ model Department {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   branchId  String?
-  updatedAt DateTime
-  Branch    Branch?  @relation(fields: [branchId], references: [id])
-  Company   Company? @relation(fields: [companyId], references: [id])
-  Tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  company   Company? @relation(fields: [companyId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([branchId])
   @@index([companyId])
@@ -190,7 +190,7 @@ model Department {
 }
 
 model Driver {
-  id                 String               @id
+  id                 String               @id @default(cuid())
   employeeId         String               @unique
   name               String
   phone              String
@@ -201,18 +201,18 @@ model Driver {
   photo              String?
   returnStartedAt    DateTime?
   tenantId           String?
-  DailyReport        DailyReport[]
-  DeliveryAssignment DeliveryAssignment[]
-  Tenant             Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  User               User?                @relation(fields: [userId], references: [id])
-  GeofenceEvent      GeofenceEvent[]
-  GpsLog             GpsLog[]
+  dailyReports        DailyReport[]
+  assignments DeliveryAssignment[]
+  tenant             Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User?                @relation(fields: [userId], references: [id])
+  geofenceEvents      GeofenceEvent[]
+  gpsLogs             GpsLog[]
 
   @@index([tenantId])
 }
 
 model Exception {
-  id          String            @id
+  id          String            @id @default(cuid())
   tenantId    String
   shipmentId  String?
   type        ExceptionType
@@ -226,10 +226,10 @@ model Exception {
   resolution  String?
   createdBy   String?
   createdAt   DateTime          @default(now())
-  updatedAt   DateTime
-  User        User?             @relation(fields: [ownerId], references: [id])
-  Shipment    Shipment?         @relation(fields: [shipmentId], references: [id])
-  Tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt   DateTime @updatedAt
+  owner        User?             @relation(fields: [ownerId], references: [id])
+  shipment    Shipment?         @relation(fields: [shipmentId], references: [id])
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([severity])
@@ -239,7 +239,7 @@ model Exception {
 }
 
 model Geofence {
-  id            String          @id
+  id            String          @id @default(cuid())
   name          String
   latitude      Float
   longitude     Float
@@ -249,14 +249,14 @@ model Geofence {
   active        Boolean         @default(true)
   createdAt     DateTime        @default(now())
   tenantId      String?
-  Tenant        Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  GeofenceEvent GeofenceEvent[]
+  tenant        Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  events              GeofenceEvent[]
 
   @@index([tenantId])
 }
 
 model GeofenceEvent {
-  id         String            @id
+  id         String            @id @default(cuid())
   geofenceId String
   driverId   String
   shipmentId String?
@@ -264,14 +264,14 @@ model GeofenceEvent {
   latitude   Float
   longitude  Float
   createdAt  DateTime          @default(now())
-  Driver     Driver            @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  Geofence   Geofence          @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
+  driver     Driver            @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  geofence   Geofence          @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
 
   @@index([geofenceId, driverId])
 }
 
 model GpsLog {
-  id        String   @id
+  id        String   @id @default(cuid())
   driverId  String
   vehicleId String?
   latitude  Float
@@ -281,8 +281,8 @@ model GpsLog {
   accuracy  Float?
   battery   Float?
   createdAt DateTime @default(now())
-  Driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  Vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
 
   @@index([createdAt])
   @@index([driverId, createdAt])
@@ -290,7 +290,7 @@ model GpsLog {
 }
 
 model Hub {
-  id           String   @id
+  id           String   @id @default(cuid())
   tenantId     String
   branchId     String
   name         String
@@ -302,8 +302,8 @@ model Hub {
   radiusMeters Float    @default(500)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
-  Branch       Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  Tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch       Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, code])
   @@index([branchId])
@@ -311,7 +311,7 @@ model Hub {
 }
 
 model IntegrationConfig {
-  id                  String                @id
+  id                  String                @id @default(cuid())
   tenantId            String
   name                String
   type                IntegrationType
@@ -319,16 +319,16 @@ model IntegrationConfig {
   active              Boolean               @default(true)
   config              Json?
   createdAt           DateTime              @default(now())
-  updatedAt           DateTime
-  Tenant              Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  IntegrationLog      IntegrationLog[]
-  WebhookSubscription WebhookSubscription[]
+  updatedAt           DateTime @updatedAt
+  tenant              Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  logs      IntegrationLog[]
+  webhooks WebhookSubscription[]
 
   @@index([tenantId])
 }
 
 model IntegrationLog {
-  id                String            @id
+  id                String            @id @default(cuid())
   integrationId     String
   direction         String
   method            String?
@@ -339,13 +339,13 @@ model IntegrationLog {
   error             String?
   durationMs        Int?
   createdAt         DateTime          @default(now())
-  IntegrationConfig IntegrationConfig @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  integrationConfig IntegrationConfig @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
   @@index([integrationId])
 }
 
 model Invoice {
-  id                 String       @id
+  id                 String       @id @default(cuid())
   tenantId           String
   subscriptionId     String
   invoiceNumber      String       @unique
@@ -360,17 +360,17 @@ model Invoice {
   billingPeriodEnd   DateTime
   lineItems          Json?
   createdAt          DateTime     @default(now())
-  updatedAt          DateTime
-  Subscription       Subscription @relation(fields: [subscriptionId], references: [id])
-  Tenant             Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  Payment            Payment[]
+  updatedAt          DateTime @updatedAt
+  subscription       Subscription @relation(fields: [subscriptionId], references: [id])
+  tenant             Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments            Payment[]
 
   @@index([status])
   @@index([tenantId])
 }
 
 model LoginAttempt {
-  id        String   @id
+  id        String   @id @default(cuid())
   username  String
   ip        String
   success   Boolean  @default(false)
@@ -381,7 +381,7 @@ model LoginAttempt {
 }
 
 model Message {
-  id         String   @id
+  id         String   @id @default(cuid())
   tenantId   String
   threadId   String?
   subject    String
@@ -391,14 +391,14 @@ model Message {
   direction  String   @default("OUTBOUND")
   read       Boolean  @default(false)
   createdAt  DateTime @default(now())
-  Tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
   @@index([threadId])
 }
 
 model Notification {
-  id         String    @id
+  id         String    @id @default(cuid())
   userId     String?
   shipmentId String?
   message    String
@@ -408,16 +408,16 @@ model Notification {
   tenantId   String?
   title      String?
   type       String    @default("INFO")
-  Shipment   Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  Tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  User       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shipment   Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([userId])
 }
 
 model Organization {
-  id          String   @id
+  id          String   @id @default(cuid())
   tenantId    String
   name        String
   code        String?
@@ -425,23 +425,23 @@ model Organization {
   logoUrl     String?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
-  updatedAt   DateTime
-  Branch      Branch[]
-  Tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  Region      Region[]
+  updatedAt   DateTime @updatedAt
+  branches      Branch[]
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  regions      Region[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
 }
 
 model PasswordResetToken {
-  id        String    @id
+  id        String    @id @default(cuid())
   userId    String
   token     String
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
-  User      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, token])
   @@index([token])
@@ -449,7 +449,7 @@ model PasswordResetToken {
 }
 
 model Payment {
-  id        String    @id
+  id        String    @id @default(cuid())
   tenantId  String
   invoiceId String
   amount    Float
@@ -459,27 +459,27 @@ model Payment {
   status    String    @default("PENDING")
   paidAt    DateTime?
   createdAt DateTime  @default(now())
-  updatedAt DateTime
-  Invoice   Invoice   @relation(fields: [invoiceId], references: [id])
-  Tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+  invoice   Invoice   @relation(fields: [invoiceId], references: [id])
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
 
 model Permission {
-  id             String           @id
+  id             String           @id @default(cuid())
   code           String           @unique
   resource       String
   action         String
   label          String?
   createdAt      DateTime         @default(now())
-  RolePermission RolePermission[]
+  rolePermissions RolePermission[]
 
   @@index([resource])
 }
 
 model Plan {
-  id                String         @id
+  id                String         @id @default(cuid())
   name              String
   code              String         @unique
   description       String?
@@ -494,17 +494,17 @@ model Plan {
   active            Boolean        @default(true)
   sortOrder         Int            @default(0)
   createdAt         DateTime       @default(now())
-  updatedAt         DateTime
+  updatedAt         DateTime @updatedAt
   maxApiCallsPerMin Int            @default(0)
   maxBranches       Int            @default(1)
   maxHubs           Int            @default(0)
   maxOrganizations  Int            @default(1)
   trialDays         Int            @default(0)
-  Subscription      Subscription[]
+  subscriptions      Subscription[]
 }
 
 model PlanAddon {
-  id           String        @id
+  id           String        @id @default(cuid())
   name         String
   slug         String        @unique
   description  String?
@@ -513,12 +513,12 @@ model PlanAddon {
   active       Boolean       @default(true)
   sortOrder    Int           @default(0)
   createdAt    DateTime      @default(now())
-  TenantAddon  TenantAddon[]
+  tenantAddons  TenantAddon[]
 }
 
 model ProofOfDelivery {
-  id           String   @id
-  shipmentId   String   @unique
+  id           String   @id @default(cuid())
+  shipmentId   String
   receiverName String
   signature    String?
   photo        String?
@@ -526,11 +526,11 @@ model ProofOfDelivery {
   longitude    Float?
   notes        String?
   deliveredAt  DateTime @default(now())
-  Shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 }
 
 model Region {
-  id             String        @id
+  id             String        @id @default(cuid())
   tenantId       String
   organizationId String?
   name           String
@@ -540,10 +540,10 @@ model Region {
   longitude      Float?
   active         Boolean       @default(true)
   createdAt      DateTime      @default(now())
-  updatedAt      DateTime
-  Branch         Branch[]
-  Organization   Organization? @relation(fields: [organizationId], references: [id])
-  Tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt      DateTime @updatedAt
+  branches         Branch[]
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, code])
   @@index([organizationId])
@@ -551,14 +551,14 @@ model Region {
 }
 
 model RolePermission {
-  id           String     @id
+  id           String     @id @default(cuid())
   permissionId String
   role         Role
   tenantId     String?
   branchId     String?
   createdAt    DateTime   @default(now())
-  Permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  Tenant       Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  tenant       Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([permissionId, role, tenantId])
   @@index([role])
@@ -566,7 +566,7 @@ model RolePermission {
 }
 
 model Shipment {
-  id                                     String               @id
+  id                                     String               @id @default(cuid())
   trackingNumber                         String               @unique
   senderId                               String
   receiverId                             String
@@ -583,26 +583,26 @@ model Shipment {
   itemValue                              Float?
   deliveryTarget                         DateTime?
   createdAt                              DateTime             @default(now())
-  updatedAt                              DateTime
+  updatedAt                              DateTime @updatedAt
   destLat                                Float?
   destLng                                Float?
   originLat                              Float?
   originLng                              Float?
   slaDeadline                            DateTime?
   tenantId                               String?
-  DeliveryAssignment                     DeliveryAssignment[]
-  Exception                              Exception[]
-  Notification                           Notification[]
-  ProofOfDelivery                        ProofOfDelivery?
-  Customer_Shipment_receiverIdToCustomer Customer             @relation("Shipment_receiverIdToCustomer", fields: [receiverId], references: [id])
-  Customer_Shipment_senderIdToCustomer   Customer             @relation("Shipment_senderIdToCustomer", fields: [senderId], references: [id])
-  Tenant                                 Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  ShipmentEvent                          ShipmentEvent[]
-  ShipmentItem                           ShipmentItem[]
-  ShipmentStop                           ShipmentStop[]
-  SlaEvent                               SlaEvent[]
-  TrackingEvent                          TrackingEvent[]
-  WarehouseScan                          WarehouseScan[]
+  assignments                     DeliveryAssignment[]
+  exceptions                              Exception[]
+  notifications                           Notification[]
+  pods                        ProofOfDelivery[]
+  receiver Customer             @relation("Shipment_receiverIdToCustomer", fields: [receiverId], references: [id])
+  sender   Customer             @relation("Shipment_senderIdToCustomer", fields: [senderId], references: [id])
+  tenant                                 Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipmentEvents                          ShipmentEvent[]
+  items                           ShipmentItem[]
+  stops                           ShipmentStop[]
+  slaEvents                               SlaEvent[]
+  events                          TrackingEvent[]
+  scans                          WarehouseScan[]
 
   @@index([createdAt])
   @@index([receiverId])
@@ -612,7 +612,7 @@ model Shipment {
 }
 
 model ShipmentEvent {
-  id             String            @id
+  id             String            @id @default(cuid())
   tenantId       String?
   shipmentId     String
   eventType      ShipmentEventType
@@ -625,8 +625,8 @@ model ShipmentEvent {
   longitude      Float?
   occurredAt     DateTime          @default(now())
   createdAt      DateTime          @default(now())
-  Shipment       Shipment          @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  Tenant         Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipment       Shipment          @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  tenant         Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
   @@index([shipmentId])
@@ -634,17 +634,17 @@ model ShipmentEvent {
 }
 
 model ShipmentItem {
-  id         String   @id
+  id         String   @id @default(cuid())
   shipmentId String
   itemName   String
   quantity   Int
   weight     Float?
   dimension  String?
-  Shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 }
 
 model ShipmentStop {
-  id         String    @id
+  id         String    @id @default(cuid())
   shipmentId String
   seq        Int
   customerId String?
@@ -654,12 +654,12 @@ model ShipmentStop {
   postalCode String?
   latitude   Float?
   longitude  Float?
-  Customer   Customer? @relation(fields: [customerId], references: [id])
-  Shipment   Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  shipment   Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 }
 
 model SlaEvent {
-  id         String     @id
+  id         String     @id @default(cuid())
   tenantId   String
   shipmentId String
   policyId   String?
@@ -667,9 +667,9 @@ model SlaEvent {
   deadline   DateTime
   breachedAt DateTime?
   createdAt  DateTime   @default(now())
-  SlaPolicy  SlaPolicy? @relation(fields: [policyId], references: [id])
-  Shipment   Shipment   @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  Tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slaPolicy  SlaPolicy? @relation(fields: [policyId], references: [id])
+  shipment   Shipment   @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([shipmentId])
   @@index([status])
@@ -677,7 +677,7 @@ model SlaEvent {
 }
 
 model SlaPolicy {
-  id          String      @id
+  id          String      @id @default(cuid())
   tenantId    String
   name        String
   serviceType ServiceType @default(REGULAR)
@@ -688,16 +688,16 @@ model SlaPolicy {
   cutoffTime  String?
   active      Boolean     @default(true)
   createdAt   DateTime    @default(now())
-  updatedAt   DateTime
-  SlaEvent    SlaEvent[]
-  Tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt   DateTime @updatedAt
+  slaEvents    SlaEvent[]
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([tenantId, serviceType])
 }
 
 model Subscription {
-  id                 String        @id
+  id                 String        @id @default(cuid())
   tenantId           String        @unique
   planId             String
   status             String        @default("ACTIVE")
@@ -708,15 +708,15 @@ model Subscription {
   trialEndsAt        DateTime?
   cancelledAt        DateTime?
   createdAt          DateTime      @default(now())
-  updatedAt          DateTime
-  Invoice            Invoice[]
-  Plan               Plan          @relation(fields: [planId], references: [id])
-  Tenant             Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  UsageRecord        UsageRecord[]
+  updatedAt          DateTime @updatedAt
+  invoices            Invoice[]
+  plan               Plan          @relation(fields: [planId], references: [id])
+  tenant             Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usageRecords        UsageRecord[]
 }
 
 model Tenant {
-  id                  String                @id
+  id                  String                @id @default(cuid())
   name                String
   slug                String                @unique
   logoUrl             String?
@@ -734,7 +734,7 @@ model Tenant {
   maxShipments        Int                   @default(100)
   active              Boolean               @default(true)
   createdAt           DateTime              @default(now())
-  updatedAt           DateTime
+  updatedAt           DateTime @updatedAt
   code                String?               @unique
   currency            String                @default("IDR")
   locale              String                @default("id-ID")
@@ -744,41 +744,41 @@ model Tenant {
   maxHubs             Int                   @default(0)
   maxOrganizations    Int                   @default(1)
   maxStorageMb        Int                   @default(50)
-  ApiKey              ApiKey[]
-  AuditLog            AuditLog[]
-  Branch              Branch[]
-  Company             Company[]
-  Customer            Customer[]
-  DemoRequest         DemoRequest[]
-  Department          Department[]
-  Driver              Driver[]
-  Exception           Exception[]
-  Geofence            Geofence[]
-  Hub                 Hub[]
-  IntegrationConfig   IntegrationConfig[]
-  Invoice             Invoice[]
-  Message             Message[]
-  Notification        Notification[]
-  Organization        Organization[]
-  Payment             Payment[]
-  Region              Region[]
-  RolePermission      RolePermission[]
-  Shipment            Shipment[]
-  ShipmentEvent       ShipmentEvent[]
-  SlaEvent            SlaEvent[]
-  SlaPolicy           SlaPolicy[]
-  Subscription        Subscription?
-  TenantAddon         TenantAddon[]
-  TenantHealthMetric  TenantHealthMetric[]
-  TenantOnboarding    TenantOnboarding[]
-  TenantRateLimit     TenantRateLimit?
-  UploadedFile        UploadedFile[]
-  UsageRecord         UsageRecord[]
-  User                User[]
-  Vehicle             Vehicle[]
-  Warehouse           Warehouse[]
-  WebhookSubscription WebhookSubscription[]
-  WhiteLabel          WhiteLabel?
+  apiKeys              ApiKey[]
+  auditLogs            AuditLog[]
+  branches              Branch[]
+  companies             Company[]
+  customers            Customer[]
+  demoRequests         DemoRequest[]
+  departments          Department[]
+  drivers              Driver[]
+  exceptions           Exception[]
+  geofences            Geofence[]
+  hubs                 Hub[]
+  integrationConfigs   IntegrationConfig[]
+  invoices             Invoice[]
+  messages             Message[]
+  notifications        Notification[]
+  organizations        Organization[]
+  payments             Payment[]
+  regions              Region[]
+  rolePermissions      RolePermission[]
+  shipments            Shipment[]
+  shipmentEvents       ShipmentEvent[]
+  slaEvents            SlaEvent[]
+  slaPolicies           SlaPolicy[]
+  subscription        Subscription?
+  tenantAddons         TenantAddon[]
+  tenantHealthMetrics  TenantHealthMetric[]
+  tenantOnboardings    TenantOnboarding[]
+  rateLimit     TenantRateLimit?
+  uploadedFiles        UploadedFile[]
+  usageRecords         UsageRecord[]
+  users                User[]
+  vehicles             Vehicle[]
+  warehouses           Warehouse[]
+  webhookSubscriptions WebhookSubscription[]
+  whiteLabel          WhiteLabel?
 
   @@index([code])
   @@index([domain])
@@ -787,7 +787,7 @@ model Tenant {
 }
 
 model TenantAddon {
-  id        String    @id
+  id        String    @id @default(cuid())
   tenantId  String
   addonId   String
   quantity  Int       @default(1)
@@ -795,22 +795,22 @@ model TenantAddon {
   endDate   DateTime?
   active    Boolean   @default(true)
   createdAt DateTime  @default(now())
-  PlanAddon PlanAddon @relation(fields: [addonId], references: [id])
-  Tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  addon PlanAddon @relation(fields: [addonId], references: [id])
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, addonId])
   @@index([tenantId])
 }
 
 model TenantHealthMetric {
-  id         String   @id
+  id         String   @id @default(cuid())
   tenantId   String
   metricType String
   value      Float
   unit       String?
   period     String?
   recordedAt DateTime @default(now())
-  Tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([tenantId, metricType])
@@ -818,7 +818,7 @@ model TenantHealthMetric {
 }
 
 model TenantOnboarding {
-  id          String           @id
+  id          String           @id @default(cuid())
   tenantId    String
   step        String
   label       String
@@ -828,15 +828,15 @@ model TenantOnboarding {
   completedAt DateTime?
   data        Json?
   createdAt   DateTime         @default(now())
-  updatedAt   DateTime
-  Tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, step])
   @@index([tenantId])
 }
 
 model TenantRateLimit {
-  id             String   @id
+  id             String   @id @default(cuid())
   tenantId       String   @unique
   apiMaxRequests Int      @default(300)
   apiWindowMs    Int      @default(60000)
@@ -845,12 +845,12 @@ model TenantRateLimit {
   active         Boolean  @default(true)
   blocked        Boolean  @default(false)
   createdAt      DateTime @default(now())
-  updatedAt      DateTime
-  Tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt      DateTime @updatedAt
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model TrackingEvent {
-  id         String         @id
+  id         String         @id @default(cuid())
   shipmentId String
   status     ShipmentStatus
   latitude   Float?
@@ -858,11 +858,11 @@ model TrackingEvent {
   notes      String?
   createdBy  String?
   createdAt  DateTime       @default(now())
-  Shipment   Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  shipment   Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 }
 
 model UploadedFile {
-  id           String   @id
+  id           String   @id @default(cuid())
   tenantId     String?
   objectKey    String   @unique
   fileName     String
@@ -873,7 +873,7 @@ model UploadedFile {
   category     String   @default("general")
   shipmentId   String?
   createdAt    DateTime @default(now())
-  Tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([objectKey])
   @@index([shipmentId])
@@ -881,7 +881,7 @@ model UploadedFile {
 }
 
 model UsageRecord {
-  id             String       @id
+  id             String       @id @default(cuid())
   tenantId       String
   subscriptionId String
   metric         String
@@ -889,15 +889,15 @@ model UsageRecord {
   recordedAt     DateTime     @default(now())
   periodStart    DateTime
   periodEnd      DateTime
-  Subscription   Subscription @relation(fields: [subscriptionId], references: [id])
-  Tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, metric, periodStart])
   @@index([tenantId, metric])
 }
 
 model User {
-  id                 String               @id
+  id                 String               @id @default(cuid())
   name               String
   username           String
   passwordHash       String
@@ -915,13 +915,15 @@ model User {
   totpSecret         String?
   tenantId           String?
   branchId           String?
-  AuditLog           AuditLog[]
-  Driver             Driver?
-  Exception          Exception[]
-  Notification       Notification[]
-  PasswordResetToken PasswordResetToken[]
-  Branch             Branch?              @relation(fields: [branchId], references: [id])
-  Tenant             Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lastLoginAt        DateTime?
+  lastLoginIp        String?
+  auditLogs           AuditLog[]
+  driver             Driver?
+  exceptions          Exception[]
+  notifications       Notification[]
+  passwordResetTokens PasswordResetToken[]
+  branch             Branch?              @relation(fields: [branchId], references: [id])
+  tenant             Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, username])
   @@index([branchId])
@@ -929,7 +931,7 @@ model User {
 }
 
 model Vehicle {
-  id                 String               @id
+  id                 String               @id @default(cuid())
   vehicleNumber      String               @unique
   type               String
   capacity           Float                @default(0)
@@ -942,16 +944,16 @@ model Vehicle {
   returnedAt         DateTime?
   returning          Boolean              @default(false)
   tenantId           String?
-  DeliveryAssignment DeliveryAssignment[]
-  GpsLog             GpsLog[]
-  Tenant             Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  VehicleMaintenance VehicleMaintenance[]
+  assignments DeliveryAssignment[]
+  gpsLogs             GpsLog[]
+  tenant             Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  maintenanceRecords VehicleMaintenance[]
 
   @@index([tenantId])
 }
 
 model VehicleMaintenance {
-  id          String   @id
+  id          String   @id @default(cuid())
   vehicleId   String
   type        String
   description String?
@@ -960,13 +962,13 @@ model VehicleMaintenance {
   notes       String?
   performedAt DateTime @default(now())
   createdAt   DateTime @default(now())
-  Vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId, performedAt])
 }
 
 model Warehouse {
-  id           String   @id
+  id           String   @id @default(cuid())
   tenantId     String
   branchId     String?
   name         String
@@ -978,8 +980,8 @@ model Warehouse {
   radiusMeters Float    @default(500)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
-  Branch       Branch?  @relation(fields: [branchId], references: [id])
-  Tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, code])
   @@index([branchId])
@@ -987,7 +989,7 @@ model Warehouse {
 }
 
 model WarehouseScan {
-  id         String   @id
+  id         String   @id @default(cuid())
   shipmentId String
   action     String
   scannedBy  String?
@@ -995,13 +997,13 @@ model WarehouseScan {
   longitude  Float?
   notes      String?
   createdAt  DateTime @default(now())
-  Shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 
   @@index([shipmentId])
 }
 
 model WebhookDelivery {
-  id                  String              @id
+  id                  String              @id @default(cuid())
   subscriptionId      String
   event               String
   payload             Json
@@ -1013,14 +1015,14 @@ model WebhookDelivery {
   nextRetryAt         DateTime?
   deliveredAt         DateTime?
   createdAt           DateTime            @default(now())
-  WebhookSubscription WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscription WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([subscriptionId])
 }
 
 model WebhookSubscription {
-  id                String             @id
+  id                String             @id @default(cuid())
   tenantId          String
   integrationId     String?
   url               String
@@ -1028,15 +1030,15 @@ model WebhookSubscription {
   secret            String?
   active            Boolean            @default(true)
   createdAt         DateTime           @default(now())
-  WebhookDelivery   WebhookDelivery[]
-  IntegrationConfig IntegrationConfig? @relation(fields: [integrationId], references: [id])
-  Tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  deliveries   WebhookDelivery[]
+  integrationConfig IntegrationConfig? @relation(fields: [integrationId], references: [id])
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
 
 model WhiteLabel {
-  id               String   @id
+  id               String   @id @default(cuid())
   tenantId         String   @unique
   appName          String?
   logoUrl          String?
@@ -1055,8 +1057,8 @@ model WhiteLabel {
   landingPageHtml  String?
   active           Boolean  @default(true)
   createdAt        DateTime @default(now())
-  updatedAt        DateTime
-  Tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  updatedAt        DateTime @updatedAt
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 enum DriverStatus {

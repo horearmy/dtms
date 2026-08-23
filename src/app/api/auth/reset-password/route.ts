@@ -4,13 +4,19 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { setSession } from '@/lib/auth';
 import { logAudit, runWithTenant } from '@/lib/api-guard';
-import { validatePassword, BCRYPT_COST } from '@/lib/security';
+import { validatePassword, BCRYPT_COST, checkRateLimit, getClientIp } from '@/lib/security';
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rateLimited = await checkRateLimit(`reset-pw:${ip}`, 10, 3600_000);
+  if (!rateLimited) {
+    return NextResponse.json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' }, { status: 429 });
+  }
+
   const body = await req.json();
   const token = body.token?.toString().trim();
   const newPassword = body.newPassword?.toString();
