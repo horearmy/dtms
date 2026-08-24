@@ -58,9 +58,20 @@ function HeatmapLayer({ points }: { points: DriverPoint[] }) {
 function SelectedDriverMarker({ driver }: { driver: DriverPoint | null }) {
   const map = useMap();
   const markerRef = useRef<L.Marker | null>(null);
+  const lastFlyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!map) return;
+
+    // Kamera terbang ke lokasi hanya saat pemilihan driver berganti,
+    // bukan setiap kali koordinat diperbarui (agar user bebas menggeser peta).
+    if (!driver) {
+      lastFlyRef.current = null;
+    } else if (lastFlyRef.current !== driver.driverId) {
+      map.flyTo([driver.lat, driver.lng], 14, { duration: 1 });
+      lastFlyRef.current = driver.driverId;
+    }
+
     if (markerRef.current) {
       map.removeLayer(markerRef.current);
       markerRef.current = null;
@@ -81,8 +92,6 @@ function SelectedDriverMarker({ driver }: { driver: DriverPoint | null }) {
       .addTo(map)
       .bindPopup(`<b>${driver.driverName}</b><br/>${driver.tenantName}`);
     markerRef.current = marker;
-
-    map.flyTo([driver.lat, driver.lng], 14, { duration: 1 });
 
     return () => {
       if (markerRef.current && map) {

@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Modal, inputCls, btnPrimary, btnGhost } from '@/components/ui';
-import { Activity, Shield, AlertTriangle, CheckCircle, XCircle, Users, Truck, X, Search, MapPin } from 'lucide-react';
+import { Activity, Shield, AlertTriangle, CheckCircle, XCircle, Users, Truck, X, Search, MapPin, Package, Gauge } from 'lucide-react';
 import type { DriverPoint } from './GlobalMap';
+import ShipmentDetail, { STATUS_LABELS } from './ShipmentDetail';
 
 const GlobalMap = dynamic(() => import('./GlobalMap'), { ssr: false, loading: () => <div className="flex h-full items-center justify-center bg-gray-50 text-sm text-[#667085]">Memuat peta...</div> });
 
@@ -39,6 +40,22 @@ type TenantStat = {
   pointCount: number;
 };
 
+type ActiveShipmentCard = {
+  id: string;
+  trackingNumber: string;
+  status: string;
+  origin: string;
+  destination: string;
+  serviceType: string;
+  slaDeadline: string | null;
+  updatedAt: string;
+  tenant: { id: string; name: string };
+  receiverName: string | null;
+  driver: { id: string; name: string; phone?: string | null } | null;
+  vehicleNumber: string | null;
+  gps: { lat: number; lng: number; speed?: number | null; updatedAt: string } | null;
+};
+
 export default function GlobalControlTowerPage() {
   const [tenants, setTenants] = useState<TenantThrottle[]>([]);
   const [heatPoints, setHeatPoints] = useState<HeatPoint[]>([]);
@@ -66,6 +83,9 @@ export default function GlobalControlTowerPage() {
   const [showDriverSidebar, setShowDriverSidebar] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<DriverPoint | null>(null);
   const [driverSearch, setDriverSearch] = useState('');
+  const [activeShipments, setActiveShipments] = useState<ActiveShipmentCard[]>([]);
+  const [selectedShipment, setSelectedShipment] = useState<ActiveShipmentCard | null>(null);
+  const [shipmentSearch, setShipmentSearch] = useState('');
 
   const loadTenants = useCallback(async () => {
     try {
@@ -95,23 +115,63 @@ export default function GlobalControlTowerPage() {
     } catch {}
   }, []);
 
+  const loadActiveShipments = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/superadmin/shipments/active?limit=24&q=${encodeURIComponent(shipmentSearch)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setActiveShipments(data.shipments || []);
+        // Sinkronkan kartu terpilih dengan data terbaru (GPS live, status)
+        setSelectedShipment((prev) =>
+          prev ? ((data.shipments || []).find((s: ActiveShipmentCard) => s.id === prev.id) ?? null) : null
+        );
+      }
+    } catch {}
+  }, [shipmentSearch]);
+
   useEffect(() => {
     loadTenants();
     loadHeatmap();
     loadHealth();
-  }, [loadTenants, loadHeatmap, loadHealth]);
+    loadActiveShipments();
+  }, [loadTenants, loadHeatmap, loadHealth, loadActiveShipments]);
 
   useEffect(() => {
     if (autoRefresh) {
       intervalRef.current = setInterval(() => {
         loadHeatmap();
         loadHealth();
+        loadActiveShipments();
       }, 15000);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [autoRefresh, loadHeatmap, loadHealth]);
+  }, [autoRefresh, loadHeatmap, loadHealth, loadActiveShipments]);
+
+  // Sorot + terbangkan kamera peta ke driver pengiriman terpilih.
+  // Koordinat diambil langsung dari data GPS kartu (bukan heatmap 60 menit),
+  // sehingga tetap akurat walau sinyal lebih lama; marker mengikuti refresh 15s.
+  useEffect(() => {
+    const s = selectedShipment;
+    if (!s) { setSelectedDriver(null); return; }
+    if (s.gps) {
+      setSelectedDriver({
+        lat: s.gps.lat,
+        lng: s.gps.lng,
+        intensity: Math.min(1, (s.gps.speed ?? 0) / 80),
+        tenantId: s.tenant.id,
+        tenantName: s.tenant.name,
+        driverName: s.driver?.name || 'Driver',
+        driverId: s.driver?.id || `shipment-${s.id}`,
+      });
+    } else {
+      // Fallback: cari posisi driver pada heatmap bila kartu tanpa GPS
+      const hp = s.driver ? heatPoints.find((p) => p.driverId === s.driver!.id) : undefined;
+      setSelectedDriver(hp ?? null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedShipment]);
 
   function openThrottle(tenant: TenantThrottle) {
     setEditTenant(tenant);
@@ -258,6 +318,81 @@ export default function GlobalControlTowerPage() {
         </div>
       </div>
 
+      {/* Shipment Cards */}
+      <div className="rounded-xl border border-[#E4E7EC] bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E4E7EC] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Package size={15} className="text-[#0D6EFD]" />
+            <div>
+              <h2 className="text-sm font-bold text-[#101828]">Pengiriman Aktif</h2>
+              <p className="text-[10px] text-[#667085]">{activeShipments.length} pengiriman berjalan · seluruh tenant · klik kartu untuk detail</p>
+            </div>
+          </div>
+          <div className="relative w-full max-w-xs">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]" />
+            <input
+              type="text"
+              value={shipmentSearch}
+              onChange={(e) => setShipmentSearch(e.target.value)}
+              placeholder="Cari resi / tenant / tujuan / driver..."
+              className="w-full rounded-lg border border-[#E4E7EC] bg-[#F7F9FC] py-2 pl-9 pr-3 text-xs text-[#101828] placeholder:text-[#667085] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 overflow-x-auto p-4">
+          {activeShipments.length === 0 && (
+            <div className="w-full py-6 text-center text-xs text-[#667085]">Tidak ada pengiriman aktif saat ini.</div>
+          )}
+          {activeShipments.map((s) => {
+            const isSelected = selectedShipment?.id === s.id;
+            const gpsAge = s.gps ? Math.floor((Date.now() - new Date(s.gps.updatedAt).getTime()) / 60000) : null;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setSelectedShipment(isSelected ? null : s)}
+                className={`w-[240px] shrink-0 rounded-xl border-2 p-3 text-left transition hover:shadow-md ${
+                  isSelected ? 'border-[#0D6EFD] bg-[#F0F6FF]' : 'border-[#E4E7EC] bg-white hover:border-[#B2CCFF]'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="truncate font-mono text-[11px] font-bold text-[#101828]">{s.trackingNumber}</span>
+                  <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
+                    s.status === 'IN_TRANSIT' || s.status === 'OUT_FOR_DELIVERY' ? 'bg-blue-100 text-blue-700' :
+                    s.status === 'DELIVERY_FAILED' ? 'bg-red-100 text-red-600' :
+                    'bg-sky-100 text-sky-700'
+                  }`}>
+                    {STATUS_LABELS[s.status] || s.status}
+                  </span>
+                </div>
+                <div className="mt-1 truncate text-[10px] font-medium text-[#0D6EFD]">{s.tenant.name}</div>
+                <div className="mt-0.5 truncate text-[10px] text-[#667085]">{s.origin} → {s.destination}</div>
+                <div className="mt-2 flex items-center justify-between border-t border-[#F2F4F7] pt-2">
+                  {s.driver ? (
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1 truncate text-[10px] font-medium text-[#101828]">
+                        <Truck size={9} /> {s.driver.name}
+                      </div>
+                      {s.vehicleNumber && <div className="text-[9px] text-[#667085]">{s.vehicleNumber}</div>}
+                    </div>
+                  ) : (
+                    <span className="text-[9px] italic text-[#98A2B3]">Belum ada driver</span>
+                  )}
+                  {s.gps ? (
+                    <span className={`flex shrink-0 items-center gap-1 text-[9px] ${gpsAge !== null && gpsAge <= 15 ? 'text-emerald-600' : 'text-amber-500'}`}>
+                      <Gauge size={9} />{Math.round(s.gps.speed ?? 0)} km/h
+                      <span className="text-[#98A2B3]">·{gpsAge}m</span>
+                    </span>
+                  ) : (
+                    <span className="shrink-0 text-[9px] text-[#98A2B3]">tanpa GPS</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
         {/* Heatmap + Driver Sidebar */}
         <div className="relative overflow-hidden rounded-xl border border-[#E4E7EC] bg-white" style={{ height: '500px' }}>
@@ -379,6 +514,16 @@ export default function GlobalControlTowerPage() {
           </div>
         </div>
       </div>
+
+      {/* Detail Pengiriman — di bawah live peta */}
+      {selectedShipment && (
+        <ShipmentDetail
+          key={selectedShipment.id}
+          shipmentId={selectedShipment.id}
+          tenantName={selectedShipment.tenant.name}
+          onClose={() => { setSelectedShipment(null); setSelectedDriver(null); }}
+        />
+      )}
 
       {/* Tenant Stats Table */}
       {Object.keys(tenantStats).length > 0 && (
