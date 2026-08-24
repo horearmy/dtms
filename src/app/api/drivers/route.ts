@@ -14,9 +14,20 @@ export async function GET(req: NextRequest) {
   return runWithTenant(session?.tenantId ?? null, async () => {
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(req.nextUrl.searchParams.get('pageSize') || '20', 10)));
+    const q = (req.nextUrl.searchParams.get('q') || '').trim();
 
-    const total = await prisma.driver.count();
+    const where = q
+      ? {
+          OR: [
+            { name: { contains: q, mode: 'insensitive' as const } },
+            { employeeId: { contains: q, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+
+    const total = await prisma.driver.count({ where });
     const drivers = await prisma.driver.findMany({
+      where,
       orderBy: { name: 'asc' },
       skip: (page - 1) * pageSize,
       take: pageSize,

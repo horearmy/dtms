@@ -3,15 +3,27 @@
  * Run: npx vitest run src/integration/__tests__/drivers.test.ts
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { getAuth, api, TENANT_A_ID, TENANT_B_ID } from '../helpers';
+import { PrismaClient } from '@prisma/client';
 
 let tenantA: ReturnType<typeof getAuth>;
 let tenantB: ReturnType<typeof getAuth>;
+const prisma = new PrismaClient();
+const FIXTURE_NAME = `Andi Pengujian ${Date.now()}`;
+const FIXTURE_EMPLOYEE_ID = `DRV-TST-${Date.now()}`;
 
 beforeAll(async () => {
   tenantA = getAuth('tenantA');
   tenantB = getAuth('tenantB');
+  await prisma.driver.create({
+    data: { name: FIXTURE_NAME, employeeId: FIXTURE_EMPLOYEE_ID, phone: '081200000001', status: 'ACTIVE', tenantId: TENANT_A_ID },
+  });
+});
+
+afterAll(async () => {
+  await prisma.driver.deleteMany({ where: { employeeId: FIXTURE_EMPLOYEE_ID } });
+  await prisma.$disconnect();
 });
 
 describe('Drivers — List (GET)', () => {
@@ -32,10 +44,17 @@ describe('Drivers — List (GET)', () => {
   });
 
   it('search by name', async () => {
-    const r = await api('GET', '/api/drivers?q=Andi', undefined, tenantA);
+    const r = await api('GET', `/api/drivers?q=${encodeURIComponent(FIXTURE_NAME)}`, undefined, tenantA);
     expect(r.status).toBe(200);
     expect(r.json.items.length).toBeGreaterThan(0);
-    expect(r.json.items[0].name).toContain('Andi');
+    expect(r.json.items.some((d: { name: string }) => d.name === FIXTURE_NAME)).toBe(true);
+  });
+
+  it('search by employee ID', async () => {
+    const r = await api('GET', `/api/drivers?q=${encodeURIComponent(FIXTURE_EMPLOYEE_ID)}`, undefined, tenantA);
+    expect(r.status).toBe(200);
+    expect(r.json.items.length).toBe(1);
+    expect(r.json.items[0].employeeId).toBe(FIXTURE_EMPLOYEE_ID);
   });
 
   it('unauthenticated → 401', async () => {

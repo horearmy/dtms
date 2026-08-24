@@ -74,7 +74,8 @@ function modelExtension(modelName: string) {
       if (tenantId && TENANT_SCOPED.has(modelName)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const r = result as any;
-        if ('tenantId' in r && r.tenantId !== null && r.tenantId !== tenantId) return null;
+        // Fail closed: record tanpa tenantId tidak boleh terlihat dari konteks tenant.
+        if ('tenantId' in r && r.tenantId !== tenantId) return null;
       }
       return result;
     },

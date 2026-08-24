@@ -8,6 +8,9 @@ export default defineConfig({
     globalSetup: ['./src/integration/global-setup.ts'],
     testTimeout: 15000,
     hookTimeout: 30000,
+    // Semua suite integrasi berbagi satu server & DB yang sama —
+    // jalankan file secara berurutan agar tidak saling mengganggu.
+    fileParallelism: false,
   },
   resolve: {
     alias: {
