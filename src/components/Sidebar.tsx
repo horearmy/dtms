@@ -87,6 +87,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
           title: 'TENANT MANAGEMENT',
           items: [
             { href: '/tenants', label: 'Tenants', icon: <Building2 size={18} /> },
+            { href: '/billing-management', label: 'Billing Management', icon: <CreditCard size={18} /> },
             { href: '/hierarchy', label: 'Hierarchy', icon: <Network size={18} /> },
             { href: '/tenant-onboarding', label: 'Onboarding', icon: <ClipboardList size={18} /> },
             { href: '/tenant-health', label: 'Health Monitor', icon: <Activity size={18} /> },
