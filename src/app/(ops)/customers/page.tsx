@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
 import LocationPicker, { type PickedLocation } from '@/components/LocationPicker';
+import CountryCodeSelect, { detectDial, splitPhone } from '@/components/CountryCodeSelect';
 import Pagination from '@/components/Pagination';
 import { formatDate } from '@/lib/constants';
 
@@ -31,6 +32,7 @@ export default function CustomersPage() {
     name: '', phone: '', email: '', address: '', city: '', postalCode: '',
     latitude: '', longitude: '',
   });
+  const [dial, setDial] = useState('+62');
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const pageSize = 20;
@@ -56,14 +58,17 @@ export default function CustomersPage() {
   function openNew() {
     setEdit(null);
     setForm({ name: '', phone: '', email: '', address: '', city: '', postalCode: '', latitude: '', longitude: '' });
+    setDial(detectDial());
     setMsg('');
     setOpen(true);
   }
 
   function openEdit(c: Customer) {
     setEdit(c);
+    const sp = splitPhone(c.phone);
+    setDial(sp.dial);
     setForm({
-      name: c.name, phone: c.phone, email: c.email || '', address: c.address || '',
+      name: c.name, phone: sp.local, email: c.email || '', address: c.address || '',
       city: c.city || '', postalCode: c.postalCode || '',
       latitude: c.latitude != null ? String(c.latitude) : '',
       longitude: c.longitude != null ? String(c.longitude) : '',
@@ -75,10 +80,11 @@ export default function CustomersPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    const fullPhone = dial + form.phone.replace(/^0+/, '');
     const res = await fetch(edit ? `/api/customers/${edit.id}` : '/api/customers', {
       method: edit ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, phone: fullPhone }),
     });
     const data = await res.json();
     setLoading(false);
@@ -106,14 +112,14 @@ export default function CustomersPage() {
   };
 
   function onPick(loc: PickedLocation) {
-    setForm({
-      ...form,
-      address: loc.address,
-      city: loc.city,
-      postalCode: loc.postalCode,
-      latitude: loc.lat != null ? String(loc.lat) : '',
-      longitude: loc.lng != null ? String(loc.lng) : '',
-    });
+    setForm((f) => ({
+      ...f,
+      latitude: loc.lat != null ? String(loc.lat) : f.latitude,
+      longitude: loc.lng != null ? String(loc.lng) : f.longitude,
+      address: loc.address || f.address,
+      city: loc.city || f.city,
+      postalCode: loc.postalCode || f.postalCode,
+    }));
   }
 
   return (
@@ -180,7 +186,17 @@ export default function CustomersPage() {
               <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
             </Field>
             <Field label="Telepon" required>
-              <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} />
+              <div className="flex gap-2">
+                <CountryCodeSelect value={dial} onChange={setDial} />
+                <input
+                  required
+                  inputMode="tel"
+                  placeholder="812xxxxxxx"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })}
+                  className={inputCls}
+                />
+              </div>
             </Field>
             <Field label="Email">
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />

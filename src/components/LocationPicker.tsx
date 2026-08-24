@@ -44,6 +44,10 @@ export default function LocationPicker({ value, onChange, mapHeight = 'h-72' }: 
   const [coords, setCoords] = useState<string>(
     value.lat != null && value.lng != null ? `${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}` : 'Belum dipilih'
   );
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
 
   function makePinIcon(L: typeof import('leaflet')) {
     return L.divIcon({
@@ -69,7 +73,7 @@ export default function LocationPicker({ value, onChange, mapHeight = 'h-72' }: 
     if (!res.ok) return;
     const json = await res.json();
     const parts = deriveFromAddress(json.address || {}, json.display_name || '');
-    onChange({ lat, lng, ...parts });
+    onChangeRef.current({ lat, lng, ...parts });
   }
 
   useEffect(() => {
@@ -147,7 +151,7 @@ export default function LocationPicker({ value, onChange, mapHeight = 'h-72' }: 
       placeMarker(s.lat, s.lng);
     }
     setCoords(`${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}`);
-    onChange({ lat: s.lat, lng: s.lng, ...parts });
+    onChangeRef.current({ lat: s.lat, lng: s.lng, ...parts });
   }
 
   function useMyLocation() {
