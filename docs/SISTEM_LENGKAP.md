@@ -1,6 +1,6 @@
 # DTMS — Dokumentasi Sistem Lengkap
 
-> Delivery Tracking & Management System
+> Delivery Tracking Management System
 > Versi: 2.0.0 | Terakhir diperbarui: Agustus 2026
 
 ---
@@ -1825,3 +1825,4 @@ Branch: main
 > - `docs/FLOW.md` — Alur aplikasi & arsitektur
 > - `docs/MULTI_TENANT_ISOLATION.md` — Detail isolasi data
 > - `docs/DTMS_Enterprise_Upgrade_Blueprint.md` — Blueprint upgrade enterprise
+

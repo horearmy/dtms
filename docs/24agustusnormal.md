@@ -1,6 +1,6 @@
 # DTMS — Dokumentasi Pekerjaan 24 Agustus 2026
 
-> **Delivery Tracking & Management System**
+> **Delivery Tracking Management System**
 > **Sesi**: Normalisasi penuh (review → fix → verifikasi → rilis)
 > **Tanggal**: 24 Agustus 2026 | **Commit**: `be3f502` (pushed ke `origin/main`)
 
@@ -246,3 +246,4 @@ Halaman: `/admin/secure-login` · API: `POST /api/auth/superadmin-login`
   (`fix-*-casing.js`, `revert-*.js`, `seed-10k-drivers.ts`).
 - Sisa warning lint (73) umumnya `no-explicit-any` / unused vars yang sengaja
   dipasang sebagai warning — bukan prioritas.
+

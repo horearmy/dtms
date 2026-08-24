@@ -176,7 +176,7 @@ export default async function TrackingResultPage({ params }: { params: Promise<{
       </main>
 
       <footer className="py-6 text-center text-xs text-[#667085]">
-        Delivery Tracking & Management System · Layanan pelanggan: 021-555-0199
+        Delivery Tracking Management System · Layanan pelanggan: 021-555-0199
       </footer>
     </div>
   );

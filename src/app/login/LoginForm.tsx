@@ -106,7 +106,7 @@ function LoginFormInner() {
           </div>
           <h1 className="text-xl font-bold text-[#101828]">DTMS</h1>
           <p className="mt-0.5 text-sm text-[#667085]">
-            {twoFactorToken ? 'Verifikasi 2 langkah' : 'Delivery Management System'}
+            {twoFactorToken ? 'Verifikasi 2 langkah' : 'Delivery Tracking Management System'}
           </p>
         </div>
 

@@ -20,7 +20,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'DTMS - Delivery Tracking & Management System',
+  title: 'DTMS - Delivery Tracking Management System',
   description: 'Sistem tracking dan manajemen pengiriman terintegrasi',
   manifest: '/manifest.webmanifest',
   appleWebApp: {

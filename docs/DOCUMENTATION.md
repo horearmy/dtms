@@ -1,4 +1,4 @@
-# DTMS — Delivery Tracking & Management System
+# DTMS — Delivery Tracking Management System
 
 Multi-tenant SaaS aplikasi manajemen pengiriman & logistik.
 
@@ -692,3 +692,4 @@ src/
     ├── permissions.ts            # Permission constants & seeding
     └── prisma.ts                 # Prisma client with tenant scoping
 ```
+

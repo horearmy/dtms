@@ -1,6 +1,6 @@
 # DTMS — Dokumentasi Lengkap
 
-> **Delivery Tracking & Management System**
+> **Delivery Tracking Management System**
 > **Versi**: 2.0.0 | **Terakhir diperbarui**: 23 Agustus 2026
 
 ---
@@ -1169,3 +1169,4 @@ npm run start
 ---
 
 *Document generated automatically on 23 Agustus 2026*
+

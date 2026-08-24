@@ -190,7 +190,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
           <div>
             <div className="text-sm font-bold tracking-wide text-white">{whiteLabel?.appName || 'DTMS'}</div>
             <div className="text-[10px] font-medium uppercase tracking-widest text-white/50">
-              Delivery Management System
+              Delivery Tracking Management System
             </div>
           </div>
         </div>

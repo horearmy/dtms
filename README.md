@@ -1,4 +1,4 @@
-# DTMS — Delivery Tracking & Management System
+# DTMS — Delivery Tracking Management System
 
 Sistem manajemen dan pelacakan pengiriman berbasis web (responsive) untuk operasional logistik: manajemen order/shipment, fleet & driver, tracking real-time, proof of delivery (POD), hingga SLA monitoring dan geofencing.
 

@@ -78,7 +78,7 @@ export default function ReportPdfExport({ data }: { data: ReportData }) {
       doc.text('DTMS', M, 16);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text('Delivery Tracking & Management System', M, 22);
+      doc.text('Delivery Tracking Management System', M, 22);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('LAPORAN OPERASIONAL PENGIRIMAN', M, 33);
