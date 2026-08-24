@@ -351,8 +351,12 @@ model Invoice {
   invoiceNumber      String       @unique
   status             String       @default("DRAFT")
   subtotal           Float        @default(0)
+  discountAmount     Float        @default(0)
   tax                Float        @default(0)
   total              Float        @default(0)
+  paidAmount         Float        @default(0)
+  periodKey          String       @default("")
+  issuedAt           DateTime?
   currency           String       @default("IDR")
   dueDate            DateTime
   paidAt             DateTime?
@@ -360,13 +364,88 @@ model Invoice {
   billingPeriodEnd   DateTime
   lineItems          Json?
   createdAt          DateTime     @default(now())
-  updatedAt          DateTime @updatedAt
+  updatedAt          DateTime     @updatedAt
   subscription       Subscription @relation(fields: [subscriptionId], references: [id])
   tenant             Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  payments            Payment[]
+  payments           Payment[]
 
+  @@unique([subscriptionId, periodKey])
   @@index([status])
   @@index([tenantId])
+}
+
+model Contract {
+  id               String    @id @default(cuid())
+  tenantId         String
+  contractNumber   String    @unique
+  planCode         String?
+  startDate        DateTime
+  endDate          DateTime?
+  billingCycle     String    @default("MONTHLY")
+  paymentTermsDays Int       @default(14)
+  autoRenew        Boolean   @default(true)
+  creditLimit      Float     @default(0)
+  gracePeriodDays  Int       @default(14)
+  status           String    @default("ACTIVE")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+model PriceComponent {
+  id            String    @id @default(cuid())
+  planId        String
+  code          String
+  name          String
+  chargeType    String    @default("FIXED")
+  unit          String?
+  unitPrice     Float     @default(0)
+  minQuantity   Float     @default(0)
+  maxQuantity   Float?
+  taxable       Boolean   @default(true)
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now())
+  plan          Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, code])
+  @@index([planId])
+}
+
+model BillingRun {
+  id            String    @id @default(cuid())
+  periodStart   DateTime
+  periodEnd     DateTime
+  periodKey     String
+  runType       String    @default("MANUAL")
+  status        String    @default("PENDING")
+  startedAt     DateTime?
+  completedAt   DateTime?
+  totalTenants  Int       @default(0)
+  totalInvoices Int       @default(0)
+  totalAmount   Float     @default(0)
+  errorCount    Int       @default(0)
+  triggeredBy   String?
+  createdAt     DateTime  @default(now())
+
+  @@unique([periodKey, runType])
+  @@index([status])
+}
+
+model TaxRule {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  name          String
+  rate          Float
+  country       String    @default("ID")
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now())
 }
 
 model LoginAttempt {
@@ -501,6 +580,7 @@ model Plan {
   maxOrganizations  Int            @default(1)
   trialDays         Int            @default(0)
   subscriptions      Subscription[]
+  priceComponents    PriceComponent[]
 }
 
 model PlanAddon {
@@ -768,6 +848,7 @@ model Tenant {
   slaEvents            SlaEvent[]
   slaPolicies           SlaPolicy[]
   subscription        Subscription?
+  contracts           Contract[]
   tenantAddons         TenantAddon[]
   tenantHealthMetrics  TenantHealthMetric[]
   tenantOnboardings    TenantOnboarding[]
