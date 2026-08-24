@@ -34,8 +34,42 @@ function clientIp(req: NextRequest) {
   return req.headers.get('x-real-ip') || 'local';
 }
 
-function rateLimit(key: string, limit: number): { allowed: boolean; remaining: number; retryAfterSec: number } {
+// Upstash Redis opsional — jika env diset, limit dibagi antar-instance (edge-safe, berbasis fetch)
+let redisClient: { incr(key: string): Promise<number>; pexpire(key: string, ms: number): Promise<unknown> } | null | undefined;
+async function getRedis() {
+  if (redisClient !== undefined) return redisClient;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
+    redisClient = null;
+    return null;
+  }
+  try {
+    const { Redis } = await import('@upstash/redis');
+    redisClient = new Redis({ url, token }) as unknown as NonNullable<typeof redisClient>;
+  } catch {
+    redisClient = null;
+  }
+  return redisClient;
+}
+
+async function rateLimit(key: string, limit: number): Promise<{ allowed: boolean; remaining: number; retryAfterSec: number }> {
   const now = Date.now();
+  const redis = await getRedis();
+  if (redis) {
+    try {
+      const rk = `rl:mw:${key}`;
+      const count = await redis.incr(rk);
+      if (count === 1) await redis.pexpire(rk, RATE_WINDOW_MS);
+      return {
+        allowed: count <= limit,
+        remaining: Math.max(0, limit - count),
+        retryAfterSec: Math.max(1, Math.ceil(RATE_WINDOW_MS / 1000)),
+      };
+    } catch {
+      // Redis gagal → jatuh ke memori lokal
+    }
+  }
   const b = buckets.get(key);
   if (!b || b.resetAt <= now) {
     buckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
@@ -119,7 +153,7 @@ export async function middleware(req: NextRequest) {
     const isGps = pathname === '/api/gps' && req.method === 'POST';
     const limit = isLogin ? RATE_LOGIN_LIMIT : isGps ? RATE_GPS_LIMIT : RATE_API_LIMIT;
     const key = `${isLogin ? 'login' : isGps ? 'gps' : 'api'}:${ip}`;
-    const rl = rateLimit(key, limit);
+    const rl = await rateLimit(key, limit);
     if (!rl.allowed) {
       return addSecurityHeaders(NextResponse.json(
         { error: 'Terlalu banyak permintaan. Silakan coba lagi nanti.' },

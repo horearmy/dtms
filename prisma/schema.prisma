@@ -289,6 +289,24 @@ model GpsLog {
   @@index([vehicleId])
 }
 
+model JobQueue {
+  id          String    @id @default(cuid())
+  type        String
+  payload     Json
+  status      String    @default("pending")
+  attempt     Int       @default(0)
+  maxAttempts Int       @default(3)
+  error       String?
+  runAfter    DateTime  @default(now())
+  lockedAt    DateTime?
+  lockedBy    String?
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  @@index([status, runAfter, createdAt])
+}
+
 model Hub {
   id           String   @id @default(cuid())
   tenantId     String
@@ -578,6 +596,7 @@ model Plan {
   maxBranches       Int            @default(1)
   maxHubs           Int            @default(0)
   maxOrganizations  Int            @default(1)
+  maxVehicles       Int            @default(-1)
   trialDays         Int            @default(0)
   subscriptions      Subscription[]
   priceComponents    PriceComponent[]
@@ -823,6 +842,7 @@ model Tenant {
   maxBranches         Int                   @default(1)
   maxHubs             Int                   @default(0)
   maxOrganizations    Int                   @default(1)
+  maxVehicles         Int                   @default(-1)
   maxStorageMb        Int                   @default(50)
   apiKeys              ApiKey[]
   auditLogs            AuditLog[]

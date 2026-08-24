@@ -26,7 +26,7 @@ export async function GET() {
   }
 
   // Queue stats
-  const queue = getStats();
+  const queue = await getStats();
   checks.queue = `pending=${queue.pending} running=${queue.running} failed=${queue.failed}`;
 
   // Memory

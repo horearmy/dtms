@@ -105,7 +105,7 @@ export async function getTenantFeatures(tenantId: string): Promise<string[]> {
   }
 }
 
-type ResourceKey = 'users' | 'drivers' | 'shipments' | 'branches' | 'hubs' | 'organizations';
+type ResourceKey = 'users' | 'drivers' | 'shipments' | 'branches' | 'hubs' | 'organizations' | 'vehicles';
 
 const RESOURCE_COUNT_FN: Record<ResourceKey, (tenantId: string) => Promise<number>> = {
   users: (tid) => prisma.user.count({ where: { tenantId: tid } }),
@@ -114,6 +114,7 @@ const RESOURCE_COUNT_FN: Record<ResourceKey, (tenantId: string) => Promise<numbe
   branches: (tid) => prisma.branch.count({ where: { tenantId: tid } }),
   hubs: (tid) => prisma.hub.count({ where: { tenantId: tid } }),
   organizations: (tid) => prisma.organization.count({ where: { tenantId: tid } }),
+  vehicles: (tid) => prisma.vehicle.count({ where: { tenantId: tid } }),
 };
 
 const RESOURCE_LIMIT_FIELD: Record<ResourceKey, string> = {
@@ -123,6 +124,7 @@ const RESOURCE_LIMIT_FIELD: Record<ResourceKey, string> = {
   branches: 'maxBranches',
   hubs: 'maxHubs',
   organizations: 'maxOrganizations',
+  vehicles: 'maxVehicles',
 };
 
 export async function checkPlanLimit(
@@ -140,6 +142,7 @@ export async function checkPlanLimit(
       maxBranches: true,
       maxHubs: true,
       maxOrganizations: true,
+      maxVehicles: true,
     },
   });
   if (!tenant) return { allowed: false, current: 0, max: 0 };
@@ -241,6 +244,7 @@ export async function createSubscription(tenantId: string, planCode: string, bil
       maxBranches: plan.maxBranches,
       maxHubs: plan.maxHubs,
       maxOrganizations: plan.maxOrganizations,
+      maxVehicles: plan.maxVehicles,
       maxStorageMb: plan.maxStorageMb,
     },
   });

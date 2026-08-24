@@ -14,7 +14,7 @@ export async function GET() {
   collectSystemMetrics();
 
   // Add job queue metrics
-  const queue = getStats();
+  const queue = await getStats();
   const { gauge } = await import('@/lib/metrics');
   gauge('dtms_queue_pending', 'Pending jobs', {}, queue.pending);
   gauge('dtms_queue_running', 'Running jobs', {}, queue.running);

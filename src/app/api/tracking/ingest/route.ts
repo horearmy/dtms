@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api-guard';
 import { ingestGps } from '@/lib/gps-processor';
-import { getJob } from '@/lib/job-queue';
 
 interface GpsIngestRequest {
   driverId: string;
