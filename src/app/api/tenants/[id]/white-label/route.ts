@@ -9,6 +9,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
+  if (session.role !== 'SUPER_ADMIN' && session.tenantId !== id) {
+    return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
+  }
   const wl = await prisma.whiteLabel.findUnique({ where: { tenantId: id } });
   return NextResponse.json(wl || { tenantId: id, active: false });
 }

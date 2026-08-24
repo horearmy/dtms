@@ -20,6 +20,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
+  if (session.role !== 'SUPER_ADMIN' && session.tenantId !== id) {
+    return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
+  }
   const steps = await prisma.tenantOnboarding.findMany({
     where: { tenantId: id },
     orderBy: { order: 'asc' },

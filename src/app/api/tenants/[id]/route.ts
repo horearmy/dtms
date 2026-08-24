@@ -12,6 +12,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
+  if (session.role !== 'SUPER_ADMIN' && session.tenantId !== id) {
+    return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
+  }
   const tenant = await prisma.tenant.findUnique({
     where: { id },
     include: {
@@ -73,7 +76,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   // If plan changed, use createSubscription to sync both Tenant.plan AND Subscription
-  if (body.plan !== undefined && body.plan !== tenant.plan) {
+  // Khusus SUPER_ADMIN — tenant admin berlangganan via /api/billing agar invoice dibuat
+  if (isSuperAdmin && body.plan !== undefined && body.plan !== tenant.plan) {
     const blocked = await validatePlanChange(id, String(body.plan));
     if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
     await createSubscription(id, String(body.plan), body.billingCycle || 'MONTHLY');

@@ -16,9 +16,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pat
   const { path: parts } = await params;
   if (!parts.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  if (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN_OPERASIONAL') {
+  if (session.role !== 'SUPER_ADMIN') {
     const fileTenant = parts[0];
-    if (session.tenantId && fileTenant !== session.tenantId) {
+    if (!session.tenantId || fileTenant !== session.tenantId) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
   }

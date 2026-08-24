@@ -2,7 +2,15 @@
 // Public tracking lookup — no auth required. Returns safe DTO only.
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { calculateEta } from '@/lib/eta-engine';
+import { getClientIp, checkRateLimit } from '@/lib/security';
+
+function maskName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length <= 1) return parts[0]?.[0] ? parts[0][0] + '***' : '***';
+  const first = parts[0][0] + '***';
+  const last = parts[parts.length - 1][0] + '.';
+  return `${first} ${last}`;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +27,11 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export async function GET(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (!await checkRateLimit(`track:${ip}`, 30, 60_000)) {
+    return NextResponse.json({ error: 'Terlalu banyak request, coba lagi nanti' }, { status: 429 });
+  }
+
   const url = new URL(req.url);
   const trackingNumber = url.searchParams.get('q')?.trim();
 
@@ -74,18 +87,19 @@ export async function GET(req: NextRequest) {
     itemName: shipment.itemName,
     itemCount: shipment.itemCount,
     weight: shipment.weight,
-    sender: shipment.sender?.name || '-',
-    receiver: shipment.receiver?.name || '-',
+    sender: shipment.sender ? maskName(shipment.sender.name) : '-',
+    receiver: shipment.receiver ? maskName(shipment.receiver.name) : '-',
     createdAt: shipment.createdAt,
     updatedAt: shipment.updatedAt,
     slaDeadline: shipment.slaDeadline,
     timeline: shipment.events.map((e) => ({
       status: e.status,
       statusLabel: STATUS_LABELS[e.status] || e.status,
-      location: e.latitude != null && e.longitude != null ? `${e.latitude}, ${e.longitude}` : null,
       notes: e.notes,
       timestamp: e.createdAt,
     })),
-    pod: shipment.pods[0] || null,
+    pod: shipment.pods[0]
+      ? { ...shipment.pods[0], receiverName: maskName(shipment.pods[0].receiverName) }
+      : null,
   });
 }
