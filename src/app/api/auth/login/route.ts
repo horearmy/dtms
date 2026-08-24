@@ -39,7 +39,10 @@ export async function POST(req: NextRequest) {
         user = null;
       }
     }
+    // Hash dummy untuk menyamakan waktu respons antara user tak dikenal dan password salah
+    const DUMMY_HASH = '$2a$12$N6EIOlmbK6eF0YXpMxJ9xOKbXzvPgD3s9rxQut.vH0B0muqr3zloG';
     if (!user) {
+      await bcrypt.compare(password, DUMMY_HASH).catch(() => false);
       await recordLoginAttempt(key, ip, false);
       await prisma.auditLog.create({
         data: { action: 'LOGIN_FAILED', module: 'AUTH', newData: `username=${key}, ip=${ip}, tenantId=${tenantId || 'none'}` },
@@ -80,7 +83,7 @@ export async function POST(req: NextRequest) {
       mustChangePassword: user.mustChangePassword,
     });
 
-    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, pwdVersion: user.pwdVersion });
+    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword });
 
     if (user.tenantId) {
       const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { slug: true } });

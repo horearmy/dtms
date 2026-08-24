@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({
       ok: true,
-      message: 'Jika akun ditemukan, instruksi reset sudah dikirim.',
+      message: 'Jika akun ditemukan, instruksi reset telah dikirim.',
     });
   }
 
@@ -93,13 +93,9 @@ export async function POST(req: NextRequest) {
 
   logger.info('Password reset requested', { context: 'auth', data: { userId: user.id, username: user.username, sent, waError } });
 
+  // Respons selalu identik agar keberadaan akun tidak bisa dienumerasi
   return NextResponse.json({
     ok: true,
-    message: sent
-      ? 'Instruksi reset sudah dikirim via WhatsApp.'
-      : user.phone
-        ? `Gagal kirim WhatsApp${waError ? ': ' + waError : ''}. Coba lagi nanti.`
-        : 'Akun tidak memiliki nomor WhatsApp. Hubungi admin.',
-    sent,
+    message: 'Jika akun ditemukan, instruksi reset telah dikirim.',
   });
 }

@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
       return r;
     }
 
-    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, pwdVersion: user.pwdVersion });
+    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword });
 
     const target = user.mustChangePassword
       ? '/account/password?first=1'

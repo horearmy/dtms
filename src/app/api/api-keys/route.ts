@@ -30,6 +30,9 @@ export async function POST(req: NextRequest) {
     const rawKey = `dtms_${crypto.randomBytes(24).toString('hex')}`;
     const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
     const keyPrefix = rawKey.slice(0, 12);
+    const VALID_SCOPES = ['read', 'write'];
+    const scopes = (Array.isArray(body.scopes) ? body.scopes : ['read']).filter((s: unknown) => typeof s === 'string' && VALID_SCOPES.includes(s));
+    if (!scopes.length) scopes.push('read');
 
     const apiKey = await prisma.apiKey.create({
       data: {
@@ -37,7 +40,7 @@ export async function POST(req: NextRequest) {
         name: body.name,
         keyHash,
         keyPrefix,
-        scopes: body.scopes || ['read'],
+        scopes,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
       },
     });

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Handshake, Plus, RefreshCcw } from 'lucide-react';
 import { Modal } from './InvoicesTab';
+import { PLAN_ORDER as PLAN_CODES } from '@/lib/plan-constants';
 
 type Contract = {
   id: string; contractNumber: string; planCode: string | null; billingCycle: string;
@@ -13,7 +14,6 @@ type Contract = {
 
 type TenantOpt = { id: string; name: string; code: string | null; slug: string };
 
-const PLAN_CODES = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
 const CYCLES = ['MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL'];
 
 export default function ContractsTab() {

@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
         role: session!.role,
         tenantId: session!.tenantId,
         branchId: session!.branchId,
+        mustChangePassword: session!.mustChangePassword,
       });
 
       await logAudit(session, 'CANCEL_SUBSCRIPTION', 'BILLING', {

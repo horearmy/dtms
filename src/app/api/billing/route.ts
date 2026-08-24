@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guardPermission, guard, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { getPlans, getTenantSubscription, getUsageSummary, createSubscription, validatePlanChange } from '@/lib/billing';
+import { PLAN_ORDER } from '@/lib/plan-constants';
 import { setSession } from '@/lib/auth';
 
 // GET — plans + current subscription + usage (any authenticated user)
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'planCode wajib' }, { status: 400 });
     }
 
-    const validCodes = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
+    const validCodes = PLAN_ORDER;
     if (!validCodes.includes(planCode)) {
       return NextResponse.json({ error: 'Plan tidak valid' }, { status: 400 });
     }
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
         role: session!.role,
         tenantId: session!.tenantId,
         branchId: session!.branchId,
+        mustChangePassword: session!.mustChangePassword,
       });
 
       await logAudit(session, 'SUBSCRIBE_PLAN', 'BILLING', {

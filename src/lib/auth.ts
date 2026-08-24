@@ -20,6 +20,7 @@ export type SessionUser = {
   branchId: string | null;
   plan?: string;
   planFeatures?: string[];
+  mustChangePassword?: boolean;
 };
 
 export async function signToken(user: SessionUser & { pwdVersion?: number }) {
@@ -44,6 +45,7 @@ export async function signToken(user: SessionUser & { pwdVersion?: number }) {
     pwd: user.pwdVersion ?? 1,
     plan,
     planFeatures,
+    mcp: user.mustChangePassword === true,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -64,6 +66,7 @@ export async function verifyToken(token: string): Promise<SessionUser & { pwd: n
       pwd: (payload.pwd as number) ?? 1,
       plan: (payload.plan as string) ?? 'FREE',
       planFeatures: (payload.planFeatures as string[]) ?? [],
+      mustChangePassword: payload.mcp === true,
     };
   } catch {
     return null;
@@ -84,6 +87,14 @@ async function verifyApiKey(authHeader: string): Promise<SessionUser | null> {
   if (!apiKey || !apiKey.active) return null;
   if (apiKey.expiresAt && apiKey.expiresAt < new Date()) return null;
   if (apiKey.tenantId && (!apiKey.tenant?.active || apiKey.tenant?.status !== 'ACTIVE')) return null;
+
+  // Enforce scope: GET/HEAD butuh 'read', metode lain butuh 'write'.
+  // Header x-dtms-method di-set middleware; tanpa header (panggilan internal/test) dilewati.
+  const method = (await headers()).get('x-dtms-method');
+  if (method) {
+    const needed = method === 'GET' || method === 'HEAD' ? 'read' : 'write';
+    if (!apiKey.scopes.includes(needed)) return null;
+  }
 
   await prisma.apiKey.update({
     where: { id: apiKey.id },
@@ -159,6 +170,7 @@ export async function getSession(): Promise<SessionUser | null> {
             tenantId: user.tenantId,
             branchId: user.branchId,
             pwdVersion: user.pwdVersion,
+            mustChangePassword: payload.mustChangePassword,
           });
           store.set(COOKIE_NAME, fresh, {
             httpOnly: true,
@@ -176,7 +188,7 @@ export async function getSession(): Promise<SessionUser | null> {
       } catch { /* ignore */ }
     }
 
-    return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan, planFeatures };
+    return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan, planFeatures, mustChangePassword: payload.mustChangePassword };
   }
 
   const hdrs = await headers();

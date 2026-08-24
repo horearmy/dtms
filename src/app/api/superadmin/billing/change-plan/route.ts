@@ -3,8 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
 import { createSubscription, getTenantSubscription, validatePlanChange } from '@/lib/billing';
-
-const VALID_CODES = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
+import { PLAN_ORDER as VALID_CODES } from '@/lib/plan-constants';
 
 // POST — ubah plan/billing cycle sebuah tenant (superadmin only)
 export async function POST(req: NextRequest) {

@@ -9,6 +9,12 @@ export async function GET() {
   const { session, error } = await guard();
   if (error) return error;
 
+  // Posisi seluruh armada hanya untuk role operasional — driver/cs/gudang tidak boleh melihat
+  const FLEET_VIEW_ROLES = ['SUPER_ADMIN', 'ADMIN_OPERASIONAL', 'DISPATCHER'];
+  if (!session || !FLEET_VIEW_ROLES.includes(session.role)) {
+    return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
+  }
+
   return runWithTenant(session?.tenantId ?? null, async () => {
     const tenantCondition = session?.tenantId
       ? Prisma.sql`AND d."tenantId" = ${session.tenantId}`

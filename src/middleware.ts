@@ -24,9 +24,14 @@ setInterval(() => {
 }, RATE_WINDOW_MS).unref?.();
 
 function clientIp(req: NextRequest) {
+  // Ambil hop paling kanan dari X-Forwarded-For (ditambahkan proxy terpercaya kita),
+  // bukan yang pertama (dapat dipalsukan klien) — konsisten dengan lib/security.
   const fwd = req.headers.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0].trim();
-  return req.headers.get('x-real-ip') || req.headers.get('x-forwarded-host') || 'local';
+  if (fwd) {
+    const parts = fwd.split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1];
+  }
+  return req.headers.get('x-real-ip') || 'local';
 }
 
 function rateLimit(key: string, limit: number): { allowed: boolean; remaining: number; retryAfterSec: number } {
@@ -101,8 +106,12 @@ export async function middleware(req: NextRequest) {
   const isPublic = isPublicPage || isTrackingApi || isDemoRequestApi || isTenantListApi || isSuperadminLoginApi;
 
   if (pathname.startsWith('/api/')) {
+    // Teruskan HTTP method ke route handler agar verifikasi scope API key bisa terpusat
+    const fwdHeaders = new Headers(req.headers);
+    fwdHeaders.set('x-dtms-method', req.method);
+
     if (isPublic) {
-      const res = NextResponse.next();
+      const res = NextResponse.next({ request: { headers: fwdHeaders } });
       return addSecurityHeaders(res);
     }
 
@@ -128,9 +137,24 @@ export async function middleware(req: NextRequest) {
           { status: 403 }
         ));
       }
+
+      // Paksa ganti password: blokir semua mutasi kecuali change-password & logout
+      const MCP_ALLOWED = ['/api/auth/change-password', '/api/auth/logout'];
+      const sessToken = req.cookies.get(COOKIE_NAME)?.value;
+      if (!isApiKeyRequest && sessToken && !MCP_ALLOWED.includes(pathname)) {
+        try {
+          const { payload } = await jwtVerify(sessToken, secret);
+          if (payload.mcp === true) {
+            return addSecurityHeaders(NextResponse.json(
+              { error: 'Anda wajib mengganti password terlebih dahulu', mustChangePassword: true },
+              { status: 403 }
+            ));
+          }
+        } catch { /* token tidak valid — biarkan route menolak */ }
+      }
     }
 
-    const res = NextResponse.next();
+    const res = NextResponse.next({ request: { headers: fwdHeaders } });
     if (!req.cookies.get(CSRF_COOKIE)) {
       res.cookies.set(CSRF_COOKIE, generateCsrfToken(), {
         httpOnly: false,
@@ -183,6 +207,15 @@ export async function middleware(req: NextRequest) {
   try {
     const { payload } = await jwtVerify(token!, secret);
     const role = payload.role as string;
+
+    // Wajib ganti password: alihkan ke halaman ubah password sampai selesai
+    if (payload.mcp === true && !pathname.startsWith('/account')) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/account/password';
+      url.searchParams.set('first', '1');
+      return NextResponse.redirect(url);
+    }
+
     if (role === 'SUPER_ADMIN' && isOperationalRoute) {
       const url = req.nextUrl.clone();
       url.pathname = '/tenants';

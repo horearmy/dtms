@@ -4,10 +4,11 @@
 // invoice lifecycle (issue/void), payment recording, dashboard KPI.
 import { prisma } from './prisma';
 import { logger } from './logger';
+import { PPN_RATE } from './plan-constants';
 
 const log = logger.child('billing-engine');
 
-const DEFAULT_TAX_RATE = 0.11;
+const DEFAULT_TAX_RATE = PPN_RATE;
 const DEFAULT_PAYMENT_TERMS_DAYS = 14;
 
 export type LineItem = {

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, Zap, Lock, X, ArrowRight, FileText, Puzzle } from 'lucide-react';
+import { PLAN_ORDER, PPN_RATE } from '@/lib/plan-constants';
 
 type Plan = {
   id: string;
@@ -94,7 +95,6 @@ const FEATURES: Record<string, string> = {
 };
 
 const ALL_FEATURES = Object.keys(FEATURES);
-const PLAN_ORDER = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
 
 export default function BillingPage() {
   return (
@@ -501,11 +501,11 @@ function BillingPageInner() {
                 <>
                   <div className="flex items-center justify-between text-xs text-gray-400">
                     <span>PPN 11%</span>
-                    <span>Rp {Math.round((billingCycle === 'MONTHLY' ? confirmPlan.priceMonthly : confirmPlan.priceYearly) * 0.11).toLocaleString('id-ID')}</span>
+                    <span>Rp {Math.round((billingCycle === 'MONTHLY' ? confirmPlan.priceMonthly : confirmPlan.priceYearly) * PPN_RATE).toLocaleString('id-ID')}</span>
                   </div>
                   <div className="mt-2 flex items-center justify-between border-t border-blue-100 pt-2">
                     <span className="text-sm font-semibold text-gray-900">Total</span>
-                    <span className="text-lg font-bold text-gray-900">Rp {Math.round((billingCycle === 'MONTHLY' ? confirmPlan.priceMonthly : confirmPlan.priceYearly) * 1.11).toLocaleString('id-ID')}</span>
+                    <span className="text-lg font-bold text-gray-900">Rp {Math.round((billingCycle === 'MONTHLY' ? confirmPlan.priceMonthly : confirmPlan.priceYearly) * (1 + PPN_RATE)).toLocaleString('id-ID')}</span>
                   </div>
                 </>
               )}

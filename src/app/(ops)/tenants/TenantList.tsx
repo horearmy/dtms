@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-
-const PLAN_ORDER = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
+import { PLAN_ORDER } from '@/lib/plan-constants';
 
 type Tenant = {
   id: string;

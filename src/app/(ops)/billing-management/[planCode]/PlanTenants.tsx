@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Search, ChevronLeft, ChevronRight, ArrowUpCircle, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { PLAN_ORDER } from '@/lib/plan-constants';
 
 type TenantRow = {
   id: string;
@@ -36,8 +37,6 @@ type PlanOption = { id: string; name: string; code: string; priceMonthly: number
 function rupiah(n: number) {
   return n === 0 ? 'Gratis' : `Rp ${n.toLocaleString('id-ID')}`;
 }
-
-const PLAN_ORDER = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
 
 export default function PlanTenants({ planCode }: { planCode: string }) {
   const [plan, setPlan] = useState<PlanInfo | null>(null);

@@ -3,6 +3,9 @@
 // Plans are seeded ONLY from prisma/seed.js (or ensurePlans fallback).
 import { prisma } from './prisma';
 import { logger } from './logger';
+import { PLAN_ORDER, PPN_RATE } from './plan-constants';
+
+export { PLAN_ORDER, PPN_RATE };
 
 const log = logger.child('billing');
 
@@ -44,8 +47,6 @@ const PLAN_DEFINITIONS = [
     features: ['basic_tracking', 'dispatch', 'reports', 'gps_tracking', 'warehouse_management', 'geofencing', 'branch_management', 'sla', 'eta', 'control_tower', 'api', 'webhooks', 'daily_reports', 'analytics_advanced', 'integrations', 'whatsapp_integration', 'white_label', 'priority_support'],
   },
 ];
-
-const PLAN_ORDER = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
 
 let plansSeeded = false;
 
@@ -399,7 +400,7 @@ export async function generateInvoice(tenantId: string) {
   const count = await prisma.invoice.count({ where: { tenantId } });
   const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-${String(count + 1).padStart(4, '0')}`;
 
-  const tax = Math.round(amount * 0.11); // PPN 11%
+  const tax = Math.round(amount * PPN_RATE); // PPN 11%
 
   const invoice = await prisma.invoice.create({
     data: {
@@ -423,7 +424,7 @@ export async function generateInvoice(tenantId: string) {
 }
 
 // ─── Helpers ─────────────────────────────────────────────
-export { PLAN_DEFINITIONS, PLAN_ORDER };
+export { PLAN_DEFINITIONS };
 
 export const PLAN_LABELS: Record<string, string> = {
   FREE: 'Free',
