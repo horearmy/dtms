@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
 import { runWithTenant } from '@/lib/api-guard';
-import { createSubscription } from '@/lib/billing';
+import { createSubscription, validatePlanChange } from '@/lib/billing';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -74,13 +74,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   // If plan changed, use createSubscription to sync both Tenant.plan AND Subscription
   if (body.plan !== undefined && body.plan !== tenant.plan) {
+    const blocked = await validatePlanChange(id, String(body.plan));
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
     await createSubscription(id, String(body.plan), body.billingCycle || 'MONTHLY');
-
-    // Invalidate all tenant user sessions (bump pwdVersion) so JWT gets fresh plan
-    await prisma.user.updateMany({
-      where: { tenantId: id },
-      data: { pwdVersion: { increment: 1 } },
-    });
   }
 
   // Remove plan from data since createSubscription already sets it

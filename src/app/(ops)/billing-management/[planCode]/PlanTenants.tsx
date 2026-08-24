@@ -282,8 +282,23 @@ export default function PlanTenants({ planCode }: { planCode: string }) {
             </div>
 
             <p className="mb-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
-              Perubahan berlaku segera: kuota tenant akan disesuaikan dengan paket baru dan invoice otomatis dibuat untuk paket berbayar.
+              Upgrade berlaku segera: kuota tenant disesuaikan dengan paket baru dan invoice otomatis dibuat untuk paket berbayar. Downgrade hanya dapat dilakukan setelah masa langganan tenant berakhir.
             </p>
+
+            {(() => {
+              const selIdx = PLAN_ORDER.indexOf(selectedPlan);
+              const curIdx = PLAN_ORDER.indexOf(planCode);
+              if (selIdx === -1 || selIdx >= curIdx) return null;
+              const sub = upgradeTarget?.subscription;
+              const active = sub?.status === 'ACTIVE' && sub?.currentPeriodEnd && new Date(sub.currentPeriodEnd) > new Date();
+              return (
+                <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-600">
+                  {active
+                    ? `Tidak dapat downgrade: masa langganan ${upgradeTarget?.name} masih aktif sampai ${new Date(sub!.currentPeriodEnd).toLocaleDateString('id-ID')}.`
+                    : 'Perhatian: ini adalah penurunan paket. Kuota dan fitur tenant akan langsung dikurangi.'}
+                </div>
+              );
+            })()}
 
             <div className="flex gap-2">
               <button onClick={() => setUpgradeTarget(null)} className="flex-1 rounded-lg border border-gray-300 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
@@ -291,7 +306,13 @@ export default function PlanTenants({ planCode }: { planCode: string }) {
               </button>
               <button
                 onClick={submitUpgrade}
-                disabled={!selectedPlan || submitting}
+                disabled={!selectedPlan || submitting || (() => {
+                  const selIdx = PLAN_ORDER.indexOf(selectedPlan);
+                  const curIdx = PLAN_ORDER.indexOf(planCode);
+                  if (selIdx === -1 || selIdx >= curIdx) return false;
+                  const sub = upgradeTarget?.subscription;
+                  return sub?.status === 'ACTIVE' && !!sub?.currentPeriodEnd && new Date(sub.currentPeriodEnd) > new Date();
+                })()}
                 className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {submitting ? 'Memproses...' : 'Konfirmasi'}

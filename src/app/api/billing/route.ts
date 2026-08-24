@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardPermission, guard, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
-import { getPlans, getTenantSubscription, getUsageSummary, createSubscription } from '@/lib/billing';
+import { getPlans, getTenantSubscription, getUsageSummary, createSubscription, validatePlanChange } from '@/lib/billing';
 import { setSession } from '@/lib/auth';
 
 // GET — plans + current subscription + usage (any authenticated user)
@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+      const blocked = await validatePlanChange(session!.tenantId!, planCode);
+      if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
       const oldSub = await getTenantSubscription(session?.tenantId || '');
       const subscription = await createSubscription(session?.tenantId || '', planCode, billingCycle);
 

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+const PLAN_ORDER = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
+
 type Tenant = {
   id: string;
   name: string;
@@ -269,9 +271,25 @@ export default function TenantList() {
                     className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none">
                     <option value="FREE">Free</option>
                     <option value="STARTER">Starter</option>
+                    <option value="GROWTH">Growth</option>
                     <option value="PRO">Professional</option>
                     <option value="ENTERPRISE">Enterprise</option>
                   </select>
+                  {editTenant && PLAN_ORDER.indexOf(form.plan) < PLAN_ORDER.indexOf(editTenant.plan) && (
+                    <p className={`mt-1 text-[11px] leading-tight ${(() => {
+                      const sub = editTenant.subscription;
+                      const active = sub?.status === 'ACTIVE' && sub?.currentPeriodEnd && new Date(sub.currentPeriodEnd) > new Date();
+                      return active ? 'text-[#F5222D]' : 'text-[#667085]';
+                    })()}`}>
+                      {(() => {
+                        const sub = editTenant.subscription;
+                        const active = sub?.status === 'ACTIVE' && sub?.currentPeriodEnd && new Date(sub.currentPeriodEnd) > new Date();
+                        return active
+                          ? `Masa langganan aktif s/d ${new Date(sub!.currentPeriodEnd).toLocaleDateString('id-ID')} — downgrade akan ditolak.`
+                          : 'Perhatian: ini penurunan paket, kuota langsung dikurangi.';
+                      })()}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[#667085]">Timezone</label>

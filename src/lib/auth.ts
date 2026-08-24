@@ -143,7 +143,40 @@ export async function getSession(): Promise<SessionUser | null> {
     });
     if (!user || user.status !== 'ACTIVE') return null;
     if (user.pwdVersion !== payload.pwd) return null;
-    return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan: payload.plan, planFeatures: payload.planFeatures };
+
+    let plan = payload.plan;
+    let planFeatures = payload.planFeatures;
+    if (user.tenantId && user.tenantId !== '') {
+      try {
+        const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { plan: true } });
+        if (tenant && tenant.plan !== payload.plan) {
+          // Plan berubah — terbitkan ulang token secara transparan (tanpa logout)
+          const fresh = await signToken({
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            role: user.role,
+            tenantId: user.tenantId,
+            branchId: user.branchId,
+            pwdVersion: user.pwdVersion,
+          });
+          store.set(COOKIE_NAME, fresh, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60 * (Number(process.env.SESSION_HOURS) || 12),
+          });
+          const freshPayload = await verifyToken(fresh);
+          if (freshPayload) {
+            plan = freshPayload.plan;
+            planFeatures = freshPayload.planFeatures;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+
+    return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan, planFeatures };
   }
 
   const hdrs = await headers();

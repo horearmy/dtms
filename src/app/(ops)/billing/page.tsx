@@ -115,6 +115,7 @@ function BillingPageInner() {
   const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [confirmPlan, setConfirmPlan] = useState<Plan | null>(null);
+  const [subErr, setSubErr] = useState('');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [activeTab, setActiveTab] = useState<'plans' | 'invoices' | 'addons'>('plans');
   const [cancelling, setCancelling] = useState(false);
@@ -125,6 +126,12 @@ function BillingPageInner() {
   const currentPlanCode = subscription?.plan?.code || 'FREE';
   const trialEndsAt = subscription?.trialEndsAt ? new Date(subscription.trialEndsAt) : null;
   const isTrialActive = trialEndsAt && new Date() < trialEndsAt && subscription?.status === 'ACTIVE';
+  const currentPlanIndex = subscription ? PLAN_ORDER.indexOf(subscription.plan.code) : 0;
+  const periodEndDate = subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : null;
+  const periodActive =
+    subscription?.status === 'ACTIVE' && periodEndDate != null && periodEndDate > new Date();
+  const downgradeBlocked = (code: string) =>
+    PLAN_ORDER.indexOf(code) < currentPlanIndex && periodActive;
 
   const fetchData = useCallback(async () => {
     try {
@@ -182,14 +189,19 @@ function BillingPageInner() {
 
   const handleSubscribe = async (planCode: string) => {
     setSubscribing(planCode);
+    setSubErr('');
     try {
       const res = await fetch('/api/billing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planCode, billingCycle }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) { setConfirmPlan(null); fetchData(); }
-    } catch { /* ignore */ }
+      else setSubErr(data.error || 'Gagal mengubah plan');
+    } catch {
+      setSubErr('Gagal mengubah plan');
+    }
     setSubscribing(null);
   };
 
@@ -204,7 +216,6 @@ function BillingPageInner() {
 
   if (loading) return <div className="text-center py-8 text-gray-500">Memuat...</div>;
 
-  const currentPlanIndex = subscription ? PLAN_ORDER.indexOf(subscription.plan.code) : 0;
   const currentPlanName = subscription?.plan?.name || 'Free';
   const isOnFree = currentPlanCode === 'FREE';
 
@@ -345,9 +356,21 @@ function BillingPageInner() {
                   </div>
 
                   {!isCurrent && (
-                    <button onClick={() => isDowngrade ? handleSubscribe(plan.code) : setConfirmPlan(plan)} disabled={subscribing === plan.code} className={`w-full rounded-lg py-2.5 text-sm font-semibold transition disabled:opacity-50 ${isDowngrade ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
-                      {subscribing === plan.code ? '...' : isDowngrade ? 'Downgrade' : price === 0 ? 'Aktifkan' : plan.trialDays > 0 ? `Uji ${plan.trialDays} Hari` : 'Upgrade'}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => { setSubErr(''); setConfirmPlan(plan); }}
+                        disabled={subscribing === plan.code || (isDowngrade && downgradeBlocked(plan.code))}
+                        title={isDowngrade && downgradeBlocked(plan.code) ? `Downgrade dapat dilakukan setelah masa langganan berakhir (${periodEndDate?.toLocaleDateString('id-ID')})` : undefined}
+                        className={`w-full rounded-lg py-2.5 text-sm font-semibold transition disabled:opacity-50 ${isDowngrade ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                      >
+                        {subscribing === plan.code ? '...' : isDowngrade ? 'Downgrade' : price === 0 ? 'Aktifkan' : plan.trialDays > 0 ? `Uji ${plan.trialDays} Hari` : 'Upgrade'}
+                      </button>
+                      {isDowngrade && downgradeBlocked(plan.code) && (
+                        <p className="mt-1 text-center text-[11px] leading-tight text-gray-400">
+                          Setelah periode berakhir ({periodEndDate?.toLocaleDateString('id-ID')})
+                        </p>
+                      )}
+                    </>
                   )}
                   {isCurrent && <div className="w-full rounded-lg bg-blue-100 py-2.5 text-center text-sm font-semibold text-blue-700">Plan Aktif</div>}
                 </div>
@@ -449,11 +472,13 @@ function BillingPageInner() {
         </div>
       )}
 
-      {confirmPlan && (
+      {confirmPlan && (() => {
+        const isDown = PLAN_ORDER.indexOf(confirmPlan.code) < currentPlanIndex;
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900">{confirmPlan.trialDays > 0 ? 'Mulai Uji Coba' : 'Konfirmasi Upgrade'}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{isDown ? 'Konfirmasi Downgrade' : confirmPlan.trialDays > 0 ? 'Mulai Uji Coba' : 'Konfirmasi Upgrade'}</h3>
               <button onClick={() => setConfirmPlan(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
 
@@ -486,19 +511,34 @@ function BillingPageInner() {
               )}
             </div>
 
-            <p className="text-xs text-gray-400 mb-4 text-center">
-              {confirmPlan.trialDays > 0 ? 'Kartu kredit tidak diperlukan selama masa uji.' : 'Invoice akan dibuat otomatis. Pembayaran dilakukan secara manual.'}
-            </p>
+            {isDown ? (
+              <p className="mb-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
+                Downgrade akan menurunkan kuota dan fitur tenant secara langsung. Pastikan penggunaan saat ini tidak melebihi batas paket baru.
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400 mb-4 text-center">
+                {confirmPlan.trialDays > 0 ? 'Kartu kredit tidak diperlukan selama masa uji.' : 'Invoice akan dibuat otomatis. Pembayaran dilakukan secara manual.'}
+              </p>
+            )}
+
+            {subErr && (
+              <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-600">{subErr}</div>
+            )}
 
             <div className="flex gap-2">
               <button onClick={() => setConfirmPlan(null)} className="flex-1 rounded-lg border border-gray-300 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">Batal</button>
-              <button onClick={() => handleSubscribe(confirmPlan.code)} disabled={subscribing === confirmPlan.code} className="flex-1 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition">
-                {subscribing === confirmPlan.code ? '...' : confirmPlan.trialDays > 0 ? 'Mulai Uji Coba' : 'Konfirmasi'}
+              <button
+                onClick={() => handleSubscribe(confirmPlan.code)}
+                disabled={subscribing === confirmPlan.code || (isDown && downgradeBlocked(confirmPlan.code))}
+                className={`flex-1 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-50 transition ${isDown ? 'bg-gray-700 hover:bg-gray-800' : 'bg-blue-600 hover:bg-blue-700'}`}
+              >
+                {subscribing === confirmPlan.code ? '...' : isDown ? 'Ya, Turunkan Paket' : confirmPlan.trialDays > 0 ? 'Mulai Uji Coba' : 'Konfirmasi'}
               </button>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

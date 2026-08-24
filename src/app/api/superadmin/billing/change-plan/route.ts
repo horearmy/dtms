@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
-import { createSubscription, getTenantSubscription } from '@/lib/billing';
+import { createSubscription, getTenantSubscription, validatePlanChange } from '@/lib/billing';
 
 const VALID_CODES = ['FREE', 'STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'];
 
@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const blocked = await validatePlanChange(tenantId, planCode);
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 400 });
     const oldSub = await getTenantSubscription(tenantId);
     const subscription = await createSubscription(tenantId, planCode, billingCycle);
 

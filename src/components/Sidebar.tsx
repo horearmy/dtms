@@ -122,8 +122,8 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
             { href: '/customers', label: 'Pelanggan', icon: <Users size={18} /> },
             { href: '/drivers', label: 'Kurir', icon: <Truck size={18} /> },
             { href: '/vehicles', label: 'Kendaraan', icon: <Car size={18} /> },
-            { href: '/warehouses', label: 'Gudang', icon: <Warehouse size={18} /> },
-            { href: '/map', label: 'Live Tracking Map', icon: <Radar size={18} /> },
+            { href: '/warehouses', label: 'Gudang', icon: <Warehouse size={18} />, locked: !hasFeature('warehouse_management'), feature: 'warehouse_management' },
+            { href: '/map', label: 'Live Tracking Map', icon: <Radar size={18} />, locked: !hasFeature('gps_tracking'), feature: 'gps_tracking' },
           ],
         },
         {
@@ -137,11 +137,11 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
           title: 'SYSTEM',
           items: [
             ...(showUsers ? [{ href: '/users', label: 'Pengguna', icon: <Shield size={18} /> }] : []),
-            ...(showUsers ? [{ href: '/organizations', label: 'Organizations', icon: <Network size={18} /> }] : []),
-            ...(showUsers ? [{ href: '/regions', label: 'Regions', icon: <Globe size={18} /> }] : []),
-            ...(showUsers ? [{ href: '/branches', label: 'Branches', icon: <Building size={18} /> }] : []),
-            ...(showUsers ? [{ href: '/departments', label: 'Departemen', icon: <Building2 size={18} /> }] : []),
-            ...(showUsers ? [{ href: '/hubs', label: 'Hub', icon: <MapPin size={18} /> }] : []),
+            ...(showUsers ? [{ href: '/organizations', label: 'Organizations', icon: <Network size={18} />, locked: !hasFeature('branch_management'), feature: 'branch_management' }] : []),
+            ...(showUsers ? [{ href: '/regions', label: 'Regions', icon: <Globe size={18} />, locked: !hasFeature('branch_management'), feature: 'branch_management' }] : []),
+            ...(showUsers ? [{ href: '/branches', label: 'Branches', icon: <Building size={18} />, locked: !hasFeature('branch_management'), feature: 'branch_management' }] : []),
+            ...(showUsers ? [{ href: '/departments', label: 'Departemen', icon: <Building2 size={18} />, locked: !hasFeature('branch_management'), feature: 'branch_management' }] : []),
+            ...(showUsers ? [{ href: '/hubs', label: 'Hub', icon: <MapPin size={18} />, locked: !hasFeature('branch_management'), feature: 'branch_management' }] : []),
             ...(showUsers ? [{ href: '/tenant-onboarding', label: 'Onboarding', icon: <ClipboardList size={18} /> }] : []),
             ...(showUsers ? [{ href: '/tenant-health', label: 'Health Monitor', icon: <Activity size={18} /> }] : []),
             { href: '/exceptions', label: 'Exceptions', icon: <ShieldAlert size={18} />, locked: !hasFeature('sla'), feature: 'sla' },
@@ -212,30 +212,36 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
                       const active = isActive(item.href);
                       const href = item.locked ? `/billing?upgrade=${item.feature}` : item.href;
                       return (
-                        <Link
-                          key={item.href}
-                          href={href}
-                          onClick={onClose}
-                          className={cn(
-                            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                            active && !item.locked
-                              ? 'bg-[#0D6EFD] text-white'
-                              : item.locked
-                                ? 'text-white/30 hover:bg-white/5 hover:text-white/50'
-                                : 'text-white/60 hover:bg-white/5 hover:text-white'
+                        <div key={item.href} className="group relative">
+                          <Link
+                            href={href}
+                            onClick={onClose}
+                            className={cn(
+                              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                              active && !item.locked
+                                ? 'bg-[#0D6EFD] text-white'
+                                : item.locked
+                                  ? 'text-amber-200/40 hover:bg-white/5 hover:text-amber-200/70'
+                                  : 'text-white/60 hover:bg-white/5 hover:text-white'
+                            )}
+                          >
+                            {item.icon}
+                            <span className="flex-1">{item.label}</span>
+                            {item.href === '/security' && securityLevel && (
+                              <span className={`h-2 w-2 rounded-full ${
+                                securityLevel === 'HIGH' ? 'bg-red-500 animate-pulse' :
+                                securityLevel === 'MEDIUM' ? 'bg-amber-400' :
+                                'bg-emerald-400'
+                              }`} title={securityLevel === 'HIGH' ? 'Ancaman Tinggi' : securityLevel === 'MEDIUM' ? 'Ancaman Sedang' : 'Sistem Aman'} />
+                            )}
+                            {item.locked && <Lock size={12} className="text-amber-400" />}
+                          </Link>
+                          {item.locked && (
+                            <div className="pointer-events-none absolute left-full top-1/2 z-[70] ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg border border-amber-400/40 bg-[#0B1530] px-3 py-1.5 text-xs font-medium text-amber-300 opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100">
+                              Upgrade paket untuk menggunakan fitur ini
+                            </div>
                           )}
-                        >
-                          {item.icon}
-                          <span className="flex-1">{item.label}</span>
-                          {item.href === '/security' && securityLevel && (
-                            <span className={`h-2 w-2 rounded-full ${
-                              securityLevel === 'HIGH' ? 'bg-red-500 animate-pulse' :
-                              securityLevel === 'MEDIUM' ? 'bg-amber-400' :
-                              'bg-emerald-400'
-                            }`} title={securityLevel === 'HIGH' ? 'Ancaman Tinggi' : securityLevel === 'MEDIUM' ? 'Ancaman Sedang' : 'Sistem Aman'} />
-                          )}
-                          {item.locked && <Lock size={12} className="text-white/30" />}
-                        </Link>
+                        </div>
                       );
                     })}
                 </div>

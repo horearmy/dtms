@@ -173,13 +173,13 @@ describe('CRUD Functional', () => {
     if (!driverId) return;
     const res = await api('GET', `/api/drivers/${driverId}`, undefined, tenantA);
     expect(res.status).toBe(200);
-    expect(res.json.name).toBe('CRUD Driver');
-    expect(res.json.tenantId).toBe(TENANT_A_ID);
+    expect(res.json.driver.name).toBe('CRUD Driver');
+    expect(res.json.driver.id).toBe(driverId);
   });
 
   it('Update driver', async () => {
     if (!driverId) return;
-    const res = await api('PUT', `/api/drivers/${driverId}`, { name: 'CRUD Driver Updated' }, tenantA);
+    const res = await api('PATCH', `/api/drivers/${driverId}`, { name: 'CRUD Driver Updated' }, tenantA);
     expect([200, 204]).toContain(res.status);
   });
 

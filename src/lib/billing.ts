@@ -257,6 +257,25 @@ export async function createSubscription(tenantId: string, planCode: string, bil
   return subscription;
 }
 
+// Aturan perubahan plan:
+// - Upgrade: boleh kapan saja.
+// - Downgrade: hanya boleh jika tidak ada periode langganan aktif yang belum berakhir.
+export async function validatePlanChange(tenantId: string, newPlanCode: string): Promise<string | null> {
+  const sub = await prisma.subscription.findUnique({
+    where: { tenantId },
+    include: { plan: { select: { code: true } } },
+  });
+  if (!sub?.plan) return null;
+  const oldIdx = PLAN_ORDER.indexOf(sub.plan.code);
+  const newIdx = PLAN_ORDER.indexOf(newPlanCode);
+  if (oldIdx === -1 || newIdx === -1 || newIdx >= oldIdx) return null;
+  if (sub.status === 'ACTIVE' && sub.currentPeriodEnd && new Date(sub.currentPeriodEnd) > new Date()) {
+    const end = new Date(sub.currentPeriodEnd).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    return `Downgrade hanya dapat dilakukan setelah masa langganan berakhir (${end}). Upgrade dapat dilakukan kapan saja.`;
+  }
+  return null;
+}
+
 export async function cancelSubscription(tenantId: string) {
   await ensurePlans();
   const sub = await prisma.subscription.findUnique({ where: { tenantId } });
