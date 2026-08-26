@@ -27,4 +27,13 @@ export const ADMIN_AUTH_POLICY = {
 
   /** Masa aktif token MFA antara step-2 dan step-3 (ms) */
   mfaTokenTtlMs: 5 * 60 * 1000,
+
+  /** Step-up authentication (Blueprint §20): masa aktif token verifikasi ulang */
+  stepUpTtlMinutes: Number(process.env.ADMIN_STEPUP_MINUTES || 5),
+} as const;
+
+/** Aksi kritis yang mewajibkan step-up (Blueprint §20/§34 privileged.requireStepUpFor) */
+export const CRITICAL_ACTIONS = {
+  TENANT_LIFECYCLE: 'tenant_suspend',
+  BILLING_CHANGE_PLAN: 'billing_change',
 } as const;

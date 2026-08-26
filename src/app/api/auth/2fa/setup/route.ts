@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAudit, runWithTenant } from '@/lib/api-guard';
+import { bumpSecurityVersion, bumpSecurityVersionFromCookie } from '@/lib/superadmin-auth';
 import {
   generateTotpSecret,
   otpauthUrl,
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
       data: { totpEnabled: true, backupCodes: hashBackupCodes(backupCodes) },
     });
 
+    if (session.role === 'SUPER_ADMIN') {
+      await bumpSecurityVersionFromCookie(session.id);
+    }
     await logAudit(session, 'TWO_FACTOR_ENABLED', 'AUTH', { newData: { enabled: true } }, req);
     return NextResponse.json({ ok: true, enabled: true, backupCodes });
   });

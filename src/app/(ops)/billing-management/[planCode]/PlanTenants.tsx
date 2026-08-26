@@ -96,7 +96,8 @@ export default function PlanTenants({ planCode }: { planCode: string }) {
     if (!upgradeTarget || !selectedPlan) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/superadmin/billing/change-plan', {
+      const { fetchWithStepUp } = await import('@/lib/stepup-client');
+      const res = await fetchWithStepUp('/api/superadmin/billing/change-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenantId: upgradeTarget.id, planCode: selectedPlan, billingCycle: selectedCycle }),

@@ -1011,6 +1011,7 @@ model User {
   lastPasswordChange DateTime?
   mustChangePassword Boolean              @default(false)
   pwdVersion         Int                  @default(1)
+  securityVersion    Int                  @default(0)
   backupCodes        String?
   email              String?
   provider           String               @default("LOCAL")

@@ -46,6 +46,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const tenant = await prisma.tenant.findUnique({ where: { id } });
   if (!tenant) return NextResponse.json({ error: 'Tenant tidak ditemukan' }, { status: 404 });
 
+  // Blueprint §20: perubahan status/aktif/plan oleh superadmin = aksi kritis
+  const CRITICAL_FIELDS = ['status', 'active', 'plan'];
+  if (isSuperAdmin && CRITICAL_FIELDS.some((f) => body[f] !== undefined)) {
+    const { assertStepUp } = await import('@/lib/superadmin-auth');
+    if (!(await assertStepUp(req, session.id))) {
+      return NextResponse.json(
+        { error: 'Verifikasi ulang diperlukan untuk mengubah pengaturan kritis tenant', stepUpRequired: true },
+        { status: 403 }
+      );
+    }
+  }
+
   const PROFILE_FIELDS = ['name', 'contactName', 'contactEmail', 'contactPhone', 'logoUrl', 'faviconUrl', 'primaryColor', 'secondaryColor', 'accentColor', 'domain', 'timezone', 'locale', 'currency'];
   const ADMIN_ONLY_FIELDS = ['status', 'active', 'plan', 'maxUsers', 'maxDrivers', 'maxShipments'];
 

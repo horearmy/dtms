@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { guard, logAudit } from '@/lib/api-guard';
 import { logger } from '@/lib/logger';
 import { getRp, verifyWebauthnChallenge } from '@/lib/webauthn';
+import { bumpSecurityVersion, bumpSecurityVersionFromCookie } from '@/lib/superadmin-auth';
 
 /**
  * POST /api/admin/auth/passkey/register/verify — Blueprint §8/§35 PasskeyCredential
@@ -46,6 +47,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Blueprint �13: faktor keamanan berubah -> cabut sesi privileged LAIN
+    await bumpSecurityVersionFromCookie(session!.id);
     await logAudit(session, 'SUPERADMIN_PASSKEY_ADDED', 'AUTH', { newData: { credentialId: credential.id.slice(-8) } }, req);
     return NextResponse.json({ ok: true, verified: true });
   } catch (e) {

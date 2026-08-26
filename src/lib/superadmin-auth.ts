@@ -97,7 +97,7 @@ export async function verifySuperAdminMfaToken(token: string): Promise<string | 
 }
 
 export async function signSuperAdminToken(
-  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean },
+  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean; securityVersion?: number },
   fingerprint: string,
   sid?: string
 ) {
@@ -113,11 +113,71 @@ export async function signSuperAdminToken(
     sa: true,
     mcp: user.mustChangePassword === true,
     sid,
+    sv: user.securityVersion ?? 0,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${ADMIN_AUTH_POLICY.maxSessionMinutes}m`)
     .sign(SECRET);
+}
+
+// ── Step-up authentication (Blueprint §20) ─────────────────────────────────
+export async function signStepUpToken(uid: string): Promise<string> {
+  return new SignJWT({ purpose: 'sa_stepup', uid })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(`${ADMIN_AUTH_POLICY.stepUpTtlMinutes}m`)
+    .sign(SECRET);
+}
+
+export async function verifyStepUpToken(token: string | undefined | null, expectedUid: string): Promise<boolean> {
+  try {
+    const { payload } = await jwtVerify(token || '', SECRET);
+    return payload.purpose === 'sa_stepup' && payload.uid === expectedUid;
+  } catch { return false; }
+}
+
+/** Guard untuk endpoint kritis: wajib header x-step-up-token valid (§20/§21) */
+export async function assertStepUp(req: { headers: { get(k: string): string | null } }, expectedUid: string): Promise<boolean> {
+  return verifyStepUpToken(req.headers.get('x-step-up-token'), expectedUid);
+}
+
+/**
+ * Blueprint §13 securityVersion: perubahan faktor keamanan -> semua sesi
+ * privileged lain mati. keepSid dipakai agar sesi yang sedang melakukan
+ * perubahan tidak mengeluarkan dirinya sendiri.
+ */
+export async function bumpSecurityVersion(userId: string, keepSid?: string): Promise<number> {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { securityVersion: { increment: 1 } },
+    select: { securityVersion: true },
+  }).catch(() => null);
+  const revoked = await prisma.adminSession.updateMany({
+    where: { userId, revokedAt: null, ...(keepSid ? { sessionHash: { not: crypto.createHash('sha256').update(keepSid).digest('hex') } } : {}) },
+    data: { revokedAt: new Date() },
+  }).catch(() => ({ count: 0 }));
+  return user ? revoked.count : -1;
+}
+
+/**
+ * Varian nyaman untuk route handler: ekstrak sid dari cookie SA saat ini,
+ * lalu bump dengan mengecualikan sesi pemanggil.
+ */
+export async function bumpSecurityVersionFromCookie(userId: string): Promise<void> {
+  try {
+    const store = await cookies();
+    const token = store.get(SUPERADMIN_COOKIE)?.value;
+    let keepSid: string | undefined;
+    if (token) {
+      const { payload } = await jwtVerify(token, SECRET);
+      keepSid = typeof payload.sid === 'string' ? payload.sid : undefined;
+    }
+    await bumpSecurityVersion(userId, keepSid);
+  } catch {
+    // Gagal ekstraksi -> revoke total agar aman
+    await bumpSecurityVersion(userId).catch(() => {});
+  }
 }
 
 export async function verifySuperAdminToken(token: string): Promise<{ valid: boolean; payload?: Record<string, unknown>; fingerprintMismatch?: boolean }> {
@@ -132,7 +192,7 @@ export async function verifySuperAdminToken(token: string): Promise<{ valid: boo
  *  Dipakai oleh alur password+TOTP maupun Passkey. */
 export async function issueSuperadminSession(
   req: { headers: { get(k: string): string | null } },
-  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword: boolean; lastLoginAt?: Date | null; lastLoginIp?: string | null; totpEnabled?: boolean },
+  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword: boolean; securityVersion?: number; lastLoginAt?: Date | null; lastLoginIp?: string | null; totpEnabled?: boolean },
   fingerprint: string,
   ip: string,
   authenticationMethod: 'password' | 'password+totp' | 'passkey'
@@ -141,6 +201,7 @@ export async function issueSuperadminSession(
     id: user.id, name: user.name, username: user.username,
     role: user.role, tenantId: user.tenantId, branchId: user.branchId,
     pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword,
+    securityVersion: (user as { securityVersion?: number }).securityVersion ?? 0,
   }, fingerprint, {
     ip,
     userAgent: req.headers.get('user-agent') || undefined,
@@ -175,7 +236,7 @@ export async function issueSuperadminSession(
 }
 
 export async function setSuperAdminSession(
-  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean },
+  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean; securityVersion?: number },
   fingerprint: string,
   meta?: { ip?: string; userAgent?: string; authenticationMethod?: string }
 ) {

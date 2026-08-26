@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAudit, runWithTenant } from '@/lib/api-guard';
+import { bumpSecurityVersion, bumpSecurityVersionFromCookie } from '@/lib/superadmin-auth';
 import { verifyTotp, verifyBackupCode } from '@/lib/totp';
 
 export async function POST(req: NextRequest) {
@@ -39,6 +40,9 @@ export async function POST(req: NextRequest) {
       data: { totpEnabled: false, totpSecret: null, backupCodes: null },
     });
 
+    if (session.role === 'SUPER_ADMIN') {
+      await bumpSecurityVersionFromCookie(session.id);
+    }
     await logAudit(session, 'TWO_FACTOR_DISABLED', 'AUTH', { newData: { enabled: false } }, req);
     return NextResponse.json({ ok: true, enabled: false });
   });

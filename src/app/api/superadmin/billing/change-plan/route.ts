@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
+import { assertStepUp } from '@/lib/superadmin-auth';
 import { createSubscription, getTenantSubscription, validatePlanChange } from '@/lib/billing';
 import { PLAN_ORDER as VALID_CODES } from '@/lib/plan-constants';
 
@@ -10,6 +11,14 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== 'SUPER_ADMIN') {
     return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
+  }
+
+  // Blueprint §20: perubahan billing tenant = aksi kritis, wajib step-up
+  if (!(await assertStepUp(req, session.id))) {
+    return NextResponse.json(
+      { error: 'Verifikasi ulang diperlukan untuk mengubah plan tenant', stepUpRequired: true },
+      { status: 403 }
+    );
   }
 
   let body: Record<string, unknown>;

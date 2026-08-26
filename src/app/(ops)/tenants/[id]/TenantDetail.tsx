@@ -107,11 +107,16 @@ export default function TenantDetail({ tenant, userRole }: { tenant: TenantData;
   const [resetting, setResetting] = useState(false);
 
   async function toggleActive() {
-    await fetch(`/api/tenants/${tenant.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active: !tenant.active }),
-    });
+    const { fetchWithStepUp } = await import('@/lib/stepup-client');
+    try {
+      await fetchWithStepUp(`/api/tenants/${tenant.id}`, {
+        method: 'PUT',
+        body: { active: !tenant.active },
+      });
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Gagal mengubah status tenant');
+      return;
+    }
     router.refresh();
   }
 

@@ -140,9 +140,11 @@ export async function getSession(): Promise<SessionUser | null> {
       }
       const user = await prisma.user.findUnique({
         where: { id: p.id as string },
-        select: { id: true, name: true, username: true, role: true, tenantId: true, branchId: true, status: true, pwdVersion: true },
+        select: { id: true, name: true, username: true, role: true, tenantId: true, branchId: true, status: true, pwdVersion: true, securityVersion: true },
       });
       if (user && user.status === 'ACTIVE' && user.pwdVersion === p.pwd) {
+        // securityVersion (Blueprint §13): perubahan MFA/passkey -> semua sesi lama mati
+        if ((user.securityVersion ?? 0) !== (p.sv as number | undefined)) return null;
         return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan: 'FREE', planFeatures: [] };
       }
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
+import { assertStepUp } from '@/lib/superadmin-auth';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   PROSPECT: ['PENDING_APPROVAL', 'ARCHIVED'],
@@ -59,6 +60,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const session = await getSession();
   if (!session || session.role !== 'SUPER_ADMIN') {
     return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
+  }
+
+  // Blueprint §20: suspend/activate tenant = aksi kritis, wajib step-up
+  if (!(await assertStepUp(req, session.id))) {
+    return NextResponse.json(
+      { error: 'Verifikasi ulang diperlukan untuk mengubah status tenant', stepUpRequired: true },
+      { status: 403 }
+    );
   }
 
   const { id } = await params;
