@@ -8,6 +8,7 @@ import {
   issueSuperadminSession, resetSaAttempts, resetSaAccountFailures,
 } from '@/lib/superadmin-auth';
 import { getRp, verifyWebauthnChallenge } from '@/lib/webauthn';
+import { assessRisk } from '@/lib/admin-risk';
 
 /**
  * POST /api/admin/auth/passkey/login/verify — Blueprint §7/§8
@@ -93,7 +94,8 @@ export async function POST(req: NextRequest) {
     resetSaAccountFailures(user.username);
 
     const fingerprint = buildFingerprint(req);
-    await issueSuperadminSession(req, user, fingerprint, ip, 'passkey');
+    const risk = await assessRisk({ userId: user.id, ip, userAgent: req.headers.get('user-agent') });
+    await issueSuperadminSession(req, user, fingerprint, ip, 'passkey', risk);
 
     return NextResponse.json({
       id: user.id, name: user.name, role: user.role,

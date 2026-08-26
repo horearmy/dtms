@@ -5,6 +5,9 @@ import { logAudit } from '@/lib/api-guard';
 import { logger } from '@/lib/logger';
 import { verifyTotp, verifyBackupCode, removeBackupCode } from '@/lib/totp';
 import { ADMIN_AUTH_POLICY } from '@/lib/admin-policy';
+import { assessRisk } from '@/lib/admin-risk';
+
+const ADMIN_RISK_BLOCK_HIGH = process.env.ADMIN_RISK_BLOCK_HIGH === 'true';
 import {
   getClientIpSa, isIpWhitelisted, verifySecretKey, buildFingerprint,
   signSuperAdminStep1Token, verifySuperAdminStep1Token,
@@ -107,7 +110,17 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      await issueSuperadminSession(req, user, fingerprint, ip, user.totpEnabled ? 'password+totp' : 'password');
+      // Blueprint §18–19: penilaian risiko sebelum sesi diterbitkan
+      const risk = await assessRisk({ userId: user.id, ip, userAgent: req.headers.get('user-agent') });
+      if (ADMIN_RISK_BLOCK_HIGH && risk.level === 'HIGH') {
+        await logAudit({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: null, branchId: null }, 'SUPERADMIN_LOGIN_BLOCKED', 'AUTH', { newData: { reason: 'risk_high', risk, ip } }, req);
+        return NextResponse.json(
+          { error: 'Percobaan login dinilai berisiko tinggi. Hubungi administrator atau coba dari perangkat yang dikenal.' },
+          { status: 403 }
+        );
+      }
+
+      await issueSuperadminSession(req, user, fingerprint, ip, user.totpEnabled ? 'password+totp' : 'password', risk);
       return NextResponse.json({
         id: user.id,
         name: user.name,
@@ -157,7 +170,16 @@ export async function POST(req: NextRequest) {
       resetSaAttempts(ip);
       resetSaAccountFailures(user.username);
 
-      await issueSuperadminSession(req, user, fingerprint, ip, user.totpEnabled ? 'password+totp' : 'password');
+      const risk = await assessRisk({ userId: user.id, ip, userAgent: req.headers.get('user-agent') });
+      if (ADMIN_RISK_BLOCK_HIGH && risk.level === 'HIGH') {
+        await logAudit({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: null, branchId: null }, 'SUPERADMIN_LOGIN_BLOCKED', 'AUTH', { newData: { reason: 'risk_high', risk, ip } }, req);
+        return NextResponse.json(
+          { error: 'Percobaan login dinilai berisiko tinggi. Hubungi administrator atau coba dari perangkat yang dikenal.' },
+          { status: 403 }
+        );
+      }
+
+      await issueSuperadminSession(req, user, fingerprint, ip, user.totpEnabled ? 'password+totp' : 'password', risk);
       return NextResponse.json({
         id: user.id,
         name: user.name,

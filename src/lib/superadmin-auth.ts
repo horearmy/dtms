@@ -4,6 +4,7 @@ import { prisma } from './prisma';
 import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 import { ADMIN_AUTH_POLICY } from './admin-policy';
+import type { RiskLevel } from './admin-risk';
 
 const SUPERADMIN_ALLOWED_IPS = (process.env.SUPERADMIN_ALLOWED_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
@@ -195,7 +196,8 @@ export async function issueSuperadminSession(
   user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword: boolean; securityVersion?: number; lastLoginAt?: Date | null; lastLoginIp?: string | null; totpEnabled?: boolean },
   fingerprint: string,
   ip: string,
-  authenticationMethod: 'password' | 'password+totp' | 'passkey'
+  authenticationMethod: 'password' | 'password+totp' | 'passkey',
+  risk?: { level: RiskLevel; reasons: string[] }
 ): Promise<void> {
   await setSuperAdminSession({
     id: user.id, name: user.name, username: user.username,
@@ -206,6 +208,7 @@ export async function issueSuperadminSession(
     ip,
     userAgent: req.headers.get('user-agent') || undefined,
     authenticationMethod,
+    riskLevel: risk?.level ?? 'LOW',
   });
 
   const ua = req.headers.get('user-agent') || 'unknown';
@@ -219,6 +222,7 @@ export async function issueSuperadminSession(
         username: user.username,
         fingerprint,
         authenticationMethod,
+        risk: risk ? `${risk.level}${risk.reasons.length ? ` (${risk.reasons.join('; ')})` : ''}` : undefined,
         mfa: authenticationMethod === 'passkey' ? 'passkey' : user.totpEnabled ? 'totp' : 'disabled',
         ua,
         lastLoginAt: user.lastLoginAt?.toISOString?.() ?? null,
@@ -238,7 +242,7 @@ export async function issueSuperadminSession(
 export async function setSuperAdminSession(
   user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean; securityVersion?: number },
   fingerprint: string,
-  meta?: { ip?: string; userAgent?: string; authenticationMethod?: string }
+  meta?: { ip?: string; userAgent?: string; authenticationMethod?: string; riskLevel?: RiskLevel }
 ) {
   // Server-side session (Blueprint §14/§35 AdminSession): token JWT membawa sid,
   // status asli (revoked/expired/idle) disimpan di DB sehingga dapat direvoke.
@@ -252,6 +256,7 @@ export async function setSuperAdminSession(
       ip: meta?.ip ?? null,
       userAgent: meta?.userAgent?.slice(0, 250) ?? null,
       authenticationMethod: meta?.authenticationMethod ?? 'password',
+      riskLevel: meta?.riskLevel ?? 'LOW',
       expiresAt,
     },
   }).catch(() => {

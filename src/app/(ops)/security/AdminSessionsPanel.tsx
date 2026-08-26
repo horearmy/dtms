@@ -138,7 +138,15 @@ export default function AdminSessionsPanel() {
                         <span>·</span>
                         <span className="inline-flex items-center gap-1">
                           <Shield size={11} />
-                          {s.authenticationMethod === 'password+totp' ? 'Password + 2FA' : 'Password'}
+                          {s.authenticationMethod === 'password+totp' ? 'Password + 2FA' : s.authenticationMethod === 'passkey' ? 'Passkey' : 'Password'}
+                        </span>
+                        <span>·</span>
+                        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                          s.riskLevel === 'HIGH' ? 'bg-red-100 text-red-700'
+                          : s.riskLevel === 'MEDIUM' ? 'bg-amber-100 text-amber-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          Risiko {s.riskLevel}
                         </span>
                       </div>
                     </div>
