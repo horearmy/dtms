@@ -9,16 +9,24 @@ const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
 
 export const SUPERADMIN_COOKIE = 'dtms_sa_token';
 
+// Normalisasi IP agar fingerprint stabil: ::ffff:127.0.0.1, 127.0.0.1, dan ::1
+// harus menghasilkan nilai yang sama (IPv4-mapped IPv6 & loopback variants).
+export function normalizeIp(ip: string): string {
+  let v = ip.trim();
+  if (v.startsWith('::ffff:')) v = v.slice(7);
+  if (v === '127.0.0.1' || v === '::1') return 'local';
+  return v;
+}
+
 export function getClientIpSa(req: NextRequest): string {
   // Ambil hop paling kanan dari X-Forwarded-For (ditambahkan proxy terpercaya kita),
   // bukan yang pertama (dapat dipalsukan klien).
   const fwd = req.headers.get('x-forwarded-for');
   if (fwd) {
     const parts = fwd.split(',').map(s => s.trim()).filter(Boolean);
-    if (parts.length > 0) return parts[parts.length - 1];
+    if (parts.length > 0) return normalizeIp(parts[parts.length - 1]);
   }
-  return req.headers.get('x-real-ip')
-    || 'local';
+  return normalizeIp(req.headers.get('x-real-ip') || 'local');
 }
 
 export function isIpWhitelisted(ip: string): boolean {
@@ -52,7 +60,7 @@ export function buildFingerprintFromHeaders(h: Headers): string {
   } else {
     ip = h.get('x-real-ip') || 'local';
   }
-  return crypto.createHash('sha256').update(`${ip}:${ua}`).digest('hex').slice(0, 32);
+  return crypto.createHash('sha256').update(`${normalizeIp(ip)}:${ua}`).digest('hex').slice(0, 32);
 }
 
 export async function signSuperAdminStep1Token(): Promise<string> {
