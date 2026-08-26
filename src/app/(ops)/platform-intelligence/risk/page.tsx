@@ -31,16 +31,24 @@ export default function RiskDetectionPage() {
   const [drillDown, setDrillDown] = useState<DrillDownData | null>(null);
   const [drillLoading, setDrillLoading] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch('/api/platform/reports/risk');
+      const res = await fetch('/api/platform/reports/risk', { signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setData(await res.json());
       setError('');
-    } catch (e: any) { setError(e.message || 'Gagal memuat data'); }
+    } catch (e: any) {
+      if (e.name === 'AbortError') return;
+      setError(e.message || 'Gagal memuat data');
+    }
   }, []);
 
-  useEffect(() => { fetchData().finally(() => setLoading(false)); }, [fetchData]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    fetchData(controller.signal).finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [fetchData]);
 
   const handleRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
 

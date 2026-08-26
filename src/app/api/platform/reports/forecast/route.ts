@@ -22,21 +22,25 @@ export async function GET(req: NextRequest) {
   const { session, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
   if (error) return error;
 
-  const months = Math.min(parseInt(req.nextUrl.searchParams.get('months') || '12', 10), 24);
+  const months = Math.min(parseInt(req.nextUrl.searchParams.get('months') || '12', 10) || 12, 24);
 
   return runWithTenant(session?.tenantId ?? null, async () => {
     const tenantFilter = session?.tenantId ? { tenantId: session.tenantId } : {};
     const now = new Date();
     const startDate = new Date(now.getFullYear() - 2, now.getMonth(), 1);
 
+    const MAX_RECORDS = 50000;
+
     const [shipments, invoices] = await Promise.all([
       prisma.shipment.findMany({
         where: { ...tenantFilter, createdAt: { gte: startDate } },
         select: { createdAt: true, status: true },
+        take: MAX_RECORDS,
       }),
       prisma.invoice.findMany({
         where: { ...tenantFilter, createdAt: { gte: startDate }, status: { not: 'VOID' } },
         select: { createdAt: true, total: true, paidAmount: true },
+        take: MAX_RECORDS,
       }),
     ]);
 

@@ -1,18 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guardPermission, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+const triggerRateMap = new Map<string, number>();
+const TRIGGER_COOLDOWN_MS = 60_000;
+
+setInterval(() => triggerRateMap.clear(), 5 * 60_000);
+
 export async function POST(_req: NextRequest, { params }: RouteContext) {
-  const { session, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
+  const { session, error } = await guardPermission(PERMISSIONS.REPORT.EXPORT);
   if (error) return error;
   const { id } = await params;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
+    const rateKey = `${session?.id}:${id}`;
+    const lastTrigger = triggerRateMap.get(rateKey) ?? 0;
+    if (Date.now() - lastTrigger < TRIGGER_COOLDOWN_MS) {
+      return NextResponse.json({ error: 'Trigger rate limit exceeded. Try again later.' }, { status: 429 });
+    }
+
     const schedule = await prisma.scheduledReport.findUnique({ where: { id } });
     if (!schedule) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (session?.role !== 'SUPER_ADMIN' && schedule.tenantId !== session?.tenantId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const recentJobs = await prisma.reportJob.count({
+      where: { scheduledReportId: id, createdAt: { gte: new Date(Date.now() - TRIGGER_COOLDOWN_MS) } },
+    });
+    if (recentJobs > 0) {
+      return NextResponse.json({ error: 'Schedule already triggered recently' }, { status: 429 });
+    }
+
+    triggerRateMap.set(rateKey, Date.now());
 
     const job = await prisma.reportJob.create({
       data: {
@@ -26,13 +49,11 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
       },
     });
 
-    // Simulate job processing (in production, this would go to a queue/worker)
     await prisma.reportJob.update({
       where: { id: job.id },
       data: { status: 'PROCESSING', startedAt: new Date() },
     });
 
-    // For now, mark as completed immediately (CSV generation would happen async in production)
     await prisma.reportJob.update({
       where: { id: job.id },
       data: { status: 'COMPLETED', completedAt: new Date(), fileUrl: `/api/platform/reports/export?type=${schedule.dataset}&limit=500` },
@@ -42,6 +63,8 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
       where: { id },
       data: { lastRunAt: new Date() },
     });
+
+    logAudit(session, 'TRIGGER_SCHEDULE', 'report_schedule', { newData: { id, jobId: job.id } }, _req);
 
     return NextResponse.json(job);
   });

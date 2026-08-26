@@ -17,7 +17,14 @@ function parsePeriod(sp: URLSearchParams): Period {
     case 'last_month': return { from: new Date(now.getFullYear(), now.getMonth() - 1, 1), to: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59) };
     case 'this_quarter': { const q = Math.floor(now.getMonth() / 3); return { from: new Date(now.getFullYear(), q * 3, 1), to: now }; }
     case 'this_year': return { from: new Date(now.getFullYear(), 0, 1), to: now };
-    case 'custom': return { from: new Date(sp.get('from') || sod), to: new Date(sp.get('to') || now) };
+    case 'custom': {
+      const from = new Date(sp.get('from') || sod);
+      const to = new Date(sp.get('to') || now);
+      if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+        throw new Error('Invalid date');
+      }
+      return { from, to };
+    }
     case 'this_month': default: return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now };
   }
 }
@@ -27,7 +34,8 @@ export async function GET(req: NextRequest) {
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
-    const period = parsePeriod(req.nextUrl.searchParams);
+    let period: Period;
+    try { period = parsePeriod(req.nextUrl.searchParams); } catch { return NextResponse.json({ error: 'Invalid date parameters' }, { status: 400 }); }
     const logWhere: Prisma.IntegrationLogWhereInput = session?.tenantId
       ? { integrationConfig: { tenantId: session.tenantId } }
       : {};

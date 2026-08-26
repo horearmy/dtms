@@ -64,8 +64,8 @@ export default function DrillDownModal({ data, onClose }: { data: DrillDownData 
     const a = document.createElement('a');
     a.href = url;
     a.download = `${data.title.replace(/\s+/g, '_').toLowerCase()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
   };
 
   const totalStr = typeof data.totalValue === 'number'

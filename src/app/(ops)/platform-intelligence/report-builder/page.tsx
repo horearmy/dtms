@@ -75,17 +75,24 @@ export default function ReportBuilderPage() {
     if (!dims.find((d) => d.value === dimension)) setDimension(dims[0].value);
   }, [dataset]);
 
-  const fetchReport = useCallback(async () => {
+  const fetchReport = useCallback(async (signal?: AbortSignal) => {
     setLoading(true); setError('');
     try {
-      const res = await fetch(`/api/platform/reports/custom?dataset=${dataset}&dimension=${dimension}&metric=${metric}&preset=${preset}&limit=20`);
+      const res = await fetch(`/api/platform/reports/custom?dataset=${dataset}&dimension=${dimension}&metric=${metric}&preset=${preset}&limit=20`, { signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setResult(await res.json());
-    } catch (e: any) { setError(e.message || 'Gagal memuat laporan'); }
+    } catch (e: any) {
+      if (e.name === 'AbortError') return;
+      setError(e.message || 'Gagal memuat laporan');
+    }
     finally { setLoading(false); }
   }, [dataset, dimension, metric, preset]);
 
-  useEffect(() => { fetchReport(); }, [fetchReport]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchReport(controller.signal);
+    return () => controller.abort();
+  }, [fetchReport]);
 
   const handleExportCSV = () => {
     if (!result) return;
@@ -94,7 +101,8 @@ export default function ReportBuilderPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url;
     a.download = `report_${result.dataset}_${result.dimension}_${result.metric}.csv`;
-    a.click(); URL.revokeObjectURL(url);
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
   };
 
   const total = result?.data.reduce((s, d) => s + d.value, 0) || 0;
@@ -114,7 +122,7 @@ export default function ReportBuilderPage() {
               <Download size={14} /> Export CSV
             </button>
           )}
-          <button onClick={fetchReport}
+          <button onClick={() => fetchReport()}
             className="flex items-center gap-1 rounded-lg border border-[#E4E7EC] px-3 py-2 text-xs font-semibold text-[#667085] hover:bg-[#F7F9FC]"
             disabled={loading}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh

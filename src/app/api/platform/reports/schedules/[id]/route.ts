@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { guardPermission, runWithTenant } from '@/lib/api-guard';
+import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+function isOwner(schedule: { tenantId: string | null }, sessionTenantId: string | null, role: string): boolean {
+  if (role === 'SUPER_ADMIN') return true;
+  return schedule.tenantId === sessionTenantId;
+}
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
   const { session, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
@@ -16,6 +21,9 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       include: { jobs: { orderBy: { createdAt: 'desc' }, take: 10 } },
     });
     if (!schedule) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!isOwner(schedule, session?.tenantId ?? null, session?.role ?? '')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     return NextResponse.json(schedule);
   });
 }
@@ -25,11 +33,15 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   if (error) return error;
   const { id } = await params;
 
-  const body = await req.json();
+  let body: Record<string, any>;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   return runWithTenant(session?.tenantId ?? null, async () => {
     const existing = await prisma.scheduledReport.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!isOwner(existing, session?.tenantId ?? null, session?.role ?? '')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const updated = await prisma.scheduledReport.update({
       where: { id },
@@ -47,6 +59,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       },
     });
 
+    logAudit(session, 'UPDATE_SCHEDULE', 'report_schedule', { oldData: { id }, newData: body }, req);
+
     return NextResponse.json(updated);
   });
 }
@@ -59,8 +73,12 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   return runWithTenant(session?.tenantId ?? null, async () => {
     const existing = await prisma.scheduledReport.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!isOwner(existing, session?.tenantId ?? null, session?.role ?? '')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     await prisma.scheduledReport.delete({ where: { id } });
+    logAudit(session, 'DELETE_SCHEDULE', 'report_schedule', { oldData: { id } }, _req);
     return NextResponse.json({ ok: true });
   });
 }

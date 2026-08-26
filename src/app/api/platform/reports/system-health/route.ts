@@ -4,7 +4,7 @@ import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
 export async function GET(_req: NextRequest) {
-  const { error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
+  const { error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW, 'SUPER_ADMIN');
   if (error) return error;
 
   return runWithTenant(null, async () => {

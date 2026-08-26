@@ -86,23 +86,35 @@ export default function SchedulesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus scheduled report ini?')) return;
-    await fetch(`/api/platform/reports/schedules/${id}`, { method: 'DELETE' });
-    setDetailId(null);
-    await fetchSchedules();
+    try {
+      const res = await fetch(`/api/platform/reports/schedules/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      success('Report berhasil dihapus');
+      setDetailId(null);
+      await fetchSchedules();
+    } catch (e: any) { notifyError('Gagal menghapus report', e.message); }
   };
 
   const handleTrigger = async (id: string) => {
-    await fetch(`/api/platform/reports/schedules/${id}/trigger`, { method: 'POST' });
-    if (detailId === id) await fetchDetail(id);
-    await fetchSchedules();
+    try {
+      const res = await fetch(`/api/platform/reports/schedules/${id}/trigger`, { method: 'POST' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      success('Report berhasil dijalankan');
+      if (detailId === id) await fetchDetail(id);
+      await fetchSchedules();
+    } catch (e: any) { notifyError('Gagal menjalankan report', e.message); }
   };
 
   const handleToggle = async (id: string, active: boolean) => {
-    await fetch(`/api/platform/reports/schedules/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active: !active }),
-    });
-    await fetchSchedules();
+    try {
+      const res = await fetch(`/api/platform/reports/schedules/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !active }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      success(active ? 'Report diaktifkan' : 'Report dinonaktifkan');
+      await fetchSchedules();
+    } catch (e: any) { notifyError('Gagal mengubah status', e.message); }
   };
 
   if (loading) {

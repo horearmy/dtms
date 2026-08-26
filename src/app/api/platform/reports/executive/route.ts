@@ -38,10 +38,12 @@ function parsePeriod(searchParams: URLSearchParams): Period {
     case 'custom': {
       const fromStr = searchParams.get('from');
       const toStr = searchParams.get('to');
-      return {
-        from: fromStr ? new Date(fromStr) : startOfDay,
-        to: toStr ? new Date(toStr) : now,
-      };
+      const from = fromStr ? new Date(fromStr) : startOfDay;
+      const to = toStr ? new Date(toStr) : now;
+      if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+        throw new Error('Invalid date');
+      }
+      return { from, to };
     }
     case 'this_month':
     default:
@@ -62,11 +64,12 @@ function fmtRp(v: number): string {
 }
 
 export async function GET(req: NextRequest) {
-  const { session, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
+  const { session, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW, 'SUPER_ADMIN');
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
-    const period = parsePeriod(req.nextUrl.searchParams);
+    let period: Period;
+    try { period = parsePeriod(req.nextUrl.searchParams); } catch { return NextResponse.json({ error: 'Invalid date parameters' }, { status: 400 }); }
     const prev = prevPeriod(period);
 
     const [

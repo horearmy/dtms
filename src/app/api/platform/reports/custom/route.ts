@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 
@@ -24,12 +25,19 @@ const DATASET_FIELDS: Record<Dataset, { table: string; fields: string[]; dateFie
   integration_logs: { table: 'IntegrationLog', fields: ['direction', 'statusGroup', 'integrationType', 'tenantId'], dateField: 'createdAt' },
 };
 
-const METRICS: Record<string, (dataset: Dataset) => string> = {
-  count: () => 'COUNT(*)::int AS value',
-  total_billed: () => 'COALESCE(SUM("total"), 0)::float AS value',
-  total_paid: () => 'COALESCE(SUM("paidAmount"), 0)::float AS value',
-  avg_odometer: () => 'COALESCE(AVG("odometerKm"), 0)::float AS value',
-  total_cost: () => 'COALESCE(SUM("cost"), 0)::float AS value',
+const SAFE_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
+function safeIdent(name: string): string {
+  if (!SAFE_IDENTIFIER.test(name)) throw new Error('Invalid identifier');
+  return `"${name}"`;
+}
+
+const METRICS: Record<string, (dataset: Dataset) => { sql: string; params: any[] }> = {
+  count: () => ({ sql: 'COUNT(*)::int', params: [] }),
+  total_billed: () => ({ sql: 'COALESCE(SUM("total"), 0)::float', params: [] }),
+  total_paid: () => ({ sql: 'COALESCE(SUM("paidAmount"), 0)::float', params: [] }),
+  avg_odometer: () => ({ sql: 'COALESCE(AVG("odometerKm"), 0)::float', params: [] }),
+  total_cost: () => ({ sql: 'COALESCE(SUM("cost"), 0)::float', params: [] }),
 };
 
 function getPeriodClause(preset: string): { clause: string; params: any[] } {
@@ -63,30 +71,32 @@ export async function GET(req: NextRequest) {
   const dimension = req.nextUrl.searchParams.get('dimension') || 'status';
   const metric = req.nextUrl.searchParams.get('metric') || 'count';
   const preset = req.nextUrl.searchParams.get('preset') || 'this_month';
-  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') || '20', 10), 50);
 
   const dsInfo = DATASET_FIELDS[dataset];
   if (!dsInfo) return NextResponse.json({ error: 'Invalid dataset' }, { status: 400 });
-  if (!dsInfo.fields.includes(dimension)) return NextResponse.json({ error: `Invalid dimension "${dimension}" for ${dataset}` }, { status: 400 });
+  if (!dsInfo.fields.includes(dimension)) return NextResponse.json({ error: 'Invalid dimension' }, { status: 400 });
 
-  const metricExpr = METRICS[metric]?.(dataset);
-  if (!metricExpr) return NextResponse.json({ error: `Invalid metric "${metric}"` }, { status: 400 });
+  const metricInfo = METRICS[metric]?.(dataset);
+  if (!metricInfo) return NextResponse.json({ error: 'Invalid metric' }, { status: 400 });
 
-  const tenantFilter = session?.tenantId ? `AND "tenantId" = '${session.tenantId}'` : '';
+  if (!SAFE_IDENTIFIER.test(dimension)) return NextResponse.json({ error: 'Invalid dimension' }, { status: 400 });
+  const tableIdent = safeIdent(dsInfo.table);
+  const dimIdent = safeIdent(dimension);
+  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') || '20', 10) || 20, 50);
+
+  const tenantFilter = session?.tenantId ? Prisma.sql`AND "tenantId" = ${session.tenantId}` : Prisma.sql``;
   const period = getPeriodClause(preset);
 
-  const sql = `
-    SELECT "${dimension}" AS dimension, ${metricExpr}
-    FROM "${dsInfo.table}"
+  const rows: any[] = await prisma.$queryRaw`
+    SELECT ${Prisma.raw(dimIdent)} AS dimension, ${Prisma.raw(metricInfo.sql)} AS value
+    FROM ${Prisma.raw(tableIdent)}
     WHERE TRUE
       ${tenantFilter}
-      ${period.clause}
-    GROUP BY "${dimension}"
+      ${Prisma.raw(period.clause)}
+    GROUP BY ${Prisma.raw(dimIdent)}
     ORDER BY value DESC
     LIMIT ${limit}
   `;
-
-  const rows: any[] = await prisma.$queryRawUnsafe(sql);
 
   return NextResponse.json({
     dataset,

@@ -87,21 +87,24 @@ export default function PlatformIntelligencePage() {
     }
   };
 
-  const fetchData = useCallback(async (p: string) => {
+  const fetchData = useCallback(async (p: string, signal?: AbortSignal) => {
     try {
-      const res = await fetch(`/api/platform/reports/executive?preset=${p}`);
+      const res = await fetch(`/api/platform/reports/executive?preset=${p}`, { signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);
       setError('');
     } catch (e: any) {
+      if (e.name === 'AbortError') return;
       setError(e.message || 'Gagal memuat data');
     }
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
-    fetchData(preset).finally(() => setLoading(false));
+    fetchData(preset, controller.signal).finally(() => setLoading(false));
+    return () => controller.abort();
   }, [preset, fetchData]);
 
   const handleRefresh = async () => {

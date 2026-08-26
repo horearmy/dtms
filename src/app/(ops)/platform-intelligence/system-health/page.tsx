@@ -24,16 +24,24 @@ export default function SystemHealthPage() {
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch('/api/platform/reports/system-health');
+      const res = await fetch('/api/platform/reports/system-health', { signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setData(await res.json());
       setError('');
-    } catch (e: any) { setError(e.message || 'Gagal memuat data'); }
+    } catch (e: any) {
+      if (e.name === 'AbortError') return;
+      setError(e.message || 'Gagal memuat data');
+    }
   }, []);
 
-  useEffect(() => { setLoading(true); fetchData().finally(() => setLoading(false)); }, [fetchData]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    fetchData(controller.signal).finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [fetchData]);
 
   useEffect(() => {
     const t = setInterval(fetchData, 30000);
@@ -59,7 +67,7 @@ export default function SystemHealthPage() {
         <div className="rounded-xl border border-[#FEE4E2] bg-[#FEF3F2] p-6 text-center">
           <AlertTriangle className="mx-auto mb-2 text-[#F5222D]" size={32} />
           <p className="text-sm font-semibold text-[#F5222D]">{error}</p>
-          <button onClick={fetchData} className="mt-3 rounded-lg bg-[#0D6EFD] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0B5ED7]">Coba Lagi</button>
+          <button onClick={() => fetchData()} className="mt-3 rounded-lg bg-[#0D6EFD] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0B5ED7]">Coba Lagi</button>
         </div>
       </div>
     );

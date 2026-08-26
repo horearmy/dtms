@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
-import { ExceptionStatus } from '@prisma/client';
+import { ExceptionStatus, ShipmentStatus } from '@prisma/client';
+
+const VALID_SHIPMENT_STATUSES = Object.values(ShipmentStatus);
 
 type DrillType =
   | 'tenants'
@@ -18,10 +20,14 @@ export async function GET(req: NextRequest) {
 
   const type = req.nextUrl.searchParams.get('type') as DrillType | null;
   const status = req.nextUrl.searchParams.get('status');
-  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') || '50', 10), 200);
+  const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') || '50', 10) || 50, 200);
 
   if (!type) {
     return NextResponse.json({ error: 'Missing type parameter' }, { status: 400 });
+  }
+
+  if (status && !VALID_SHIPMENT_STATUSES.includes(status as ShipmentStatus)) {
+    return NextResponse.json({ error: 'Invalid status parameter' }, { status: 400 });
   }
 
   return runWithTenant(session?.tenantId ?? null, async () => {
@@ -187,7 +193,7 @@ export async function GET(req: NextRequest) {
       }
 
       default:
-        return NextResponse.json({ error: `Unknown drill-down type: ${type}` }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
     }
   });
 }

@@ -38,16 +38,24 @@ export default function FleetAnalyticsPage() {
   const [preset, setPreset] = useState('this_month');
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = useCallback(async (p: string) => {
+  const fetchData = useCallback(async (p: string, signal?: AbortSignal) => {
     try {
-      const res = await fetch(`/api/platform/reports/fleet?preset=${p}`);
+      const res = await fetch(`/api/platform/reports/fleet?preset=${p}`, { signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setData(await res.json());
       setError('');
-    } catch (e: any) { setError(e.message || 'Gagal memuat data'); }
+    } catch (e: any) {
+      if (e.name === 'AbortError') return;
+      setError(e.message || 'Gagal memuat data');
+    }
   }, []);
 
-  useEffect(() => { setLoading(true); fetchData(preset).finally(() => setLoading(false)); }, [preset, fetchData]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    fetchData(preset, controller.signal).finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [preset, fetchData]);
 
   const handleRefresh = async () => { setRefreshing(true); await fetchData(preset); setRefreshing(false); };
 

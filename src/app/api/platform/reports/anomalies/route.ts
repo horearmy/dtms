@@ -62,19 +62,24 @@ export async function GET(req: NextRequest) {
     const now = new Date();
     const startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
 
+    const MAX_RECORDS = 50000;
+
     const shipments = await prisma.shipment.findMany({
       where: { ...tenantFilter, createdAt: { gte: startDate } },
       select: { createdAt: true, status: true },
+      take: MAX_RECORDS,
     });
 
     const exceptions = await prisma.exception.findMany({
       where: { ...tenantFilter, createdAt: { gte: startDate } },
       select: { createdAt: true, severity: true },
+      take: MAX_RECORDS,
     });
 
     const invoices = await prisma.invoice.findMany({
       where: { ...tenantFilter, createdAt: { gte: startDate }, status: { not: 'VOID' } },
       select: { createdAt: true, total: true },
+      take: MAX_RECORDS,
     });
 
     const integrationLogs = await prisma.integrationLog.findMany({
@@ -82,6 +87,7 @@ export async function GET(req: NextRequest) {
         ? { integrationConfig: { tenantId: tenantFilter.tenantId }, createdAt: { gte: startDate } }
         : { createdAt: { gte: startDate } },
       select: { createdAt: true, error: true },
+      take: MAX_RECORDS,
     });
 
     // Aggregate by month

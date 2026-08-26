@@ -157,6 +157,6 @@ export async function GET(req: NextRequest) {
       minimal: risks.filter((r) => r.riskLevel === 'MINIMAL').length,
     };
 
-    return NextResponse.json({ risks, summary, riskColor });
+    return NextResponse.json({ risks, summary });
   });
 }
