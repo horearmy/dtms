@@ -9,7 +9,7 @@ import {
   getClientIpSa, isIpWhitelisted, verifySecretKey, buildFingerprint,
   signSuperAdminStep1Token, verifySuperAdminStep1Token,
   signSuperAdminMfaToken, verifySuperAdminMfaToken,
-  setSuperAdminSession, resetSaAttempts,
+  issueSuperadminSession, resetSaAttempts,
   isSaRateLimited, recordSaAttempt,
   isSaAccountBlocked, recordSaAccountFailure, resetSaAccountFailures,
 } from '@/lib/superadmin-auth';
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      await issueSuperadminSession(req, user, fingerprint, ip);
+      await issueSuperadminSession(req, user, fingerprint, ip, user.totpEnabled ? 'password+totp' : 'password');
       return NextResponse.json({
         id: user.id,
         name: user.name,
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
       resetSaAttempts(ip);
       resetSaAccountFailures(user.username);
 
-      await issueSuperadminSession(req, user, fingerprint, ip);
+      await issueSuperadminSession(req, user, fingerprint, ip, user.totpEnabled ? 'password+totp' : 'password');
       return NextResponse.json({
         id: user.id,
         name: user.name,
@@ -171,39 +171,4 @@ export async function POST(req: NextRequest) {
     logger.error('Superadmin login error', { context: 'superadmin-login', error: String(e) });
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
   }
-}
-
-/** Terbitkan sesi privileged + audit lengkap (Blueprint §27) */
-async function issueSuperadminSession(
-  req: NextRequest,
-  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword: boolean; lastLoginAt: Date | null; lastLoginIp: string | null; totpEnabled: boolean },
-  fingerprint: string,
-  ip: string
-) {
-  await setSuperAdminSession({
-    id: user.id, name: user.name, username: user.username,
-    role: user.role, tenantId: user.tenantId, branchId: user.branchId,
-    pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword,
-  }, fingerprint, {
-    ip,
-    userAgent: req.headers.get('user-agent') || undefined,
-    authenticationMethod: user.totpEnabled ? 'password+totp' : 'password',
-  });
-
-  await logAudit({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: null, branchId: null }, 'SUPERADMIN_SESSION_CREATED', 'AUTH', {
-    newData: {
-      username: user.username,
-      fingerprint,
-      authenticationMethod: 'password+totp',
-      mfa: user.totpEnabled ? 'totp' : 'disabled',
-      ua: req.headers.get('user-agent') || 'unknown',
-      lastLoginAt: user.lastLoginAt?.toISOString(),
-      lastLoginIp: user.lastLoginIp,
-    },
-  }, req);
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date(), lastLoginIp: ip },
-  }).catch(() => {});
 }

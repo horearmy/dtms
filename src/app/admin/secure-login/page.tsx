@@ -2,7 +2,8 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Key, Lock, Eye, EyeOff, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Shield, Key, Lock, Eye, EyeOff, AlertTriangle, CheckCircle, Fingerprint } from 'lucide-react';
+import { startAuthentication } from '@simplewebauthn/browser';
 
 type Step = 'secret' | 'credentials' | 'mfa';
 
@@ -19,7 +20,56 @@ export default function SecureLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pkLoading, setPkLoading] = useState(false);
   const [lastLoginInfo, setLastLoginInfo] = useState<{ time: string; ip: string } | null>(null);
+
+  async function handlePasskey() {
+    if (!username.trim()) {
+      setError('Isi username terlebih dahulu untuk login passkey');
+      return;
+    }
+    if (!sessionToken) {
+      setError('Verifikasi secret key terlebih dahulu');
+      return;
+    }
+    setError('');
+    setPkLoading(true);
+    try {
+      const startRes = await fetch('/api/admin/auth/passkey/login/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionToken, username: username.trim() }),
+      });
+      const startData = await startRes.json();
+      if (!startRes.ok) {
+        setError(startData.error || 'Passkey tidak tersedia');
+        return;
+      }
+      let assertion;
+      try {
+        assertion = await startAuthentication({ optionsJSON: startData.options });
+      } catch {
+        setError('Passkey dibatalkan atau tidak tersedia di perangkat ini');
+        return;
+      }
+      const vRes = await fetch('/api/admin/auth/passkey/login/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challenge: startData.challenge, response: assertion }),
+      });
+      const vData = await vRes.json();
+      if (!vRes.ok) {
+        setError(vData.error || 'Verifikasi passkey gagal');
+        return;
+      }
+      setLastLoginInfo({ time: new Date().toLocaleString('id-ID'), ip: 'Authenticated' });
+      router.push('/tenants');
+    } catch {
+      setError('Koneksi gagal');
+    } finally {
+      setPkLoading(false);
+    }
+  }
 
   const handleSecretKey = async (e: FormEvent) => {
     e.preventDefault();
@@ -205,6 +255,15 @@ export default function SecureLoginPage() {
                   Masuk ke Dashboard
                 </span>
               )}
+            </button>
+            <button
+              type="button"
+              onClick={handlePasskey}
+              disabled={pkLoading || loading || !username.trim()}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-600 bg-transparent py-3 text-sm font-semibold text-gray-200 transition hover:border-gray-400 hover:bg-gray-800/40 disabled:opacity-50"
+            >
+              <Fingerprint className="h-4 w-4" />
+              {pkLoading ? 'Menunggu authenticator…' : 'Masuk dengan Passkey'}
             </button>
             <button
               type="button"

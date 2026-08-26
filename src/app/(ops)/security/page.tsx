@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import SecurityDashboard from './SecurityDashboard';
 import AdminSessionsPanel from './AdminSessionsPanel';
+import PasskeysPanel from './PasskeysPanel';
 
 export const metadata: Metadata = { title: 'Security Dashboard | DTMS' };
 
@@ -12,6 +13,7 @@ export default async function SecurityPage() {
   return (
     <div className="space-y-8">
       <SecurityDashboard />
+      <PasskeysPanel />
       <AdminSessionsPanel />
     </div>
   );

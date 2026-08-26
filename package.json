@@ -25,6 +25,8 @@
     "@base-ui/react": "^1.7.0",
     "@prisma/client": "^6.2.1",
     "@sentry/nextjs": "^10.70.0",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.3",
     "@upstash/redis": "^1.38.2",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",

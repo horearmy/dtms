@@ -128,6 +128,52 @@ export async function verifySuperAdminToken(token: string): Promise<{ valid: boo
   } catch { return { valid: false }; }
 }
 
+/** Terbitkan sesi privileged + persist AdminSession + audit lengkap (Blueprint §27).
+ *  Dipakai oleh alur password+TOTP maupun Passkey. */
+export async function issueSuperadminSession(
+  req: { headers: { get(k: string): string | null } },
+  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword: boolean; lastLoginAt?: Date | null; lastLoginIp?: string | null; totpEnabled?: boolean },
+  fingerprint: string,
+  ip: string,
+  authenticationMethod: 'password' | 'password+totp' | 'passkey'
+): Promise<void> {
+  await setSuperAdminSession({
+    id: user.id, name: user.name, username: user.username,
+    role: user.role, tenantId: user.tenantId, branchId: user.branchId,
+    pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword,
+  }, fingerprint, {
+    ip,
+    userAgent: req.headers.get('user-agent') || undefined,
+    authenticationMethod,
+  });
+
+  const ua = req.headers.get('user-agent') || 'unknown';
+  try {
+    const { prisma } = await import('./prisma');
+    await prisma.auditLog.create({ data: {
+      userId: user.id,
+      action: 'SUPERADMIN_SESSION_CREATED',
+      module: 'AUTH',
+      newData: JSON.stringify({
+        username: user.username,
+        fingerprint,
+        authenticationMethod,
+        mfa: authenticationMethod === 'passkey' ? 'passkey' : user.totpEnabled ? 'totp' : 'disabled',
+        ua,
+        lastLoginAt: user.lastLoginAt?.toISOString?.() ?? null,
+        lastLoginIp: user.lastLoginIp ?? null,
+      }),
+      ip,
+      method: 'POST',
+      userAgent: ua.slice(0, 250),
+    }});
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date(), lastLoginIp: ip },
+    });
+  } catch { /* jangan gagalkan login karena audit */ }
+}
+
 export async function setSuperAdminSession(
   user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean },
   fingerprint: string,
