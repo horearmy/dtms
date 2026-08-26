@@ -133,6 +133,11 @@ export async function getSession(): Promise<SessionUser | null> {
       if (p.fp !== buildFingerprintFromHeaders(h)) {
         return null;
       }
+      // Server-side session: revoked / expired / idle -> tolak (Blueprint §14)
+      const { validateSuperAdminSid } = await import('./superadmin-auth');
+      if (!(await validateSuperAdminSid(p.sid as string | undefined))) {
+        return null;
+      }
       const user = await prisma.user.findUnique({
         where: { id: p.id as string },
         select: { id: true, name: true, username: true, role: true, tenantId: true, branchId: true, status: true, pwdVersion: true },

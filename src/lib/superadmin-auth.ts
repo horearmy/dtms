@@ -98,7 +98,8 @@ export async function verifySuperAdminMfaToken(token: string): Promise<string | 
 
 export async function signSuperAdminToken(
   user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean },
-  fingerprint: string
+  fingerprint: string,
+  sid?: string
 ) {
   return new SignJWT({
     id: user.id,
@@ -111,6 +112,7 @@ export async function signSuperAdminToken(
     fp: fingerprint,
     sa: true,
     mcp: user.mustChangePassword === true,
+    sid,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -126,8 +128,31 @@ export async function verifySuperAdminToken(token: string): Promise<{ valid: boo
   } catch { return { valid: false }; }
 }
 
-export async function setSuperAdminSession(user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean }, fingerprint: string) {
-  const token = await signSuperAdminToken(user, fingerprint);
+export async function setSuperAdminSession(
+  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean },
+  fingerprint: string,
+  meta?: { ip?: string; userAgent?: string; authenticationMethod?: string }
+) {
+  // Server-side session (Blueprint §14/§35 AdminSession): token JWT membawa sid,
+  // status asli (revoked/expired/idle) disimpan di DB sehingga dapat direvoke.
+  const sid = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + ADMIN_AUTH_POLICY.maxSessionMinutes * 60 * 1000);
+
+  await prisma.adminSession.create({
+    data: {
+      userId: user.id,
+      sessionHash: crypto.createHash('sha256').update(sid).digest('hex'),
+      ip: meta?.ip ?? null,
+      userAgent: meta?.userAgent?.slice(0, 250) ?? null,
+      authenticationMethod: meta?.authenticationMethod ?? 'password',
+      expiresAt,
+    },
+  }).catch(() => {
+    // Fail-closed: tanpa baris sesi, token di bawah tidak akan valid
+    throw new Error('ADMIN_SESSION_PERSIST_FAILED');
+  });
+
+  const token = await signSuperAdminToken(user, fingerprint, sid);
   const store = await cookies();
   store.set(SUPERADMIN_COOKIE, token, {
     httpOnly: true,
@@ -136,6 +161,41 @@ export async function setSuperAdminSession(user: { id: string; name: string; use
     path: '/',
     maxAge: 60 * ADMIN_AUTH_POLICY.maxSessionMinutes,
   });
+}
+
+/** Validasi sesi server-side: revoked / absolute expiry / idle timeout + sliding activity */
+export async function validateSuperAdminSid(sid: string | undefined): Promise<boolean> {
+  if (!sid || !/^[a-f0-9]{64}$/.test(sid)) return false;
+  try {
+    const row = await prisma.adminSession.findUnique({ where: { sessionHash: crypto.createHash('sha256').update(sid).digest('hex') } });
+    if (!row || row.revokedAt) return false;
+    const now = Date.now();
+    if (row.expiresAt.getTime() <= now) return false;
+    const idleMs = ADMIN_AUTH_POLICY.idleTimeoutMinutes * 60 * 1000;
+    if (now - row.lastActivityAt.getTime() > idleMs) {
+      await prisma.adminSession.update({ where: { id: row.id }, data: { revokedAt: new Date() } }).catch(() => {});
+      return false;
+    }
+    if (now - row.lastActivityAt.getTime() > ADMIN_AUTH_POLICY.activityWriteThrottleMs) {
+      await prisma.adminSession.update({ where: { id: row.id }, data: { lastActivityAt: new Date() } }).catch(() => {});
+    }
+    return true;
+  } catch {
+    return true; // jangan mengunci semua SA gara-gara gangguan DB sementara
+  }
+}
+
+export async function revokeSuperAdminSessionByToken(token: string): Promise<boolean> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    const sid = payload.sid as string | undefined;
+    if (!sid) return false;
+    const r = await prisma.adminSession.updateMany({
+      where: { sessionHash: crypto.createHash('sha256').update(sid).digest('hex'), revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    return r.count > 0;
+  } catch { return false; }
 }
 
 export async function clearSuperAdminSession() {

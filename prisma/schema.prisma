@@ -1021,6 +1021,7 @@ model User {
   lastLoginAt        DateTime?
   lastLoginIp        String?
   auditLogs           AuditLog[]
+  adminSessions       AdminSession[]
   driver             Driver?
   exceptions          Exception[]
   notifications       Notification[]
@@ -1346,4 +1347,22 @@ model ReportJob {
   @@index([tenantId])
   @@index([status])
   @@index([createdAt])
+}
+
+model AdminSession {
+  id                   String    @id @default(cuid())
+  userId               String
+  sessionHash          String    @unique
+  ip                   String?
+  userAgent            String?
+  authenticationMethod String    @default("password")
+  riskLevel            String    @default("LOW")
+  createdAt            DateTime  @default(now())
+  lastActivityAt       DateTime  @default(now())
+  expiresAt            DateTime
+  revokedAt            DateTime?
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt, revokedAt])
 }

@@ -184,7 +184,11 @@ async function issueSuperadminSession(
     id: user.id, name: user.name, username: user.username,
     role: user.role, tenantId: user.tenantId, branchId: user.branchId,
     pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword,
-  }, fingerprint);
+  }, fingerprint, {
+    ip,
+    userAgent: req.headers.get('user-agent') || undefined,
+    authenticationMethod: user.totpEnabled ? 'password+totp' : 'password',
+  });
 
   await logAudit({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: null, branchId: null }, 'SUPERADMIN_SESSION_CREATED', 'AUTH', {
     newData: {
