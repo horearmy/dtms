@@ -81,17 +81,32 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const tenantAdmins = await prisma.user.findMany({
-      where: { tenantId: targetTenantId, role: { in: ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'] } },
-      select: { id: true },
-    });
-    if (tenantAdmins.length > 0) {
-      await prisma.notification.createMany({
-        data: tenantAdmins.map((u) => ({
-          userId: u.id,
-          message: `[Pesan] ${subject}`,
-        })),
+    if (msgDirection === 'INBOUND') {
+      const superAdmins = await prisma.user.findMany({
+        where: { role: 'SUPER_ADMIN', status: 'ACTIVE' },
+        select: { id: true },
       });
+      if (superAdmins.length > 0) {
+        await prisma.notification.createMany({
+          data: superAdmins.map((u) => ({
+            userId: u.id,
+            message: `[Pesan] Pesan baru dari ${session!.name} (${targetTenantId}): ${subject}`,
+          })),
+        });
+      }
+    } else {
+      const tenantAdmins = await prisma.user.findMany({
+        where: { tenantId: targetTenantId, role: { in: ['ADMIN_OPERASIONAL', 'MANAGEMENT'] }, status: 'ACTIVE' },
+        select: { id: true },
+      });
+      if (tenantAdmins.length > 0) {
+        await prisma.notification.createMany({
+          data: tenantAdmins.map((u) => ({
+            userId: u.id,
+            message: `[Pesan] Pesan baru dari Support: ${subject}`,
+          })),
+        });
+      }
     }
 
     return NextResponse.json(msg);
