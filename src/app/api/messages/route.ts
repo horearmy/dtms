@@ -126,3 +126,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(msg);
   });
 }
+
+export async function PATCH(req: NextRequest) {
+  const { session, error } = await guardPermission(PERMISSIONS.NOTIFICATION.READ);
+  if (error) return error;
+  return runWithTenant(session?.tenantId ?? null, async () => {
+    const { ids, tenantId } = await req.json();
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'ids wajib diisi' }, { status: 400 });
+    }
+    const where: Record<string, unknown> = { id: { in: ids }, read: false };
+    if (session!.role === 'SUPER_ADMIN') {
+      if (tenantId) where.tenantId = tenantId;
+    } else {
+      where.tenantId = session!.tenantId;
+    }
+    const result = await prisma.message.updateMany({ where, data: { read: true } });
+    return NextResponse.json({ updated: result.count });
+  });
+}

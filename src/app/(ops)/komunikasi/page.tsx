@@ -47,6 +47,19 @@ export default function KomunikasiPage() {
     loadUnreadCounts();
   }, [loadUnreadCounts]);
 
+  const markAsRead = useCallback(async (messageIds: string[]) => {
+    if (!selectedTenant || messageIds.length === 0) return;
+    const res = await fetch('/api/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: messageIds, tenantId: selectedTenant.id }),
+    });
+    if (res.ok) {
+      setMessages((prev) => prev.map((m) => (messageIds.includes(m.id) ? { ...m, read: true } : m)));
+      setUnreadCounts((prev) => ({ ...prev, [selectedTenant.id]: Math.max(0, (prev[selectedTenant.id] || 0) - messageIds.length) }));
+    }
+  }, [selectedTenant]);
+
   const loadMessages = useCallback(async () => {
     if (!selectedTenant) return;
     setLoading(true);
@@ -61,12 +74,26 @@ export default function KomunikasiPage() {
       setMessages(data.items);
       setTotal(data.total);
       setUnreadCounts((prev) => ({ ...prev, [selectedTenant.id]: data.unreadCount || 0 }));
+      const unreadIds = data.items
+        .filter((m: Message) => m.direction === 'INBOUND' && !m.read)
+        .map((m: Message) => m.id);
+      if (unreadIds.length > 0) markAsRead(unreadIds);
     }
     setLoading(false);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-  }, [selectedTenant, page]);
+  }, [selectedTenant, page, markAsRead]);
 
   useEffect(() => { loadMessages(); }, [loadMessages]);
+
+  useEffect(() => {
+    const interval = setInterval(loadUnreadCounts, 30000);
+    const onVisible = () => { if (!document.hidden) loadUnreadCounts(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [loadUnreadCounts]);
 
   async function sendMessage() {
     if (!selectedTenant || !form.subject || !form.body) return;
