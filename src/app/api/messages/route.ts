@@ -96,10 +96,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (msgDirection === 'INBOUND') {
-      const superAdmins = await prisma.user.findMany({
-        where: { role: 'SUPER_ADMIN', status: 'ACTIVE' },
-        select: { id: true },
-      });
+      const superAdmins = await runWithTenant(null, async () =>
+        prisma.user.findMany({
+          where: { role: 'SUPER_ADMIN', status: 'ACTIVE' },
+          select: { id: true },
+        })
+      );
       if (superAdmins.length > 0) {
         await prisma.notification.createMany({
           data: superAdmins.map((u) => ({
