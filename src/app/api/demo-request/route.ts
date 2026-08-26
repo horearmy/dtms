@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
             userId: a.id,
             message: `Permohonan Demo baru dari ${demo.name} (${demo.company}). Silakan ditindaklanjuti.`,
             tenantId: null,
+            metadata: { type: 'demo_request', demoRequestId: demo.id },
           })),
         });
       }

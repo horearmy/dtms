@@ -43,7 +43,17 @@ export default function KomunikasiPage() {
   useEffect(() => {
     fetch('/api/tenants')
       .then((r) => r.json())
-      .then((data) => setTenants(Array.isArray(data) ? data : data.tenants || []));
+      .then((data) => {
+        const list: Tenant[] = Array.isArray(data) ? data : data.tenants || [];
+        setTenants(list);
+        const tid = new URLSearchParams(window.location.search).get('tenant');
+        const found = tid ? list.find((t) => t.id === tid) : null;
+        if (found) {
+          setSelectedTenant(found);
+          setPage(1);
+          setShowCompose(false);
+        }
+      });
     loadUnreadCounts();
   }, [loadUnreadCounts]);
 

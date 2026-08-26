@@ -1,17 +1,44 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 
-type Notif = { id: string; message: string; shipmentId: string | null; createdAt: string; status: string };
+type Notif = {
+  id: string;
+  message: string;
+  shipmentId: string | null;
+  createdAt: string;
+  status: string;
+  metadata?: unknown;
+};
+
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+export function notifHref(n: Notif): string | null {
+  if (n.shipmentId) return `/shipments/${n.shipmentId}`;
+  const md = (n.metadata && typeof n.metadata === 'object' ? n.metadata : {}) as Record<string, unknown>;
+  if (md.type === 'message' && typeof md.tenantId === 'string') {
+    return `/komunikasi?tenant=${md.tenantId}`;
+  }
+  if (md.type === 'demo_request') return '/demo-requests';
+  // Fallback untuk notifikasi lama (tanpa metadata): parse dari teks
+  if (n.message.startsWith('[Pesan]')) {
+    const m = n.message.match(UUID_RE);
+    if (m) return `/komunikasi?tenant=${m[0]}`;
+    return '/komunikasi';
+  }
+  if (n.message.startsWith('Permohonan Demo')) return '/demo-requests';
+  return null;
+}
 
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notif[]>([]);
   const [unread, setUnread] = useState(0);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const res = await fetch('/api/notifications');
       if (res.ok) {
@@ -20,28 +47,57 @@ export default function NotificationsBell() {
         setUnread(data.unread || 0);
       }
     } catch { /* silent */ }
-  }
+  }, []);
 
   useEffect(() => {
     load();
     const t = setInterval(load, 30000);
-    return () => clearInterval(t);
-  }, []);
+    const onVisible = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [load]);
 
-  async function markRead() {
+  async function markRead(ids?: string[]) {
     try {
-      await fetch('/api/notifications/read', { method: 'POST' });
-      setUnread(0);
-      setItems(items.map((i) => ({ ...i, status: 'READ' })));
+      await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ids ? { ids } : {}),
+      });
+      setUnread((u) => (ids ? Math.max(0, u - ids.length) : 0));
+      setItems((prev) => prev.map((i) => (!ids || ids.includes(i.id) ? { ...i, status: 'READ' } : i)));
     } catch { /* silent */ }
   }
 
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen((wasOpen) => {
+          if (wasOpen && unread > 0) markRead();
+          return false;
+        });
+      }
+    }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unread]);
+
+  function onItemClick(n: Notif) {
+    markRead([n.id]);
+    setOpen(false);
+  }
+
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <button
         onClick={() => {
-          setOpen(!open);
-          if (!open) markRead();
+          const next = !open;
+          setOpen(next);
+          if (next && unread > 0) markRead();
         }}
         className="relative rounded-lg p-2 text-[#667085] hover:bg-gray-100"
         aria-label="Notifikasi"
@@ -64,29 +120,32 @@ export default function NotificationsBell() {
             {items.length === 0 && (
               <div className="py-8 text-center text-sm text-[#667085]">Tidak ada notifikasi</div>
             )}
-            {items.map((n) => (
-              <div key={n.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]">
-                {n.shipmentId ? (
-                  <Link
-                    href={`/shipments/${n.shipmentId}`}
-                    onClick={() => setOpen(false)}
-                    className="block px-4 py-3"
-                  >
-                    <div className="text-sm text-[#101828]">{n.message}</div>
-                    <div className="mt-1 text-[11px] text-[#667085]">
+            {items.map((n) => {
+              const href = notifHref(n);
+              const inner = (
+                <>
+                  <div className={`text-sm ${n.status === 'UNREAD' ? 'font-semibold text-[#101828]' : 'text-[#344054]'}`}>{n.message}</div>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span className="text-[11px] text-[#667085]">
                       {new Date(n.createdAt).toLocaleString('id-ID')}
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="px-4 py-3">
-                    <div className="text-sm text-[#101828]">{n.message}</div>
-                    <div className="mt-1 text-[11px] text-[#667085]">
-                      {new Date(n.createdAt).toLocaleString('id-ID')}
-                    </div>
+                    </span>
+                    {href && <span className="text-[11px] font-medium text-[#0D6EFD]">Lihat →</span>}
                   </div>
-                )}
-              </div>
-            ))}
+                </>
+              );
+              const cls = `block px-4 py-3 hover:bg-[#F7F9FC] ${n.status === 'UNREAD' ? 'bg-[#0D6EFD]/[0.03]' : ''}`;
+              return (
+                <div key={n.id} className="border-b border-[#E4E7EC] last:border-0">
+                  {href ? (
+                    <Link href={href} onClick={() => onItemClick(n)} className={cls}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className="px-4 py-3">{inner}</div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

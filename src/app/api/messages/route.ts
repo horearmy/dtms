@@ -107,6 +107,7 @@ export async function POST(req: NextRequest) {
           data: superAdmins.map((u) => ({
             userId: u.id,
             message: `[Pesan] Pesan baru dari ${session!.name} (${targetTenantId}): ${subject}`,
+            metadata: { type: 'message', tenantId: targetTenantId },
           })),
         });
       }
