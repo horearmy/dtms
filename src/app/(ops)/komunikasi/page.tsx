@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { formatDateTime } from '@/lib/constants';
-import { EmptyRow } from '@/components/ui';
 
 type Tenant = { id: string; name: string; slug: string; status: string; active: boolean };
 type Message = {
@@ -19,6 +18,7 @@ type Message = {
 
 export default function KomunikasiPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [total, setTotal] = useState(0);
@@ -32,11 +32,20 @@ export default function KomunikasiPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const pageSize = 50;
 
+  const loadUnreadCounts = useCallback(async () => {
+    const res = await fetch('/api/messages');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.unreadCounts) setUnreadCounts(data.unreadCounts);
+    }
+  }, []);
+
   useEffect(() => {
     fetch('/api/tenants')
       .then((r) => r.json())
       .then((data) => setTenants(Array.isArray(data) ? data : data.tenants || []));
-  }, []);
+    loadUnreadCounts();
+  }, [loadUnreadCounts]);
 
   const loadMessages = useCallback(async () => {
     if (!selectedTenant) return;
@@ -51,6 +60,7 @@ export default function KomunikasiPage() {
       const data = await res.json();
       setMessages(data.items);
       setTotal(data.total);
+      setUnreadCounts((prev) => ({ ...prev, [selectedTenant.id]: data.unreadCount || 0 }));
     }
     setLoading(false);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -78,6 +88,7 @@ export default function KomunikasiPage() {
         setSuccess(`Pesan berhasil dikirim ke ${selectedTenant.name}`);
         setTimeout(() => setSuccess(''), 3000);
         loadMessages();
+        loadUnreadCounts();
       } else {
         const data = await res.json();
         setError(data.error || 'Gagal mengirim pesan');
@@ -111,18 +122,28 @@ export default function KomunikasiPage() {
             <h2 className="text-sm font-bold text-[#101828]">Pilih Tenant</h2>
           </div>
           <div className="max-h-[600px] overflow-y-auto">
-            {tenants.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => { setSelectedTenant(t); setPage(1); setShowCompose(false); }}
-                className={`w-full border-b border-[#E4E7EC] px-4 py-3 text-left transition hover:bg-[#F7F9FC] last:border-0 ${
-                  selectedTenant?.id === t.id ? 'bg-[#0D6EFD]/5 border-l-2 border-l-[#0D6EFD]' : ''
-                }`}
-              >
-                <div className="text-sm font-medium text-[#101828]">{t.name}</div>
-                <div className="text-xs text-[#667085]">/{t.slug}</div>
-              </button>
-            ))}
+            {tenants.map((t) => {
+              const count = unreadCounts[t.id] || 0;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => { setSelectedTenant(t); setPage(1); setShowCompose(false); }}
+                  className={`w-full border-b border-[#E4E7EC] px-4 py-3 text-left transition hover:bg-[#F7F9FC] last:border-0 ${
+                    selectedTenant?.id === t.id ? 'bg-[#0D6EFD]/5 border-l-2 border-l-[#0D6EFD]' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium text-[#101828]">{t.name}</div>
+                    {count > 0 && (
+                      <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white min-w-[18px] text-center">
+                        {count > 99 ? '99+' : count}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-[#667085]">/{t.slug}</div>
+                </button>
+              );
+            })}
             {tenants.length === 0 && (
               <div className="py-10 text-center text-sm text-[#667085]">Tidak ada tenant</div>
             )}
@@ -213,11 +234,20 @@ export default function KomunikasiPage() {
                       className={`rounded-lg border p-3 ${
                         msg.direction === 'OUTBOUND'
                           ? 'border-[#0D6EFD]/20 bg-[#0D6EFD]/5 ml-8'
-                          : 'border-[#E4E7EC] bg-[#F7F9FC] mr-8'
+                          : 'border-[#16B364]/20 bg-[#16B364]/5 mr-8'
                       }`}
                     >
                       <div className="mb-1 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-[#101828]">{msg.subject}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-[#101828]">{msg.subject}</span>
+                          {!msg.read && (
+                            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                              msg.direction === 'OUTBOUND'
+                                ? 'bg-[#0D6EFD]/10 text-[#0D6EFD]'
+                                : 'bg-[#16B364]/10 text-[#16B364]'
+                            }`}>Baru</span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-[#667085]">{formatDateTime(msg.createdAt)}</span>
                       </div>
                       <div className="whitespace-pre-wrap text-sm text-[#344054]">{msg.body}</div>
@@ -225,9 +255,6 @@ export default function KomunikasiPage() {
                         <span className="text-[10px] text-[#667085]">
                           {msg.direction === 'OUTBOUND' ? 'Dikirim ke tenant' : 'Dari tenant'} · {msg.senderName}
                         </span>
-                        {!msg.read && msg.direction === 'OUTBOUND' && (
-                          <span className="rounded-full bg-[#0D6EFD]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#0D6EFD]">Baru</span>
-                        )}
                       </div>
                     </div>
                   ))

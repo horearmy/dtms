@@ -12,6 +12,20 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, parseInt(req.nextUrl.searchParams.get('pageSize') || '20', 10));
 
+    if (isSuperAdmin && !tenantId) {
+      const tenants = await prisma.tenant.findMany({ select: { id: true, name: true, slug: true, status: true } });
+      const counts = await prisma.message.groupBy({
+        by: ['tenantId'],
+        where: { direction: 'INBOUND', read: false, tenantId: { in: tenants.map(t => t.id) } },
+        _count: true,
+      });
+      const countMap: Record<string, number> = {};
+      for (const c of counts) {
+        if (c.tenantId) countMap[c.tenantId] = c._count;
+      }
+      return NextResponse.json({ unreadCounts: countMap, items: [], total: 0, unreadCount: 0, page, pageSize });
+    }
+
     const where: Record<string, unknown> = {};
 
     if (isSuperAdmin) {
