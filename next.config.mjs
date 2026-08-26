@@ -15,6 +15,9 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@base-ui/react', 'recharts'],
+  },
   headers: async () => [
     {
       source: '/_next/static/:path*',

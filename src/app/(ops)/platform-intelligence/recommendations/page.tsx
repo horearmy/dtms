@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
-} from 'recharts';
+} from '@/components/recharts-lazy';
 import { Lightbulb, TrendingUp, ShieldAlert, DollarSign, Cog, Zap, RefreshCw, Filter, Send, X } from 'lucide-react';
 import { useNotification } from '@/components/ui/NotificationContext';
 

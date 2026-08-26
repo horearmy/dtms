@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceDot,
-} from 'recharts';
+} from '@/components/recharts-lazy';
 import { AlertTriangle, RefreshCw, Activity, Filter } from 'lucide-react';
 import KPICard from '@/components/platform/KPICard';
 

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
-} from 'recharts';
+} from '@/components/recharts-lazy';
 import { Building2, Package, CreditCard, Activity, Users, Truck, Car, AlertTriangle, Clock, RefreshCw, Download } from 'lucide-react';
 import Link from 'next/link';
 import KPICard from '@/components/platform/KPICard';

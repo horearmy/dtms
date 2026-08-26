@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line,
-} from 'recharts';
+} from '@/components/recharts-lazy';
 import { TrendingUp, RefreshCw, BarChart3 } from 'lucide-react';
 import KPICard from '@/components/platform/KPICard';
 

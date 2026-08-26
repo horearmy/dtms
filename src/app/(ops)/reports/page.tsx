@@ -3,7 +3,8 @@ import { getSession } from '@/lib/auth';
 import { runWithTenant } from '@/lib/api-guard';
 import { driverScore } from '@/lib/scoring';
 import CsvExport from '@/components/CsvExport';
-import ReportPdfExport, { type ReportData } from '@/components/ReportPdfExport';
+import { type ReportData } from '@/components/ReportPdfExport';
+import ReportPdfExport from '@/components/ReportPdfExportLazy';
 import StatusBadge from '@/components/StatusBadge';
 import { STATUS_LABELS } from '@/lib/constants';
 

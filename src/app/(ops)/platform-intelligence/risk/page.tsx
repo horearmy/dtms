@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
-} from 'recharts';
+} from '@/components/recharts-lazy';
 import { AlertTriangle, ShieldAlert, TrendingDown, RefreshCw, Activity, CheckCircle2 } from 'lucide-react';
 import KPICard from '@/components/platform/KPICard';
 import DrillDownModal, { DrillDownData } from '@/components/platform/DrillDownModal';

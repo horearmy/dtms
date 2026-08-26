@@ -2,10 +2,18 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import StatusBadge from '@/components/StatusBadge';
-import ShipmentQR from '@/components/ShipmentQR';
-import ShipmentLiveMap from '@/components/ShipmentLiveMap';
 import ReturnTimeline from '@/components/ReturnTimeline';
+
+const ShipmentQR = dynamic(() => import('@/components/ShipmentQR'), {
+  ssr: false,
+  loading: () => <div className="h-[140px] w-[140px] animate-pulse rounded-lg bg-[#F2F4F7]" />,
+});
+const ShipmentLiveMap = dynamic(() => import('@/components/ShipmentLiveMap'), {
+  ssr: false,
+  loading: () => <div className="min-h-[320px] w-full animate-pulse rounded-xl bg-[#F2F4F7]" />,
+});
 import { btnPrimary, btnGhost, inputCls, Field, Modal } from '@/components/ui';
 import {
   STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS,

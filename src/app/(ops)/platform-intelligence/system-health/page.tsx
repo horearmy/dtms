@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts';
+} from '@/components/recharts-lazy';
 import { Activity, AlertTriangle, RefreshCw, Database, Plug, Webhook, Key, XCircle, Server } from 'lucide-react';
 import KPICard from '@/components/platform/KPICard';
 import ExecutiveInsights from '@/components/platform/ExecutiveInsights';
