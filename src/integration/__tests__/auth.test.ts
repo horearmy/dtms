@@ -41,10 +41,13 @@ describe('Auth — Login', () => {
     expect(r.status).toBe(401);
   });
 
-  it('superadmin login without tenantId → 200', async () => {
+  it('superadmin via tenant login → 401 generik (Blueprint §38: wajib secure portal)', async () => {
     const r = await api('POST', '/api/auth/login', { username: 'superadmin', password: process.env.TEST_SA_PASSWORD || 'Admin1234' });
-    expect(r.status).toBe(200);
-    expect(r.json.role).toBe('SUPER_ADMIN');
+    expect(r.status).toBe(401);
+    expect(r.json.error).toBe('Username atau password salah');
+    // Anti-enumeration: respons identik dengan kredensial acak
+    const ghost = await api('POST', '/api/auth/login', { username: 'tidakada_xz', password: 'whatever123' });
+    expect(ghost.json.error).toBe(r.json.error);
   });
 });
 

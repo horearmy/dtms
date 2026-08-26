@@ -35,9 +35,9 @@ export async function POST(req: NextRequest) {
       user = await prisma.user.findFirst({ where: { username: key, tenantId: String(tenantId) } });
     } else {
       user = await prisma.user.findFirst({ where: { username: key, tenantId: null } });
-      if (user && user.role !== 'SUPER_ADMIN') {
-        user = null;
-      }
+      // Blueprint §38: superadmin TIDAK login lewat pintu tenant biasa.
+      // Satu-satunya jalur: /admin/secure-login (secret key + MFA/passkey).
+      if (user) user = null;
     }
     // Hash dummy untuk menyamakan waktu respons antara user tak dikenal dan password salah
     const DUMMY_HASH = '$2a$12$N6EIOlmbK6eF0YXpMxJ9xOKbXzvPgD3s9rxQut.vH0B0muqr3zloG';
