@@ -14,9 +14,7 @@ export default function LandingClient() {
       <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-lg">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0D6EFD] text-lg font-bold text-white">
-              DT
-            </div>
+            <img src="/logo.png" alt="Logo DTMS" className="h-10 w-10 rounded-xl object-contain" />
             <span className="text-xl font-bold text-gray-900">DTMS</span>
           </div>
           <div className="hidden items-center gap-8 md:flex">
@@ -236,9 +234,7 @@ export default function LandingClient() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0D6EFD] text-xs font-bold text-white">
-                  DT
-                </div>
+                <img src="/logo.png" alt="Logo DTMS" className="h-8 w-8 rounded-lg object-contain" />
                 <span className="text-lg font-bold text-gray-900">DTMS</span>
               </div>
               <p className="mt-3 text-sm text-gray-500">

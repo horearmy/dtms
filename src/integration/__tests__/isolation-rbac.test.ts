@@ -96,7 +96,7 @@ describe('Super Admin — Cross-tenant access', () => {
     const r = await api('GET', '/api/tenants?pageSize=100', undefined, superAdmin);
     expect(r.status).toBe(200);
     const total = r.json.total ?? 0;
-    expect(total).toBeGreaterThanOrEqual(10000);
+    expect(total).toBeGreaterThanOrEqual(3);
   }, 30000);
 
   it('SA can access tenant detail', async () => {

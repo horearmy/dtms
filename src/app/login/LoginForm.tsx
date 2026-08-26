@@ -101,9 +101,7 @@ function LoginFormInner() {
       <div className="rounded-2xl border border-[#E4E7EC] bg-white p-8 shadow-sm">
         {/* Logo */}
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0D6EFD]">
-            <Package size={28} className="text-white" />
-          </div>
+          <img src="/logo.png" alt="Logo DTMS" className="mx-auto mb-3 h-14 w-14 rounded-2xl object-contain" />
           <h1 className="text-xl font-bold text-[#101828]">DTMS</h1>
           <p className="mt-0.5 text-sm text-[#667085]">
             {twoFactorToken ? 'Verifikasi 2 langkah' : 'Delivery Tracking Management System'}

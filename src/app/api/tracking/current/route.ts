@@ -20,6 +20,12 @@ export async function GET() {
       ? Prisma.sql`AND d."tenantId" = ${session.tenantId}`
       : Prisma.sql``;
 
+    // Kolom DateTime disimpan sebagai timestamp tanpa zona waktu (UTC naif).
+    // Jangan pakai NOW() DB yang sadar-zona-waktu — pakai cutoff dari aplikasi,
+    // dikirim sebagai string ISO UTC + cast eksplisit agar bebas pengaruh
+    // zona waktu sesi database.
+    const cutoff = new Date(Date.now() - 2 * 3600_000).toISOString();
+
     const rows = await prisma.$queryRaw<
       { driverId: string; vehicleId: string | null; latitude: number; longitude: number; speed: number | null; heading: number | null; battery: number | null; createdAt: Date }[]
     >`
@@ -27,7 +33,7 @@ export async function GET() {
         g."driverId", g."vehicleId", g."latitude", g."longitude", g."speed", g."heading", g."battery", g."createdAt"
       FROM "GpsLog" g
       JOIN "Driver" d ON d."id" = g."driverId"
-      WHERE g."createdAt" > NOW() - INTERVAL '2 hours'
+      WHERE g."createdAt" > ${cutoff}::timestamp
       ${tenantCondition}
       ORDER BY g."driverId", g."createdAt" DESC
     `;

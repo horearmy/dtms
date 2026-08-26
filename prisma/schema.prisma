@@ -880,6 +880,8 @@ model Tenant {
   warehouses           Warehouse[]
   webhookSubscriptions WebhookSubscription[]
   whiteLabel          WhiteLabel?
+  scheduledReports    ScheduledReport[]
+  reportJobs          ReportJob[]
 
   @@index([code])
   @@index([domain])
@@ -1297,4 +1299,51 @@ enum TenantStatus {
 enum UserStatus {
   ACTIVE
   INACTIVE
+}
+
+model ScheduledReport {
+  id              String   @id @default(cuid())
+  tenantId        String?
+  name            String
+  reportType      String
+  dataset         String
+  dimension       String
+  metric          String
+  preset          String   @default("this_month")
+  format          String   @default("csv")
+  schedule        String
+  timezone        String   @default("Asia/Jakarta")
+  recipients      String[]
+  active          Boolean  @default(true)
+  lastRunAt       DateTime?
+  nextRunAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jobs            ReportJob[]
+
+  @@index([tenantId])
+  @@index([active, nextRunAt])
+}
+
+model ReportJob {
+  id              String    @id @default(cuid())
+  tenantId        String?
+  scheduledReportId String?
+  reportType      String
+  parameters      Json?
+  format          String    @default("csv")
+  status          String    @default("QUEUED")
+  fileUrl         String?
+  error           String?
+  requestedBy     String?
+  createdAt       DateTime  @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scheduledReport ScheduledReport? @relation(fields: [scheduledReportId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
 }

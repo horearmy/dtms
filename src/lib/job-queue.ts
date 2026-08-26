@@ -116,16 +116,17 @@ export async function getStats() {
 }
 
 async function claimJobs(limit: number): Promise<Job[]> {
+  const nowIso = new Date().toISOString();
   const rows = await prisma.$queryRaw<ClaimedRow[]>`
     UPDATE "JobQueue"
     SET status = 'running',
-        "startedAt" = NOW(),
-        "lockedAt" = NOW(),
+        "startedAt" = ${nowIso}::timestamp,
+        "lockedAt" = ${nowIso}::timestamp,
         "lockedBy" = ${INSTANCE_ID},
         attempt = attempt + 1
     WHERE id IN (
       SELECT id FROM "JobQueue"
-      WHERE status = 'pending' AND "runAfter" <= NOW()
+      WHERE status = 'pending' AND "runAfter" <= ${nowIso}::timestamp
       ORDER BY "createdAt" ASC
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED

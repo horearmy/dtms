@@ -41,6 +41,8 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [role, setRole] = useState('');
+  const isSuperAdmin = role === 'SUPER_ADMIN';
 
   const [statusForm, setStatusForm] = useState({ status: '', notes: '', lat: '', lng: '' });
   const [statusOpen, setStatusOpen] = useState(false);
@@ -61,6 +63,12 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
   }
 
   useEffect(() => { load(); }, [id]);
+
+  useEffect(() => {
+    fetch('/api/auth/me').then((r) => r.ok ? r.json() : null).then((d) => {
+      if (d?.user?.role) setRole(d.user.role);
+    }).catch(() => {});
+  }, []);
 
   async function postActions(fn: () => Promise<Response>) {
     setBusy(true);
@@ -152,6 +160,11 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="space-y-5">
+      {isSuperAdmin && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
+          <b>Mode Monitoring</b> — Anda melihat data shipment dari tenant. Perubahan status dilakukan oleh tenant/driver.
+        </div>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
@@ -206,8 +219,8 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         status={s.status}
       />
 
-      {/* Aksi status */}
-      {!terminal && (
+      {/* Aksi status — hanya untuk tenant, superadmin hanya memantau */}
+      {!terminal && !isSuperAdmin && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E4E7EC] bg-[#F7F9FC] p-4">
           <span className="text-sm font-bold text-[#101828]">Aksi:</span>
           {next && (() => {
@@ -250,14 +263,14 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
       {/* Info cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <InfoCard title="Pengirim">
-          <p className="font-semibold text-[#101828]">{s.Customer_Shipment_senderIdToCustomer.name}</p>
-          <p className="text-xs text-[#667085]">{s.sender.phone}</p>
-          <p className="text-xs text-[#667085]">{s.sender.address}, {s.sender.city || ''}</p>
+          <p className="font-semibold text-[#101828]">{s.sender?.name}</p>
+          <p className="text-xs text-[#667085]">{s.sender?.phone}</p>
+          <p className="text-xs text-[#667085]">{s.sender?.address}, {s.sender?.city || ''}</p>
         </InfoCard>
         <InfoCard title="Penerima">
-          <p className="font-semibold text-[#101828]">{s.Customer_Shipment_receiverIdToCustomer.name}</p>
-          <p className="text-xs text-[#667085]">{s.Customer_Shipment_receiverIdToCustomer.phone}</p>
-          <p className="text-xs text-[#667085]">{s.Customer_Shipment_receiverIdToCustomer.address}, {s.Customer_Shipment_receiverIdToCustomer.city || ''}</p>
+          <p className="font-semibold text-[#101828]">{s.receiver?.name}</p>
+          <p className="text-xs text-[#667085]">{s.receiver?.phone}</p>
+          <p className="text-xs text-[#667085]">{s.receiver?.address}, {s.receiver?.city || ''}</p>
         </InfoCard>
         <InfoCard title="Pengiriman">
           <div className="space-y-1 text-xs text-[#667085]">
@@ -270,16 +283,18 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         <InfoCard title="Penugasan">
           {assignment ? (
             <div className="space-y-1 text-xs text-[#667085]">
-              <div><b>Driver:</b> {assignment.Driver.name}</div>
-              <div><b>Kendaraan:</b> {assignment.Vehicle?.vehicleNumber || '-'}</div>
+              <div><b>Driver:</b> {assignment.driver?.name}</div>
+              <div><b>Kendaraan:</b> {assignment.vehicle?.vehicleNumber || '-'}</div>
               <div><b>Tugas:</b> {formatDateTime(assignment.assignedAt)}</div>
             </div>
           ) : (
             <p className="text-xs text-[#667085]">Belum ditugaskan</p>
           )}
-          <button onClick={openAssign} className="mt-2 text-xs font-bold text-[#0D6EFD] hover:underline">
-            {assignment ? 'Ganti Assignment' : '+ Tugaskan Driver'}
-          </button>
+          {!isSuperAdmin && (
+            <button onClick={openAssign} className="mt-2 text-xs font-bold text-[#0D6EFD] hover:underline">
+              {assignment ? 'Ganti Assignment' : '+ Tugaskan Driver'}
+            </button>
+          )}
         </InfoCard>
       </div>
 
@@ -343,7 +358,8 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         <ReturnTimeline driverId={assignment?.driver?.id} driverName={assignment?.driver?.name} />
 
         <div className="space-y-5">
-          {/* QR resi */}
+          {/* QR resi — hanya untuk tenant */}
+          {!isSuperAdmin && (
           <div className="flex items-start gap-4 rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
             <ShipmentQR value={s.trackingNumber} />
             <div>
@@ -356,6 +372,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
               </Link>
             </div>
           </div>
+          )}
           {/* POD */}
           <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
             <h2 className="mb-3 text-sm font-bold text-[#101828]">Proof of Delivery</h2>
@@ -411,7 +428,8 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
-      {/* Modal assignment */}
+      {/* Modal assignment — hanya untuk tenant */}
+      {!isSuperAdmin && (
       <Modal open={assignOpen} title="Tugaskan Driver" onClose={() => setAssignOpen(false)}>
         <form onSubmit={assign} className="space-y-4">
           <Field label="Driver" required>
@@ -438,8 +456,10 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </form>
       </Modal>
+      )}
 
-      {/* Modal status */}
+      {/* Modal status — hanya untuk tenant */}
+      {!isSuperAdmin && (
       <Modal open={statusOpen} title="Update Status & Lokasi" onClose={() => setStatusOpen(false)}>
         {s.status === 'OUT_FOR_DELIVERY'
           ? (
@@ -485,6 +505,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
             </form>
           )}
       </Modal>
+      )}
     </div>
   );
 }

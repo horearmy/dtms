@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import CsrfProvider from '@/components/CsrfProvider';
 import PWARegister from '@/components/PWARegister';
+import TopLoader from '@/components/TopLoader';
+import { NotificationProvider } from '@/components/ui/NotificationContext';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -38,9 +40,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id" className={cn('font-sans antialiased scroll-smooth', jakarta.variable)}>
       <body>
+        <TopLoader />
         <PWARegister />
         <CsrfProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <NotificationProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </NotificationProvider>
         </CsrfProvider>
       </body>
     </html>

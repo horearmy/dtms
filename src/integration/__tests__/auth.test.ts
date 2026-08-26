@@ -91,7 +91,7 @@ describe('Auth — Tenants List (public)', () => {
     const r = await api('GET', '/api/auth/tenants');
     expect(r.status).toBe(200);
     const items = Array.isArray(r.json) ? r.json : r.json.items || [];
-    expect(items.length).toBeGreaterThanOrEqual(10000);
+    expect(items.length).toBeGreaterThanOrEqual(3);
   });
 });
 

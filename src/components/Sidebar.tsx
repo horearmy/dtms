@@ -32,6 +32,9 @@ import {
   Globe,
   Warehouse,
   Building,
+  Server,
+  Download,
+  Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -81,6 +84,19 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
           title: 'DASHBOARD',
           items: [
             { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+            { href: '/platform-intelligence', label: 'Platform Intelligence', icon: <BarChart3 size={18} /> },
+            { href: '/platform-intelligence/exceptions', label: 'Exception Analytics', icon: <ShieldAlert size={18} /> },
+            { href: '/platform-intelligence/fleet', label: 'Fleet Analytics', icon: <Truck size={18} /> },
+            { href: '/platform-intelligence/customers', label: 'Customer Analytics', icon: <Users size={18} /> },
+            { href: '/platform-intelligence/integrations', label: 'Integration Analytics', icon: <Plug size={18} /> },
+            { href: '/platform-intelligence/system-health', label: 'System Health', icon: <Server size={18} /> },
+            { href: '/platform-intelligence/report-builder', label: 'Report Builder', icon: <FileText size={18} /> },
+            { href: '/platform-intelligence/export', label: 'Export Data', icon: <Download size={18} /> },
+            { href: '/platform-intelligence/risk', label: 'Risk Detection', icon: <ShieldAlert size={18} /> },
+            { href: '/platform-intelligence/recommendations', label: 'Recommendations', icon: <Zap size={18} /> },
+            { href: '/platform-intelligence/forecast', label: 'Forecast', icon: <TrendingUp size={18} /> },
+            { href: '/platform-intelligence/anomalies', label: 'Anomaly Detection', icon: <Activity size={18} /> },
+            { href: '/platform-intelligence/schedules', label: 'Scheduled Reports', icon: <Calendar size={18} /> },
           ],
         },
         {
@@ -183,9 +199,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
           {whiteLabel?.logoUrl ? (
             <img src={whiteLabel.logoUrl} alt="Logo" className="h-10 w-10 rounded-xl object-contain" />
           ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: whiteLabel?.primaryColor || '#0D6EFD' }}>
-              <Package size={20} className="text-white" />
-            </div>
+            <img src="/logo.png" alt="Logo DTMS" className="h-10 w-10 rounded-xl object-contain bg-white p-0.5" />
           )}
           <div>
             <div className="text-sm font-bold tracking-wide text-white">{whiteLabel?.appName || 'DTMS'}</div>

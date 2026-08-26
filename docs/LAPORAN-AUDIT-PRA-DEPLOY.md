@@ -160,3 +160,31 @@ Request
 Seluruh temuan kritikal dan penting dari audit pra-deploy telah diperbaiki dan diverifikasi ulang secara end-to-end. Pemeriksaan menyeluruh menemukan 3 isu tambahan yang juga telah diperbaiki. **Gerbang kualitas hijau penuh (tsc, lint, build, 306/306 tes stabil)**, tidak ditemukan gap atau bug yang menghalangi rilis.
 
 **Rekomendasi:** lanjut ke deployment produksi mengikuti Checklist Bagian 7.
+
+---
+
+## Addendum Round 5 — Audit Aplikasi Driver (24 Agustus 2026)
+
+Verifikasi end-to-end aplikasi driver (`/driver`) dan pemantauan oleh tenant/superadmin menemukan 2 bug nyata yang telah diperbaiki:
+
+### Bug 1: Role DRIVER kehilangan izin laporan harian & GPS
+- **Gejala**: `POST /api/driver/daily-report` → 403, `POST /api/gps` → 403 untuk user ber-role DRIVER. Fitur "Laporan Harian" dan kirim posisi GPS di aplikasi driver tidak berfungsi.
+- **Penyebab**: `ROLE_PERMS.DRIVER` (src/lib/permissions.ts) dan seed.js tidak memuat `daily_report.read/create` maupun `gps.send`.
+- **Perbaikan**: kedua map ditambah `GPS.SEND`, `DAILY_REPORT.READ`, `DAILY_REPORT.CREATE`; sinkronisasi ke DB dijalankan untuk seluruh tenant (30.318 baris RolePermission ditambah).
+
+### Bug 2: Live tracking kosong di server non-UTC (zona waktu)
+- **Gejala**: `GET /api/tracking/current` selalu `[]` meski ada GpsLog segar.
+- **Penyebab**: kolom DateTime Prisma disimpan sebagai `timestamp` tanpa zona waktu (UTC naif), sedangkan raw SQL membandingkan dengan `NOW()` DB yang sadar-zona-waktu. Di server GMT+7, posisi baru tampak "berumur 7 jam" sehingga terfilter keluar dari jendela 2 jam. Pola sama ada di job queue (`runAfter <= NOW()`, `startedAt = NOW()`).
+- **Perbaikan**: cutoff dikirim dari aplikasi sebagai string ISO UTC + cast eksplisit `::timestamp` (src/app/api/tracking/current/route.ts, src/lib/job-queue.ts). Verifikasi: tenant melihat armadanya sendiri; superadmin melihat lintas tenant.
+
+### Catatan kualitas data (belum ditindak)
+- Database berisi ±10.106 tenant sisa pengujian lama (10.002 dengan user, 10.000 dengan shipment) dan total >10 juta baris Driver/GpsLog sampah. Superadmin `/api/drivers` menampilkan total >10 juta. Disarankan pembersihan menyeluruh sebelum produksi.
+
+### Hasil verifikasi akhir
+| Alur | Status |
+|---|---|
+| Login driver, lihat tugas, status, kirim GPS | OK |
+| Laporan harian driver (lihat + simpan) | OK (setelah fix) |
+| Tenant: daftar/detail driver, live tracking | OK |
+| Superadmin: semua driver, live tracking lintas tenant | OK |
+| Suite integrasi | 306/306 |
