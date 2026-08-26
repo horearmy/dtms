@@ -4,15 +4,18 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, Key, Lock, Eye, EyeOff, AlertTriangle, CheckCircle } from 'lucide-react';
 
-type Step = 'secret' | 'credentials';
+type Step = 'secret' | 'credentials' | 'mfa';
 
 export default function SecureLoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>('secret');
   const [secretKey, setSecretKey] = useState('');
   const [sessionToken, setSessionToken] = useState('');
+  const [mfaToken, setMfaToken] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [backupAllowed, setBackupAllowed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -60,6 +63,41 @@ export default function SecureLoginPage() {
           setSessionToken('');
         }
         setError(data.error || 'Login gagal');
+        return;
+      }
+      if (data.mfaRequired && data.mfaToken) {
+        setMfaToken(data.mfaToken);
+        setBackupAllowed(!!data.backupAllowed);
+        setMfaCode('');
+        setStep('mfa');
+        return;
+      }
+      setLastLoginInfo({ time: new Date().toLocaleString('id-ID'), ip: 'Authenticated' });
+      router.push('/tenants');
+    } catch { setError('Koneksi gagal'); }
+    finally { setLoading(false); }
+  };
+
+  const handleMfa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaCode.trim()) return;
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/superadmin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: 3, mfaToken, code: mfaCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 401 && data.error?.includes('kedaluwarsa')) {
+          setStep('secret');
+          setSecretKey('');
+          setSessionToken('');
+          setMfaToken('');
+        }
+        setError(data.error || 'Kode verifikasi salah');
         return;
       }
       setLastLoginInfo({ time: new Date().toLocaleString('id-ID'), ip: 'Authenticated' });
@@ -174,6 +212,61 @@ export default function SecureLoginPage() {
               className="w-full text-center text-sm text-gray-500 hover:text-gray-300"
             >
               Kembali
+            </button>
+          </form>
+        )}
+
+        {step === 'mfa' && (
+          <form onSubmit={handleMfa} className="space-y-5">
+            <div className="rounded-lg border border-green-800 bg-green-900/20 p-3 text-center text-sm text-green-400">
+              <CheckCircle className="mx-auto mb-1 h-4 w-4" />
+              Kredensial terverifikasi
+            </div>
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-300">
+                <Lock className="h-4 w-4" />
+                Kode Autentikasi (2FA)
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={mfaCode}
+                onChange={e => setMfaCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
+                className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-center text-lg font-mono tracking-[0.3em] text-white placeholder-gray-500 outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                placeholder="000000"
+                maxLength={11}
+                autoFocus
+                autoComplete="one-time-code"
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                Masukkan 6 digit kode dari aplikasi autentikator{backupAllowed ? ', atau salah satu recovery code' : ''}.
+              </p>
+            </div>
+            {error && (
+              <div className="rounded-lg border border-red-800 bg-red-900/20 p-3 text-sm text-red-400">
+                {error}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={loading || !mfaCode.trim()}
+              className="w-full rounded-lg bg-red-600 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Lock className="h-4 w-4 animate-pulse" />
+                  Memverifikasi...
+                </span>
+              ) : (
+                'Verifikasi & Masuk'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStep('secret'); setSecretKey(''); setSessionToken(''); setMfaToken(''); setError(''); }}
+              className="w-full text-center text-sm text-gray-500 hover:text-gray-300"
+            >
+              Mulai dari awal
             </button>
           </form>
         )}

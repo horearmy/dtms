@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from './prisma';
 import crypto from 'crypto';
 import { NextRequest } from 'next/server';
+import { ADMIN_AUTH_POLICY } from './admin-policy';
 
 const SUPERADMIN_ALLOWED_IPS = (process.env.SUPERADMIN_ALLOWED_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
@@ -78,7 +79,27 @@ export async function verifySuperAdminStep1Token(token: string): Promise<boolean
   } catch { return false; }
 }
 
-export async function signSuperAdminToken(user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number }, fingerprint: string) {
+/** Token jembatan antara step-2 (password OK) dan step-3 (MFA) — Blueprint §37 MFA_REQUIRED */
+export async function signSuperAdminMfaToken(userId: string): Promise<string> {
+  return new SignJWT({ purpose: 'sa_mfa', uid: userId })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(`${Math.ceil(ADMIN_AUTH_POLICY.mfaTokenTtlMs / 1000)}s`)
+    .sign(SECRET);
+}
+
+export async function verifySuperAdminMfaToken(token: string): Promise<string | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    if (payload.purpose !== 'sa_mfa' || typeof payload.uid !== 'string') return null;
+    return payload.uid;
+  } catch { return null; }
+}
+
+export async function signSuperAdminToken(
+  user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean },
+  fingerprint: string
+) {
   return new SignJWT({
     id: user.id,
     name: user.name,
@@ -89,10 +110,11 @@ export async function signSuperAdminToken(user: { id: string; name: string; user
     pwd: user.pwdVersion,
     fp: fingerprint,
     sa: true,
+    mcp: user.mustChangePassword === true,
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('4h')
+    .setExpirationTime(`${ADMIN_AUTH_POLICY.maxSessionMinutes}m`)
     .sign(SECRET);
 }
 
@@ -104,7 +126,7 @@ export async function verifySuperAdminToken(token: string): Promise<{ valid: boo
   } catch { return { valid: false }; }
 }
 
-export async function setSuperAdminSession(user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number }, fingerprint: string) {
+export async function setSuperAdminSession(user: { id: string; name: string; username: string; role: string; tenantId: string | null; branchId: string | null; pwdVersion: number; mustChangePassword?: boolean }, fingerprint: string) {
   const token = await signSuperAdminToken(user, fingerprint);
   const store = await cookies();
   store.set(SUPERADMIN_COOKIE, token, {
@@ -112,7 +134,7 @@ export async function setSuperAdminSession(user: { id: string; name: string; use
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     path: '/',
-    maxAge: 60 * 60 * 4,
+    maxAge: 60 * ADMIN_AUTH_POLICY.maxSessionMinutes,
   });
 }
 
@@ -152,4 +174,55 @@ export function recordSaAttempt(ip: string) {
 
 export function resetSaAttempts(ip: string) {
   saAttempts.delete(ip);
+}
+
+// ── Lockout per-akun (Blueprint §25: jangan IP-only) ────────────────────────
+// Kunci berdasarkan username sehingga rotasi IP tidak mem-bypass.
+// Progressive delay: pelanggaran ke-N terkunci base * 2^(N-max), maks maxMs.
+type AccountEntry = { violations: number; lastViolationAt: number; windowStart: number; fails: number };
+
+const saAccount = new Map<string, AccountEntry>();
+
+function pruneAccount(e: AccountEntry): boolean {
+  return Date.now() - e.windowStart > ADMIN_AUTH_POLICY.accountWindowMs;
+}
+
+export function isSaAccountBlocked(username: string): { blocked: boolean; retryAfterSec?: number } {
+  const key = username.trim().toLowerCase();
+  const e = saAccount.get(key);
+  if (!e || pruneAccount(e)) {
+    if (e) saAccount.delete(key);
+    return { blocked: false };
+  }
+  if (e.fails < ADMIN_AUTH_POLICY.accountMaxAttempts) return { blocked: false };
+  const level = Math.min(e.violations - ADMIN_AUTH_POLICY.accountMaxAttempts + 1, 10);
+  const lockMs = Math.min(
+    ADMIN_AUTH_POLICY.accountLockBaseMs * 2 ** Math.max(0, level - 1),
+    ADMIN_AUTH_POLICY.accountLockMaxMs
+  );
+  const until = e.lastViolationAt + lockMs;
+  if (Date.now() < until) {
+    return { blocked: true, retryAfterSec: Math.ceil((until - Date.now()) / 1000) };
+  }
+  // Masa lock lewat — reset hitungan gagal, pertahankan riwayat pelanggaran
+  e.fails = 0;
+  e.windowStart = Date.now();
+  return { blocked: false };
+}
+
+export function recordSaAccountFailure(username: string) {
+  const key = username.trim().toLowerCase();
+  const now = Date.now();
+  let e = saAccount.get(key);
+  if (!e || pruneAccount(e)) {
+    e = { violations: 0, lastViolationAt: now, windowStart: now, fails: 0 };
+    saAccount.set(key, e);
+  }
+  e.lastViolationAt = now;
+  e.fails++;
+  if (e.fails > ADMIN_AUTH_POLICY.accountMaxAttempts) e.violations++;
+}
+
+export function resetSaAccountFailures(username: string) {
+  saAccount.delete(username.trim().toLowerCase());
 }
