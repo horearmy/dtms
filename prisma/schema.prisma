@@ -680,6 +680,10 @@ model Shipment {
   itemCount                              Int                  @default(1)
   itemCategory                           String?
   itemValue                              Float?
+  distanceKm                             Float?
+  durationMin                            Int?
+  photo1                                 String?
+  photo2                                 String?
   deliveryTarget                         DateTime?
   createdAt                              DateTime             @default(now())
   updatedAt                              DateTime @updatedAt

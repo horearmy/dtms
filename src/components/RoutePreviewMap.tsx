@@ -40,7 +40,9 @@ async function fetchRoute(coords: LatLng[]): Promise<{ points: [number, number][
   return { points: sampled, distanceKm: Math.round((route.distance || 0) / 1000), durationMin: Math.round((route.duration || 0) / 60) };
 }
 
-export default function RoutePreviewMap({ stops }: { stops: Array<RoutePoint | null> }) {
+export type RouteInfo = { distanceKm: number; durationMin: number };
+
+export default function RoutePreviewMap({ stops, onRouteInfo }: { stops: Array<RoutePoint | null>; onRouteInfo?: (info: RouteInfo | null) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInst = useRef<L.Map | null>(null);
   const markerLayer = useRef<L.LayerGroup | null>(null);
@@ -82,10 +84,12 @@ export default function RoutePreviewMap({ stops }: { stops: Array<RoutePoint | n
       const points = resolved.filter((c): c is LatLng => c != null);
       if (!stops[0] || stops.length < 2) {
         setStatus('Lengkapi pengirim & minimal satu tujuan untuk melihat rute di peta.');
+        onRouteInfo?.(null);
         return;
       }
       if (points.length < 2) {
         setStatus('Koordinat belum tersedia. Tetapkan lokasi pengirim/tujuan pada peta customer.');
+        onRouteInfo?.(null);
         return;
       }
 
@@ -121,11 +125,13 @@ export default function RoutePreviewMap({ stops }: { stops: Array<RoutePoint | n
         const lastLabel = lastIdx >= 0 && stops[lastIdx] ? stops[lastIdx]!.label.split(',')[0] : '';
         setStatus(`Rute ${firstLabel}${destCoords.length > 1 ? ` +${stops.length - 2} tujuan` : ''} → ${lastLabel} ditampilkan.`);
         setInfo(`${route.distanceKm} km · ±${Math.floor(route.durationMin / 60)} jam ${route.durationMin % 60} mnt`);
+        onRouteInfo?.({ distanceKm: route.distanceKm, durationMin: route.durationMin });
         map.fitBounds(L.latLngBounds(points).pad(0.2));
       } catch {
         if (cancelled) return;
         L.polyline(points, { color: '#0D6EFD', weight: 3, opacity: 0.6, dashArray: '4 6' }).addTo(routeLayer.current!);
         setStatus('Rute lurus (layanan routing tidak merespons).');
+        onRouteInfo?.(null);
         map.fitBounds(L.latLngBounds(points).pad(0.2));
       }
     })();

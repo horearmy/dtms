@@ -502,6 +502,8 @@ npm test          # unit + integration (306 tes / 24 file)
 6. Increment 5: **Risk engine** heuristik + badge + mode blokir HIGH
 7. Link "Portal Admin" di /login; fix korupsi `.next` akibat build-paralel-dev (dokumentasikan larangan)
 
+**26 Agt (malam)** — Form shipment baru (tenant): field **Service Type diganti "Estimasi Jarak Tempuh"** (otomatis dari rute OSRM di peta: `distanceKm` + `durationMin` tersimpan di Shipment), **field Nilai Barang dihapus** dari form (kolom DB tetap ada), tambah **2 foto barang** (`photo1`/`photo2` via `/api/upload`), tampil di halaman detail. `serviceType` tetap default REGULAR di backend untuk SLA. Migrasi `20260826223318_shipment_route_estimate_photos`. Catatan ops: drift migrasi pra-ada (bukan dari sesi ini) — `migrate dev` meminta reset; kolom baru diterapkan manual + `migrate resolve`. Dev server wajib restart setelah `prisma generate` (client di memori basi).
+
 **Status akhir:** 306/306 tes hijau, typecheck bersih, semua ter-push ke `origin/main`.
 
 ---

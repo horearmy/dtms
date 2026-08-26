@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Field, inputCls, btnPrimary, btnGhost } from '@/components/ui';
-import RoutePreviewMap, { type RoutePoint } from '@/components/RoutePreviewMap';
-import { SERVICE_TYPES } from '@/lib/constants';
+import RoutePreviewMap, { type RouteInfo, type RoutePoint } from '@/components/RoutePreviewMap';
+import PhotoField from '@/components/PhotoField';
 
 type Customer = { id: string; name: string; phone: string; city: string | null; address: string | null; latitude: number | null; longitude: number | null };
 
@@ -13,9 +13,12 @@ export default function NewShipmentPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [form, setForm] = useState({
     senderId: '', itemName: '', itemCount: '1',
-    weight: '', volume: '', serviceType: 'REGULAR', fragile: false,
-    itemCategory: '', itemValue: '', deliveryTarget: '',
+    weight: '', volume: '', fragile: false,
+    itemCategory: '', deliveryTarget: '',
   });
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [photo1, setPhoto1] = useState<string | null>(null);
+  const [photo2, setPhoto2] = useState<string | null>(null);
   const [destinations, setDestinations] = useState<string[]>(['']);
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -71,6 +74,10 @@ export default function NewShipmentPage() {
         ...form,
         receiverId: stops[stops.length - 1].customerId,
         stops,
+        distanceKm: routeInfo?.distanceKm ?? null,
+        durationMin: routeInfo?.durationMin ?? null,
+        photo1: photo1 || null,
+        photo2: photo2 || null,
       }),
     });
     const data = await res.json();
@@ -86,10 +93,20 @@ export default function NewShipmentPage() {
   const sender = customers.find((c) => c.id === form.senderId);
   const destCustomers = destinations.map((id) => customers.find((c) => c.id === id));
 
-  const previewStops: Array<RoutePoint | null> = [
-    sender ? { label: `${sender.name} (${sender.city || '-'})`, city: sender.city, address: sender.address, lat: sender.latitude, lng: sender.longitude } : null,
-    ...destCustomers.map((c) => (c ? { label: `${c.name} (${c.city || '-'})`, city: c.city, address: c.address, lat: c.latitude, lng: c.longitude } : null)),
-  ];
+  const previewStops = useMemo<Array<RoutePoint | null>>(() => {
+    const sender = customers.find((c) => c.id === form.senderId);
+    return [
+      sender ? { label: `${sender.name} (${sender.city || '-'})`, city: sender.city, address: sender.address, lat: sender.latitude, lng: sender.longitude } : null,
+      ...destinations.map((id) => {
+        const c = customers.find((cu) => cu.id === id);
+        return c ? { label: `${c.name} (${c.city || '-'})`, city: c.city, address: c.address, lat: c.latitude, lng: c.longitude } : null;
+      }),
+    ];
+  }, [customers, form.senderId, destinations]);
+
+  const handleRouteInfo = useCallback((info: RouteInfo | null) => {
+    setRouteInfo((prev) => (prev?.distanceKm === info?.distanceKm && prev?.durationMin === info?.durationMin ? prev : info));
+  }, []);
 
   function setDest(i: number, id: string) {
     setDestinations((prev) => prev.map((d, idx) => (idx === i ? id : d)));
@@ -144,7 +161,7 @@ export default function NewShipmentPage() {
           </div>
 
           <div className="mt-4">
-            <RoutePreviewMap stops={previewStops} />
+            <RoutePreviewMap stops={previewStops} onRouteInfo={handleRouteInfo} />
           </div>
 
           <div className="mt-3 grid gap-2 text-xs text-[#667085] md:grid-cols-2">
@@ -176,19 +193,22 @@ export default function NewShipmentPage() {
             <Field label="Kategori">
               <input value={form.itemCategory} onChange={(e) => setForm({ ...form, itemCategory: e.target.value })} className={inputCls} placeholder="Umum / Fragile / dsb" />
             </Field>
-            <Field label="Nilai Barang (Rp)">
-              <input type="number" value={form.itemValue} onChange={(e) => setForm({ ...form, itemValue: e.target.value })} className={inputCls} />
-            </Field>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <PhotoField label="Foto Barang 1" value={photo1} onChange={setPhoto1} />
+            <PhotoField label="Foto Barang 2" value={photo2} onChange={setPhoto2} />
           </div>
         </div>
 
         <div>
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#667085]">Pengiriman</h2>
           <div className="grid gap-4 md:grid-cols-3">
-            <Field label="Service Type">
-              <select value={form.serviceType} onChange={(e) => setForm({ ...form, serviceType: e.target.value })} className={inputCls}>
-                {SERVICE_TYPES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
+            <Field label="Estimasi Jarak Tempuh">
+              <div className={`${inputCls} flex items-center bg-[#F7F9FC] ${routeInfo ? 'font-semibold text-[#0D6EFD]' : 'text-[#98A2B3]'}`}>
+                {routeInfo
+                  ? `${routeInfo.distanceKm} km · ±${Math.floor(routeInfo.durationMin / 60)} jam ${routeInfo.durationMin % 60} mnt`
+                  : 'Otomatis dari peta rute'}
+              </div>
             </Field>
             <Field label="Target Kirim (tanggal)">
               <input type="datetime-local" value={form.deliveryTarget} onChange={(e) => setForm({ ...form, deliveryTarget: e.target.value })} className={inputCls} />

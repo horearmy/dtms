@@ -284,7 +284,11 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
           <div className="space-y-1 text-xs text-[#667085]">
             <div><b>Asal:</b> {s.origin}</div>
             <div><b>Tujuan:</b> {s.destination}</div>
-            <div><b>Service:</b> {s.serviceType}</div>
+            {s.distanceKm != null ? (
+              <div><b>Estimasi Jarak:</b> {formatNumber(s.distanceKm)} km{s.durationMin != null ? ` · ±${Math.floor(s.durationMin / 60)} jam ${s.durationMin % 60} mnt` : ''}</div>
+            ) : (
+              <div><b>Service:</b> {s.serviceType}</div>
+            )}
             <div><b>Fragile:</b> {s.fragile ? 'Ya' : 'Tidak'}</div>
           </div>
         </InfoCard>
@@ -432,6 +436,18 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
                 </tbody>
               </table>
             </div>
+            {(s.photo1 || s.photo2) && (
+              <div className="mt-3">
+                <p className="mb-1.5 text-xs font-semibold text-[#667085]">Foto Barang:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[s.photo1, s.photo2].filter(Boolean).map((p: string, i: number) => (
+                    <a key={i} href={p} target="_blank" rel="noreferrer">
+                      <img src={p} alt={`Foto barang ${i + 1}`} className="h-28 w-full rounded-lg border border-[#E4E7EC] object-cover" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
