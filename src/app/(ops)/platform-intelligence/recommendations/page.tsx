@@ -5,11 +5,12 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { Lightbulb, TrendingUp, ShieldAlert, DollarSign, Cog, Zap, RefreshCw, Filter } from 'lucide-react';
+import { Lightbulb, TrendingUp, ShieldAlert, DollarSign, Cog, Zap, RefreshCw, Filter, Send, X } from 'lucide-react';
+import { useNotification } from '@/components/ui/NotificationContext';
 
 type Recommendation = {
   id: string; category: string; priority: string; title: string;
-  description: string; impact: string; action: string; metric?: string; tenantName?: string;
+  description: string; impact: string; action: string; metric?: string; tenantId?: string; tenantName?: string;
 };
 type RecData = {
   recommendations: Recommendation[];
@@ -25,13 +26,36 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 const CATEGORY_COLORS: Record<string, string> = { revenue: '#7C3AED', operations: '#0D6EFD', growth: '#16B364', risk: '#F5222D', efficiency: '#FF8A00' };
 
+const ACTIONABLE_RECS = ['growth', 'revenue', 'risk'];
+
+const DEFAULT_MESSAGES: Record<string, { title: string; message: string }> = {
+  growth: {
+    title: 'Upgrade Plan Tersedia',
+    message: 'Halo! Kami melihat Anda telah menggunakan sebagian besar kuota shipment. Kami menawarkan upgrade ke plan yang lebih tinggi untuk menikmati kuota lebih besar, fitur premium, dan dukungan prioritas. Silakan hubungi kami untuk informasi lebih lanjut.',
+  },
+  revenue: {
+    title: 'Pengingat Pembayaran',
+    message: 'Kami perhatikan ada invoice yang telah jatuh tempo. Mohon segera lakukan pembayaran untuk menghindari gangguan layanan. Jika Anda membutuhkan bantuan, tim kami siap membantu.',
+  },
+  risk: {
+    title: 'Perhatian: Aktivitas Terdeteksi',
+    message: 'Kami mendeteksi potensi risiko pada operasional Anda. Tim kami ingin membantu memastikan kelancaran operasional. Silakan hubungi kami untuk diskusi lebih lanjut.',
+  },
+};
+
 export default function RecommendationsPage() {
+  const { success, error: notifyError } = useNotification();
   const [data, setData] = useState<RecData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [catFilter, setCatFilter] = useState('all');
   const [prioFilter, setPrioFilter] = useState('all');
+
+  const [sendModal, setSendModal] = useState<{ open: boolean; rec: Recommendation | null }>({ open: false, rec: null });
+  const [sendTitle, setSendTitle] = useState('');
+  const [sendMsg, setSendMsg] = useState('');
+  const [sending, setSending] = useState(false);
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -53,6 +77,41 @@ export default function RecommendationsPage() {
   }, [fetchData]);
 
   const handleRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
+
+  const openSendModal = (rec: Recommendation) => {
+    const defaults = DEFAULT_MESSAGES[rec.category] || DEFAULT_MESSAGES.growth;
+    setSendTitle(defaults.title);
+    setSendMsg(defaults.message);
+    setSendModal({ open: true, rec });
+  };
+
+  const handleSend = async () => {
+    if (!sendModal.rec?.tenantId || !sendTitle.trim() || !sendMsg.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId: sendModal.rec.tenantId,
+          title: sendTitle.trim(),
+          message: sendMsg.trim(),
+          type: sendModal.rec.category === 'growth' ? 'UPGRADE' : 'WARNING',
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const result = await res.json();
+      success(`Notifikasi terkirim ke ${result.tenantName} (${result.sent} user)`);
+      setSendModal({ open: false, rec: null });
+    } catch (e: any) {
+      notifyError('Gagal mengirim notifikasi', e.message);
+    } finally {
+      setSending(false);
+    }
+  };
 
   if (loading && !data) {
     return (
@@ -207,10 +266,65 @@ export default function RecommendationsPage() {
                 </div>
                 {r.metric && <p className="mt-1 text-[10px] font-semibold text-[#0D6EFD]">{r.metric}</p>}
               </div>
+              {ACTIONABLE_RECS.includes(r.category) && r.tenantId && (
+                <button onClick={() => openSendModal(r)}
+                  className="mt-1 flex flex-shrink-0 items-center gap-1 rounded-lg border border-[#0D6EFD]/30 bg-[#0D6EFD]/5 px-2.5 py-1.5 text-[10px] font-semibold text-[#0D6EFD] hover:bg-[#0D6EFD]/10"
+                  title="Kirim notifikasi ke tenant">
+                  <Send size={12} /> Kirim
+                </button>
+              )}
             </div>
           ))}
         </div>
       </div>
+
+      {/* Send Notification Modal */}
+      {sendModal.open && sendModal.rec && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setSendModal({ open: false, rec: null })}>
+          <div className="w-full max-w-lg rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-[#101828]">Kirim Notifikasi ke Tenant</h3>
+                <p className="text-[10px] text-[#667085]">{sendModal.rec.tenantName}</p>
+              </div>
+              <button onClick={() => setSendModal({ open: false, rec: null })} className="rounded-lg p-1 hover:bg-[#F7F9FC]">
+                <X size={16} className="text-[#667085]" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase text-[#667085]">Judul</label>
+                <input value={sendTitle} onChange={(e) => setSendTitle(e.target.value)} maxLength={200}
+                  className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-xs text-[#101828] focus:border-[#0D6EFD] focus:outline-none" />
+                <p className="mt-0.5 text-right text-[9px] text-[#98A2B3]">{sendTitle.length}/200</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase text-[#667085]">Pesan</label>
+                <textarea value={sendMsg} onChange={(e) => setSendMsg(e.target.value)} rows={5} maxLength={2000}
+                  className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-xs text-[#101828] focus:border-[#0D6EFD] focus:outline-none" />
+                <p className="mt-0.5 text-right text-[9px] text-[#98A2B3]">{sendMsg.length}/2000</p>
+              </div>
+              <div className="rounded-lg bg-[#F7F9FC] p-3">
+                <p className="text-[9px] font-semibold uppercase text-[#667085]">Rekomendasi</p>
+                <p className="mt-0.5 text-[10px] text-[#101828]">{sendModal.rec.title}</p>
+                <p className="text-[10px] text-[#667085]">{sendModal.rec.action}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setSendModal({ open: false, rec: null })}
+                className="rounded-lg border border-[#E4E7EC] px-3 py-2 text-xs font-semibold text-[#667085] hover:bg-[#F7F9FC]">
+                Batal
+              </button>
+              <button onClick={handleSend} disabled={sending || !sendTitle.trim() || !sendMsg.trim()}
+                className="flex items-center gap-1 rounded-lg bg-[#0D6EFD] px-3 py-2 text-xs font-semibold text-white hover:bg-[#0B5ED7] disabled:opacity-50">
+                <Send size={12} /> {sending ? 'Mengirim...' : 'Kirim Notifikasi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ type Recommendation = {
   impact: string;
   action: string;
   metric?: string;
+  tenantId?: string;
   tenantName?: string;
 };
 
@@ -58,6 +59,7 @@ export async function GET(req: NextRequest) {
           impact: 'Meningkatkan collection rate dan mengurangi risiko churn',
           action: 'Kirim reminder pembayaran dan jadwalkan follow-up dengan tenant',
           metric: `Rp ${(totalOverdue / 1_000_000).toFixed(1)}M overdue`,
+          tenantId: t.id,
           tenantName: t.name,
         });
       }
@@ -73,6 +75,7 @@ export async function GET(req: NextRequest) {
           impact: 'Potensi peningkatan revenue dan better service level',
           action: 'Tawarkan upgrade plan ke tier yang lebih tinggi',
           metric: `${usagePct.toFixed(0)}% usage`,
+          tenantId: t.id,
           tenantName: t.name,
         });
       }
@@ -86,6 +89,7 @@ export async function GET(req: NextRequest) {
           impact: 'Meningkatkan customer satisfaction dan mengurangi churn',
           action: 'Analisis root cause pelanggaran SLA dan implementasi perbaikan',
           metric: `${breaches} breaches`,
+          tenantId: t.id,
           tenantName: t.name,
         });
       }
@@ -99,6 +103,7 @@ export async function GET(req: NextRequest) {
           impact: 'Mengurangi risiko operasional dan meningkatkan kualitas layanan',
           action: 'Alokasi resource untuk menyelesaikan exception yang sudah menumpuk',
           metric: `${exceptions} open`,
+          tenantId: t.id,
           tenantName: t.name,
         });
       }
@@ -113,8 +118,9 @@ export async function GET(req: NextRequest) {
             description: `Volume shipment turun ${drop.toFixed(0)}% (${prevShipments} → ${currentShipments})`,
             impact: 'Risiko kehilangan tenant',
             action: 'Hubungi tenant untuk memahami penurunan dan tawarkan dukungan',
-            metric: `-${drop.toFixed(0)}%`,
-            tenantName: t.name,
+          metric: `-${drop.toFixed(0)}%`,
+          tenantId: t.id,
+          tenantName: t.name,
           });
         }
       }
@@ -128,6 +134,7 @@ export async function GET(req: NextRequest) {
           impact: 'Mengoptimalkan biaya dan meningkatkan value per user',
           action: 'Edukasi tenant tentang fitur platform dan ajak untuk mengundang lebih banyak user',
           metric: `${users}/${t.maxUsers} users`,
+          tenantId: t.id,
           tenantName: t.name,
         });
       }
