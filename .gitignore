@@ -3,6 +3,8 @@ node_modules
 out
 build
 *.log
+*.png
+*.err
 next-env.d.ts
 prisma/dev.db
 prisma/dev.db-journal
