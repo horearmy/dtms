@@ -80,28 +80,36 @@ export default function CustomersPage() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    const fullPhone = dial + form.phone.replace(/^0+/, '');
-    const res = await fetch(edit ? `/api/customers/${edit.id}` : '/api/customers', {
-      method: edit ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
-      body: JSON.stringify({ ...form, phone: fullPhone }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) {
-      setMsg(data.error || 'Gagal menyimpan');
-      return;
+    setMsg('');
+    try {
+      const fullPhone = dial + form.phone.replace(/^0+/, '');
+      const res = await fetch(edit ? `/api/customers/${edit.id}` : '/api/customers', {
+        method: edit ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+        body: JSON.stringify({ ...form, phone: fullPhone }),
+      });
+      const data = await res.json().catch(() => ({ error: 'Server tidak merespons' }));
+      if (!res.ok) {
+        setMsg(data.error || 'Gagal menyimpan');
+        return;
+      }
+      setOpen(false);
+      await load();
+    } catch (err) {
+      setMsg('Gagal menghubungi server');
+      console.error('save customer error:', err);
     }
-    setOpen(false);
-    await load();
   }
 
   async function remove(c: Customer) {
     if (!confirm(`Hapus customer "${c.name}"?`)) return;
-    const res = await fetch(`/api/customers/${c.id}`, { method: 'DELETE', headers: csrfHeaders() });
-    if (res.ok) await load();
-    else alert((await res.json()).error || 'Gagal menghapus');
+    try {
+      const res = await fetch(`/api/customers/${c.id}`, { method: 'DELETE', headers: csrfHeaders() });
+      if (!res.ok) alert((await res.json()).error || 'Gagal menghapus');
+      else await load();
+    } catch {
+      alert('Gagal menghubungi server');
+    }
   }
 
   const pickedLocation: PickedLocation = {
