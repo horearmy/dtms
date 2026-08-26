@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { logger } from './logger';
 import { createSubscription } from './billing';
 import { BCRYPT_COST } from './security';
+import { ensureTenantPermissions } from './permissions';
 
 interface ProvisionResult {
   tenantId: string;
@@ -77,6 +78,7 @@ export async function provisionTenant(requestId: string): Promise<ProvisionResul
   });
 
   await createSubscription(result.tenantId, 'FREE', 'MONTHLY');
+  await ensureTenantPermissions(result.tenantId);
 
   log.info('Tenant provisioned successfully', {
     tenantId: result.tenantId,
