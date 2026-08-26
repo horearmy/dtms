@@ -40,11 +40,15 @@ export default function CustomersPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/customers?q=${encodeURIComponent(q)}&page=${page}&pageSize=${pageSize}`);
-    if (res.ok) {
-      const data = await res.json();
-      setItems(data.items);
-      setTotal(data.total);
+    try {
+      const res = await fetch(`/api/customers?q=${encodeURIComponent(q)}&page=${page}&pageSize=${pageSize}`);
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items);
+        setTotal(data.total);
+      }
+    } catch {
+      // silently fail — user can retry via search/page change
     }
     setLoading(false);
   }, [q, page]);
