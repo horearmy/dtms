@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { formatDateTime } from '@/lib/constants';
+import { useNotification } from '@/components/ui/NotificationContext';
 
 type Message = {
   id: string;
@@ -15,6 +16,7 @@ type Message = {
 };
 
 export default function PesanPage() {
+  const { notify } = useNotification();
   const [messages, setMessages] = useState<Message[]>([]);
   const [total, setTotal] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -24,7 +26,7 @@ export default function PesanPage() {
   const [form, setForm] = useState({ subject: '', body: '' });
   const [sending, setSending] = useState(false);
   const [selected, setSelected] = useState<Message | null>(null);
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const pageSize = 20;
 
@@ -46,6 +48,7 @@ export default function PesanPage() {
   async function sendReply() {
     if (!form.subject || !form.body) return;
     setSending(true);
+    setError('');
     try {
       const res = await fetch('/api/messages', {
         method: 'POST',
@@ -55,11 +58,19 @@ export default function PesanPage() {
       if (res.ok) {
         setForm({ subject: '', body: '' });
         setShowCompose(false);
-        setSuccess('Pesan berhasil dikirim');
-        setTimeout(() => setSuccess(''), 3000);
+        notify('success', 'Terkirim', 'Pesan berhasil dikirim ke support');
         load();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        const msg = data.error || `Gagal mengirim pesan (${res.status})`;
+        setError(msg);
+        notify('error', 'Gagal', msg);
       }
-    } catch {}
+    } catch {
+      const msg = 'Terjadi kesalahan jaringan';
+      setError(msg);
+      notify('error', 'Kesalahan', msg);
+    }
     setSending(false);
   }
 
@@ -80,8 +91,8 @@ export default function PesanPage() {
         </button>
       </div>
 
-      {success && (
-        <div className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</div>
+      {error && (
+        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
       {showCompose && (
