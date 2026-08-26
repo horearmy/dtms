@@ -131,6 +131,45 @@ export function splitPhone(phone: string): { dial: string; local: string } {
   return { dial: detectDial(), local: phone };
 }
 
+// Aturan panjang nomor lokal (digit setelah kode negara, tanpa leading 0)
+const PHONE_RULES: Record<string, [number, number]> = {
+  "62": [8, 12],
+  "1": [10, 10],
+  "65": [8, 8],
+  "60": [8, 10],
+  "61": [9, 9],
+  "44": [9, 10],
+  "91": [10, 10],
+  "81": [9, 10],
+  "86": [11, 11],
+  "49": [9, 11],
+  "66": [8, 9],
+  "63": [9, 10],
+  "84": [9, 10],
+};
+
+const DEFAULT_RULE: [number, number] = [7, 13];
+
+export function phoneRule(dial: string): [number, number] {
+  return PHONE_RULES[dial.replace(/\D/g, "")] || DEFAULT_RULE;
+}
+
+export function validatePhone(dial: string, local: string): string | null {
+  const digits = local.replace(/\D/g, "").replace(/^0+/, "");
+  if (!digits) return "Nomor telepon wajib diisi";
+  const [min, max] = phoneRule(dial);
+  if (digits.length < min || digits.length > max) {
+    return `Nomor untuk +${dial.replace(/\D/g, "")} harus ${min}${max !== min ? `-${max}` : ""} digit`;
+  }
+  return null;
+}
+
+export function toE164(dial: string, local: string): string {
+  return dial.replace(/\D/g, "") === ""
+    ? ""
+    : "+" + dial.replace(/\D/g, "") + local.replace(/\D/g, "").replace(/^0+/, "");
+}
+
 export default function CountryCodeSelect({
   value,
   onChange,

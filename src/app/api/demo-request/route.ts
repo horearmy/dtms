@@ -28,6 +28,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (phone) {
+      const e164 = /^\+[1-9]\d{7,14}$/;
+      if (!e164.test(String(phone).trim())) {
+        return NextResponse.json(
+          { error: 'Format nomor telepon tidak valid (gunakan format internasional, mis. +628123456789)' },
+          { status: 400 }
+        );
+      }
+    }
+
     return runWithTenant(null, async () => {
       const demo = await prisma.demoRequest.create({
         data: {

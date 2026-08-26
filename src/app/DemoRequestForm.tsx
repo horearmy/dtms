@@ -1,21 +1,41 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import CountryCodeSelect, { detectDial, validatePhone, toE164 } from '@/components/CountryCodeSelect';
 
 export default function DemoRequestForm() {
+  const [dial, setDial] = useState('+62');
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', message: '' });
+  const [phoneError, setPhoneError] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    setDial(detectDial());
+  }, []);
+
+  function setPhone(raw: string) {
+    const digits = raw.replace(/\D/g, '');
+    setForm({ ...form, phone: digits });
+    setPhoneError('');
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (form.phone) {
+      const err = validatePhone(dial, form.phone);
+      if (err) {
+        setPhoneError(err);
+        return;
+      }
+    }
     setStatus('loading');
     setError('');
     try {
       const res = await fetch('/api/demo-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, phone: form.phone ? toE164(dial, form.phone) : '' }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -75,13 +95,18 @@ export default function DemoRequestForm() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Telepon</label>
-          <input
-            type="tel"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2.5 text-sm focus:border-[#0D6EFD] focus:outline-none"
-            placeholder="08123456789"
-          />
+          <div className="flex gap-2">
+            <CountryCodeSelect value={dial} onChange={setDial} />
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={form.phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className={`w-full rounded-lg border px-3 py-2.5 text-sm focus:border-[#0D6EFD] focus:outline-none ${phoneError ? 'border-red-400' : 'border-[#E4E7EC]'}`}
+              placeholder="8123456789"
+            />
+          </div>
+          {phoneError && <p className="mt-1 text-xs text-red-600">{phoneError}</p>}
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Nama Perusahaan *</label>
