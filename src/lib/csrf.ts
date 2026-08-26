@@ -1,43 +1,42 @@
-function getCsrfToken(): string {
-  if (typeof document === 'undefined') return '';
-  const match = document.cookie.match(/(?:^|;\s*)dtms_csrf=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : '';
+export function getCsrfToken(): string | null {
+  const m = document.cookie.match(/(?:^|;\s*)dtms_csrf=([^;]*)/);
+  return m ? m[1] : null;
 }
 
-export async function csrfFetch(url: string, init: RequestInit = {}): Promise<Response> {
-  const method = (init.method || 'GET').toUpperCase();
-  const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
-
-  const headers = new Headers(init.headers);
-  if (isMutation) {
-    headers.set('x-csrf-token', getCsrfToken());
-  }
-  if (!headers.has('Content-Type') && init.body && typeof init.body === 'string') {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  return fetch(url, { ...init, headers });
+export function csrfHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const csrf = getCsrfToken();
+  if (csrf) extra['x-csrf-token'] = csrf;
+  return extra;
 }
 
-let patched = false;
+const IS_MUTATION = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 export function patchFetchCsrf() {
-  if (patched || typeof window === 'undefined') return;
-  patched = true;
-
-  const originalFetch = window.fetch;
-  window.fetch = function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const orig = window.fetch;
+  window.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
     const method = (init?.method || 'GET').toUpperCase();
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      const headers = new Headers(init?.headers);
-      if (!headers.has('x-csrf-token')) {
-        headers.set('x-csrf-token', getCsrfToken());
+    if (IS_MUTATION.includes(method)) {
+      const headers = new Headers(init?.headers || {});
+      const csrf = getCsrfToken();
+      if (csrf && !headers.has('x-csrf-token')) {
+        headers.set('x-csrf-token', csrf);
       }
-      if (!headers.has('Content-Type') && init?.body && typeof init.body === 'string') {
-        headers.set('Content-Type', 'application/json');
+      if (!headers.has('content-type') && init?.body) {
+        headers.set('content-type', 'application/json');
       }
-      return originalFetch.call(window, input, { ...init, headers });
+      init = { ...init, headers };
     }
-    return originalFetch.call(window, input, init);
-  } as typeof window.fetch;
+    return orig.call(this, input, init);
+  };
+}
+
+export async function apiFetch(path: string, opts: RequestInit & { body?: unknown } = {}): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (opts.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  Object.assign(headers, csrfHeaders(opts.headers as Record<string, string> | undefined));
+  const res = await fetch(path, { ...opts, headers, credentials: 'same-origin' });
+  return res;
 }

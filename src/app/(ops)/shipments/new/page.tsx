@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Field, inputCls, btnPrimary, btnGhost } from '@/components/ui';
 import RoutePreviewMap, { type RouteInfo, type RoutePoint } from '@/components/RoutePreviewMap';
 import PhotoField from '@/components/PhotoField';
+import { csrfHeaders } from '@/lib/csrf';
 
 type Customer = { id: string; name: string; phone: string; city: string | null; address: string | null; latitude: number | null; longitude: number | null };
 
@@ -69,7 +70,7 @@ export default function NewShipmentPage() {
     setLoading(true);
     const res = await fetch('/api/shipments', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({
         ...form,
         receiverId: stops[stops.length - 1].customerId,

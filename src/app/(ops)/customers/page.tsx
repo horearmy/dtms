@@ -6,6 +6,7 @@ import LocationPicker, { type PickedLocation } from '@/components/LocationPicker
 import CountryCodeSelect, { detectDial, splitPhone } from '@/components/CountryCodeSelect';
 import Pagination from '@/components/Pagination';
 import { formatDate } from '@/lib/constants';
+import { csrfHeaders } from '@/lib/csrf';
 
 type Customer = {
   id: string;
@@ -83,7 +84,7 @@ export default function CustomersPage() {
     const fullPhone = dial + form.phone.replace(/^0+/, '');
     const res = await fetch(edit ? `/api/customers/${edit.id}` : '/api/customers', {
       method: edit ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ ...form, phone: fullPhone }),
     });
     const data = await res.json();
@@ -98,7 +99,7 @@ export default function CustomersPage() {
 
   async function remove(c: Customer) {
     if (!confirm(`Hapus customer "${c.name}"?`)) return;
-    const res = await fetch(`/api/customers/${c.id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/customers/${c.id}`, { method: 'DELETE', headers: csrfHeaders() });
     if (res.ok) await load();
     else alert((await res.json()).error || 'Gagal menghapus');
   }

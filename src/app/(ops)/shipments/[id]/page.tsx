@@ -19,6 +19,7 @@ import {
   STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS,
   formatDateTime, formatNumber,
 } from '@/lib/constants';
+import { csrfHeaders } from '@/lib/csrf';
 
 type EventItem = { id: string; status: string; notes: string | null; createdAt: string; latitude: number | null; longitude: number | null };
 type Driver = { id: string; name: string; employeeId: string; status: string; busy?: boolean };
@@ -104,7 +105,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
     await postActions(async () =>
       fetch(`/api/shipments/${id}/assign`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify(assignForm),
       })
     );
@@ -115,7 +116,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
     await postActions(async () =>
       fetch(`/api/shipments/${id}/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify({ status, notes: notes || null }),
       })
     );
@@ -125,13 +126,13 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
     await postActions(async () => {
       const r1 = await fetch(`/api/shipments/${id}/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify({ status: 'DELIVERY_FAILED', notes: failReason }),
       });
       if (!r1.ok) return r1;
       return fetch(`/api/shipments/${id}/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify({ status: next, notes: next === 'RESCHEDULED' ? 'Dijadwalkan ulang' : 'Pengembalian ke pengirim' }),
       });
     });
@@ -143,7 +144,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
     await postActions(async () =>
       fetch(`/api/shipments/${id}/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify({
           status: statusForm.status,
           notes: statusForm.notes || null,
