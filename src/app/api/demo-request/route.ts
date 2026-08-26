@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { runWithTenant } from '@/lib/api-guard';
 import { getClientIp, checkRateLimit } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
@@ -27,32 +28,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const demo = await prisma.demoRequest.create({
-      data: {
-        name: String(name).slice(0, 100),
-        email: String(email).slice(0, 150),
-        phone: phone ? String(phone).slice(0, 20) : null,
-        company: String(company).slice(0, 150),
-        message: message ? String(message).slice(0, 1000) : null,
-      },
-    });
-
-    const admins = await prisma.user.findMany({
-      where: { role: { in: ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'] }, status: 'ACTIVE' },
-      select: { id: true },
-    });
-
-    if (admins.length > 0) {
-      await prisma.notification.createMany({
-        data: admins.map((a) => ({
-          userId: a.id,
-          message: `Permohonan Demo baru dari ${demo.name} (${demo.company}). Silakan ditindaklanjuti.`,
-        })),
+    return runWithTenant(null, async () => {
+      const demo = await prisma.demoRequest.create({
+        data: {
+          name: String(name).slice(0, 100),
+          email: String(email).slice(0, 150),
+          phone: phone ? String(phone).slice(0, 20) : null,
+          company: String(company).slice(0, 150),
+          message: message ? String(message).slice(0, 1000) : null,
+          tenantId: null,
+        },
       });
-    }
 
-    return NextResponse.json({ ok: true });
-  } catch {
+      const admins = await prisma.user.findMany({
+        where: { role: { in: ['SUPER_ADMIN', 'ADMIN_OPERASIONAL'] }, status: 'ACTIVE' },
+        select: { id: true },
+      });
+
+      if (admins.length > 0) {
+        await prisma.notification.createMany({
+          data: admins.map((a) => ({
+            userId: a.id,
+            message: `Permohonan Demo baru dari ${demo.name} (${demo.company}). Silakan ditindaklanjuti.`,
+            tenantId: null,
+          })),
+        });
+      }
+
+      return NextResponse.json({ ok: true });
+    });
+  } catch (e: any) {
     return NextResponse.json(
       { error: 'Terjadi kesalahan server' },
       { status: 500 }
