@@ -115,13 +115,16 @@ function addSecurityHeaders(res: NextResponse): NextResponse {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://*.google.com https://*.basemaps.cartocdn.com",
     "media-src 'self' blob:",
+    "worker-src 'self' blob:",
     "connect-src 'self' https://tile.openstreetmap.org https://*.openstreetmap.org https://nominatim.openstreetmap.org https://*.google.com https://*.basemaps.cartocdn.com https://router.project-osrm.org",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "object-src 'none'",
+    "upgrade-insecure-requests",
   ].join('; '));
   return res;
 }
@@ -143,6 +146,17 @@ export async function middleware(req: NextRequest) {
     // Teruskan HTTP method ke route handler agar verifikasi scope API key bisa terpusat
     const fwdHeaders = new Headers(req.headers);
     fwdHeaders.set('x-dtms-method', req.method);
+
+    if (isMutationMethod(req.method)) {
+      const contentLength = parseInt(req.headers.get('content-length') || '0', 10);
+      const MAX_BODY_BYTES = 1_048_576;
+      if (contentLength > MAX_BODY_BYTES) {
+        return addSecurityHeaders(NextResponse.json(
+          { error: 'Request body terlalu besar. Maks 1MB.' },
+          { status: 413 }
+        ));
+      }
+    }
 
     if (isPublic) {
       const res = NextResponse.next({ request: { headers: fwdHeaders } });
