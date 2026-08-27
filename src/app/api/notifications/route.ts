@@ -26,6 +26,7 @@ export async function GET() {
       const tenantFilter = session?.tenantId
         ? { OR: [
             { shipment: { tenantId: session.tenantId } },
+            { tenantId: session.tenantId },
             { userId: session!.id },
           ] }
         : { userId: session!.id };

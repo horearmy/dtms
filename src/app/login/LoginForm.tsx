@@ -47,9 +47,12 @@ function LoginFormInner() {
     setError('');
     setLoading(true);
     try {
+      const deviceStorageKey = 'dtms_device_id';
+      const deviceId = localStorage.getItem(deviceStorageKey) || crypto.randomUUID();
+      localStorage.setItem(deviceStorageKey, deviceId);
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-DTMS-Device-ID': deviceId },
         body: JSON.stringify({ username, password, tenantId: selectedTenant || undefined }),
       });
       const data = await res.json();

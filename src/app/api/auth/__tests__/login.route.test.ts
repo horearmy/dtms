@@ -4,8 +4,9 @@ import { NextRequest } from 'next/server';
 
 const {
   mockPrismaUser,
-  mockLoginAttempt,
-  mockAuditLog,
+   mockLoginAttempt,
+   mockAuditLog,
+   mockNotification,
   mockTenant,
   mockSetSession,
   mockIsLoginBlocked,
@@ -16,7 +17,8 @@ const {
 } = vi.hoisted(() => ({
   mockPrismaUser: { findFirst: vi.fn() },
   mockLoginAttempt: { create: vi.fn(), deleteMany: vi.fn(), count: vi.fn() },
-  mockAuditLog: { create: vi.fn() },
+   mockAuditLog: { create: vi.fn(), findFirst: vi.fn() },
+   mockNotification: { create: vi.fn() },
   mockTenant: { findUnique: vi.fn() },
   mockSetSession: vi.fn(),
   mockIsLoginBlocked: vi.fn(),
@@ -27,7 +29,7 @@ const {
 }));
 
 vi.mock('@/lib/prisma', () => ({
-  prisma: { user: mockPrismaUser, loginAttempt: mockLoginAttempt, auditLog: mockAuditLog, tenant: mockTenant },
+  prisma: { user: mockPrismaUser, loginAttempt: mockLoginAttempt, auditLog: mockAuditLog, notification: mockNotification, tenant: mockTenant },
 }));
 vi.mock('@/lib/auth', () => ({ setSession: mockSetSession }));
 vi.mock('@/lib/api-guard', () => ({ logAudit: vi.fn() }));
@@ -119,6 +121,26 @@ describe('POST /api/auth/login', () => {
       expect.objectContaining({ id: 'u1', username: 'admin', role: 'SUPER_ADMIN', pwdVersion: 1 }),
       { secure: false }
     );
+  });
+
+  it('membuat notifikasi jika login tenant memakai device berbeda', async () => {
+    mockIsLoginBlocked.mockResolvedValue(false);
+    mockPrismaUser.findFirst.mockResolvedValue({ ...USER, tenantId: 't1' });
+    mockTenant.findUnique
+      .mockResolvedValueOnce({ id: 't1', active: true })
+      .mockResolvedValueOnce({ slug: 'tenant-a' });
+    mockAuditLog.findFirst.mockResolvedValue({ newData: JSON.stringify({ deviceId: 'device-lama' }) });
+
+    const res = await POST(new NextRequest('http://localhost:3001/api/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-dtms-device-id': 'device-baru' },
+      body: JSON.stringify({ username: 'admin', password: 'StrongPass1', tenantId: 't1' }),
+    }));
+
+    expect(res.status).toBe(200);
+    expect(mockNotification.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ tenantId: 't1', type: 'SECURITY' }),
+    }));
   });
 
   it('mengembalikan 500 jika prisma gagal', async () => {

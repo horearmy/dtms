@@ -43,7 +43,7 @@ type NavGroup = { title: string; items: NavItem[] };
 
 type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null;
 
-export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, open, onClose }: { role: string; tenantPlan: string | null; planFeatures?: string[]; whiteLabel?: WhiteLabel; open?: boolean; onClose?: () => void }) {
+export default function Sidebar({ name, role, tenantPlan, planFeatures, whiteLabel, open, onClose }: { name: string; role: string; tenantPlan: string | null; planFeatures?: string[]; whiteLabel?: WhiteLabel; open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [securityLevel, setSecurityLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH' | null>(null);
@@ -64,7 +64,7 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
   useEffect(() => {
     fetchSecurityStatus();
     if (!isSuperAdmin) return;
-    const t = setInterval(fetchSecurityStatus, 60000);
+    const t = setInterval(fetchSecurityStatus, 15000);
     return () => clearInterval(t);
   }, [fetchSecurityStatus, isSuperAdmin]);
 
@@ -208,6 +208,36 @@ export default function Sidebar({ role, tenantPlan, planFeatures, whiteLabel, op
             </div>
           </div>
         </div>
+
+        {isSuperAdmin && (
+          <div className="mx-4 mb-4 rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="mb-2 text-xs font-semibold text-white">{name}</div>
+            <div className={cn(
+              'rounded-lg border px-3 py-2.5 transition-colors',
+              securityLevel === 'HIGH' ? 'border-red-400/30 bg-red-500/15' :
+                securityLevel === 'MEDIUM' ? 'border-yellow-300/30 bg-yellow-500/15' :
+                  securityLevel === 'LOW' ? 'border-green-300/30 bg-green-500/15' : 'border-white/15 bg-white/5'
+            )}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold tracking-[0.14em] text-white">SUPERADMIN</span>
+                <span className={cn(
+                  'h-2 w-2 rounded-full',
+                  securityLevel === 'HIGH' ? 'bg-red-400' :
+                    securityLevel === 'MEDIUM' ? 'bg-yellow-300' :
+                      securityLevel === 'LOW' ? 'bg-green-400' : 'bg-white/40'
+                )} />
+              </div>
+              <div className={cn(
+                'mt-1 text-[10px] font-medium uppercase tracking-wider',
+                securityLevel === 'HIGH' ? 'text-red-200' :
+                  securityLevel === 'MEDIUM' ? 'text-yellow-100' :
+                    securityLevel === 'LOW' ? 'text-green-200' : 'text-white/50'
+              )}>
+                {securityLevel === 'HIGH' ? 'Keamanan tinggi' : securityLevel === 'MEDIUM' ? 'Perlu perhatian' : securityLevel === 'LOW' ? 'Keamanan normal' : 'Memuat status...'}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">

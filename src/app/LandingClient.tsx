@@ -11,49 +11,48 @@ export default function LandingClient() {
 
   return (
     <div className="min-h-screen bg-white">
-      <nav className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-lg">
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#061B41]/95 backdrop-blur-lg">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Logo DTMS" className="h-10 w-10 rounded-xl object-contain" />
-            <span className="text-xl font-bold text-gray-900">DTMS</span>
+            <img src="/logo.png" alt="Logo DTMS" className="h-10 w-10 rounded-xl bg-white object-contain p-0.5" />
+            <div><span className="block text-xl font-bold tracking-tight text-white">DTMS</span><span className="hidden text-[9px] font-semibold uppercase tracking-[0.2em] text-blue-200/70 sm:block">Logistics intelligence</span></div>
           </div>
           <div className="hidden items-center gap-8 md:flex">
-            <a href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900">Fitur</a>
-            <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">Harga</a>
-            <a href="#demo" className="text-sm font-medium text-gray-600 hover:text-gray-900">Demo</a>
+            <a href="#features" className="text-sm font-medium text-blue-100/70 transition hover:text-white">Fitur</a>
+            <a href="#pricing" className="text-sm font-medium text-blue-100/70 transition hover:text-white">Harga</a>
+            <a href="#demo" className="text-sm font-medium text-blue-100/70 transition hover:text-white">Demo</a>
             <button
               onClick={() => setShowLogin(true)}
-              className="rounded-lg bg-[#0D6EFD] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0B5FD5]"
+              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[#061B41] transition hover:bg-blue-50"
             >
               Masuk
             </button>
           </div>
           <button className="md:hidden" aria-label="Menu">
-            <svg className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         </div>
       </nav>
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#061B41] via-[#0B2A5B] to-[#0D6EFD] px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+      <section className="relative overflow-hidden bg-[#061B41] px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-white/20" />
           <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-white/10" />
         </div>
         <div className="relative mx-auto max-w-7xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium text-white/90 backdrop-blur-sm">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-300/20 bg-blue-400/10 px-4 py-1.5 text-sm font-medium text-blue-100 backdrop-blur-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-            Trusted by 200+ perusahaan logistik
+            Satu pusat kendali untuk operasional logistik
           </div>
-          <h1 className="mx-auto max-w-4xl text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Kelola Pengiriman
+          <h1 className="mx-auto max-w-4xl text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-7xl">
+            Setiap pengiriman,
             <br />
-            <span className="text-blue-200">Lebih Cerdas & Efisien</span>
+            <span className="text-blue-300">lebih terkendali.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-blue-100/90">
-            Satu platform untuk tracking real-time, manajemen armada, optimasi rute, dan analitik mendalam.
-            Dirancang untuk korporasi logistik modern.
+            DTMS menyatukan tracking real-time, armada, warehouse, SLA, dan insight bisnis dalam satu workspace yang dibuat untuk tim logistik modern.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <a
@@ -68,6 +67,18 @@ export default function LandingClient() {
             >
               Coba Tracking
             </a>
+          </div>
+          <div className="mx-auto mt-14 max-w-4xl rounded-2xl border border-white/15 bg-[#0B2A5B]/80 p-3 text-left shadow-2xl shadow-black/20 backdrop-blur sm:p-4">
+            <div className="flex items-center justify-between border-b border-white/10 px-2 pb-3">
+              <div><p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-blue-200/55">Operations overview</p><p className="mt-1 text-sm font-semibold text-white">Control Tower</p></div>
+              <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">● Live</span>
+            </div>
+            <div className="grid gap-3 p-2 sm:grid-cols-3">
+              {['1,284 Active shipments', '94.8% On-time rate', '18 Open exceptions'].map((item, index) => {
+                const [value, ...label] = item.split(' ');
+                return <div key={item} className="rounded-xl border border-white/10 bg-white/5 p-3"><p className="text-lg font-bold text-white">{value}</p><p className="mt-1 text-[10px] text-blue-100/55">{label.join(' ')}</p><div className={`mt-3 h-1 rounded-full ${index === 2 ? 'w-1/3 bg-amber-400' : 'w-4/5 bg-emerald-400'}`} /></div>;
+              })}
+            </div>
           </div>
           <div className="mx-auto mt-16 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
             {STATS.map((stat) => (
@@ -160,18 +171,25 @@ export default function LandingClient() {
             {PRICING_PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className={`relative rounded-2xl border-2 p-6 transition xl:p-8 ${
-                  plan.popular
-                    ? 'border-[#0D6EFD] shadow-lg'
-                    : 'border-[#E4E7EC] hover:border-[#0D6EFD]'
-                }`}
+                  className={`relative overflow-hidden rounded-2xl border-2 p-6 transition hover:-translate-y-1 xl:p-8 ${
+                   plan.code === 'FREE' ? 'border-slate-200 bg-slate-50 hover:border-slate-400' :
+                     plan.code === 'STARTER' ? 'border-cyan-200 bg-cyan-50/60 hover:border-cyan-400' :
+                       plan.code === 'GROWTH' ? 'border-blue-500 bg-gradient-to-b from-blue-50 to-white shadow-lg shadow-blue-100' :
+                         plan.code === 'PRO' ? 'border-violet-200 bg-violet-50/50 hover:border-violet-400' :
+                           'border-amber-200 bg-gradient-to-b from-amber-50 to-white hover:border-amber-400'
+                 }`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-[#0D6EFD] px-4 py-1 text-xs font-semibold text-white">
                     Paling Populer
                   </div>
                 )}
-                <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                 <div className="mb-4 flex items-center justify-between gap-2">
+                   <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                   <span className={`h-2.5 w-2.5 rounded-full ${
+                     plan.code === 'FREE' ? 'bg-slate-400' : plan.code === 'STARTER' ? 'bg-cyan-500' : plan.code === 'GROWTH' ? 'bg-blue-600' : plan.code === 'PRO' ? 'bg-violet-500' : 'bg-amber-500'
+                   }`} />
+                 </div>
                 <p className="mt-2 text-sm text-gray-500">{plan.description}</p>
                 <div className="mt-6">
                   <span className="text-3xl font-extrabold text-gray-900 xl:text-4xl">{plan.price}</span>
@@ -180,7 +198,7 @@ export default function LandingClient() {
                 <ul className="mt-6 space-y-2 xl:mt-8 xl:space-y-3">
                   {plan.features.map((feat) => (
                     <li key={feat} className="flex items-center gap-3 text-sm text-gray-600">
-                      <svg className="h-4 w-4 flex-shrink-0 text-[#0D6EFD]" fill="currentColor" viewBox="0 0 20 20">
+                       <svg className={`h-4 w-4 flex-shrink-0 ${plan.code === 'FREE' ? 'text-slate-500' : plan.code === 'STARTER' ? 'text-cyan-600' : plan.code === 'GROWTH' ? 'text-blue-600' : plan.code === 'PRO' ? 'text-violet-600' : 'text-amber-600'}`} fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                       {feat}
@@ -190,9 +208,9 @@ export default function LandingClient() {
                 <a
                   href="#demo"
                   className={`mt-6 block w-full rounded-xl py-3 text-center text-sm font-semibold transition xl:mt-8 ${
-                    plan.popular
-                      ? 'bg-[#0D6EFD] text-white hover:bg-[#0B5FD5]'
-                      : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                     plan.code === 'GROWTH'
+                       ? 'bg-[#0D6EFD] text-white hover:bg-[#0B5FD5]'
+                       : plan.code === 'STARTER' ? 'border border-cyan-300 bg-white text-cyan-700 hover:bg-cyan-100' : plan.code === 'PRO' ? 'border border-violet-300 bg-white text-violet-700 hover:bg-violet-100' : plan.code === 'ENTERPRISE' ? 'border border-amber-300 bg-white text-amber-700 hover:bg-amber-100' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   {plan.cta}

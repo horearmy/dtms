@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
   try {
     const secureCookies = req.nextUrl.protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https';
     const ip = getClientIp(req);
+    const deviceId = req.headers.get('x-dtms-device-id')?.trim() || `ua:${req.headers.get('user-agent') || 'unknown'}|ip:${ip}`;
     await cleanupLoginAttempts();
     const body = await req.json();
     const { username, password, tenantId } = body || {};
@@ -100,7 +101,39 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await logAudit(null, 'LOGIN_SUCCESS', 'AUTH', { newData: { username: user.username, tenantId: user.tenantId } }, req);
+    if (user.tenantId) {
+      const previousLogin = await prisma.auditLog.findFirst({
+        where: { userId: user.id, tenantId: user.tenantId, action: 'LOGIN_SUCCESS' },
+        orderBy: { createdAt: 'desc' },
+        select: { newData: true },
+      });
+      let previousDeviceId: string | undefined;
+      try {
+        const previousData = previousLogin?.newData ? JSON.parse(previousLogin.newData) as { deviceId?: string } : null;
+        previousDeviceId = previousData?.deviceId;
+      } catch { /* legacy audit data */ }
+
+      if (previousDeviceId && previousDeviceId !== deviceId) {
+        await prisma.notification.create({
+          data: {
+            tenantId: user.tenantId,
+            userId: null,
+            type: 'SECURITY',
+            title: 'Login dari perangkat berbeda',
+            message: `Akun ${user.username} login dari perangkat berbeda pada ${new Date().toLocaleString('id-ID')}.`,
+            metadata: { username: user.username, deviceId, previousDeviceId, ip },
+          },
+        });
+      }
+    }
+
+    await logAudit(
+      { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId },
+      'LOGIN_SUCCESS',
+      'AUTH',
+      { newData: { username: user.username, tenantId: user.tenantId, deviceId } },
+      req
+    );
     return response;
   } catch (e) {
     logger.error('Login error', { context: 'login', error: String(e) });
