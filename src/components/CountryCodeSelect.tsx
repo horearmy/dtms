@@ -213,6 +213,8 @@ export default function CountryCodeSelect({
       <div className="flex items-center gap-1 rounded-lg border border-[#D0D5DD] bg-white px-2 py-2 focus-within:border-[#0D6EFD] focus-within:ring-1 focus-within:ring-[#0D6EFD]">
         <span className="w-6 text-center text-base leading-none">{flagOf(matched?.iso2 || "")}</span>
         <input
+          id="country-code"
+          name="countryCode"
           aria-label="Kode negara"
           title="Kode negara — pilih dari daftar atau ketik manual"
           value={value}
@@ -230,6 +232,8 @@ export default function CountryCodeSelect({
       {open && (
         <div className="absolute left-0 top-full z-20 mt-1 w-64 overflow-hidden rounded-lg border border-[#E4E7EC] bg-white shadow-lg">
           <input
+            id="country-search"
+            name="countrySearch"
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}

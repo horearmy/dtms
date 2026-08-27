@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
+import { csrfHeaders } from '@/lib/csrf';
 
 type Notif = {
   id: string;
@@ -64,7 +65,7 @@ export default function NotificationsBell() {
     try {
       await fetch('/api/notifications/read', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify(ids ? { ids } : {}),
       });
       setUnread((u) => (ids ? Math.max(0, u - ids.length) : 0));

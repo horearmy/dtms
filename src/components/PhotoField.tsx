@@ -26,9 +26,21 @@ export default function PhotoField({
     try {
       const fd = new FormData();
       fd.append('file', f);
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!res.ok) return alert(data.error || 'Upload gagal');
+      const csrf = document.cookie.match(/(?:^|;\s*)dtms_csrf=([^;]*)/)?.[1] || '';
+      const data = await new Promise<{ url?: string; error?: string; status: number }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload');
+        if (csrf) xhr.setRequestHeader('x-csrf-token', csrf);
+        xhr.onload = () => {
+          let json: any = {};
+          try { json = JSON.parse(xhr.responseText); } catch {}
+          resolve({ ...json, status: xhr.status });
+        };
+        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.send(fd);
+      });
+      if (data.status < 200 || data.status >= 300) return alert(data.error || `Upload gagal (${data.status})`);
+      if (!data.url) return alert('Upload gagal: URL tidak dikembalikan server');
       onChange(data.url);
     } catch {
       alert('Upload gagal, coba lagi');

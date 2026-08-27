@@ -107,6 +107,35 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      const latestAssignment = await prisma.deliveryAssignment.findFirst({
+        where: { driverId: driver.id },
+        orderBy: { assignedAt: 'desc' },
+        include: { shipment: { select: { id: true, trackingNumber: true, destination: true } } },
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId: session?.id,
+          tenantId: session?.tenantId,
+          shipmentId: latestAssignment?.shipmentId ?? null,
+          type: 'SUCCESS',
+          title: 'Tugas telah selesai',
+          message: latestAssignment?.shipment
+            ? `Tugas telah selesai — ${latestAssignment.shipment.trackingNumber} telah kembali ke gudang. Terima kasih atas kerja kerasnya!`
+            : 'Tugas telah selesai — Anda telah tiba di gudang. Terima kasih atas kerja kerasnya!',
+        },
+      });
+
+      if (latestAssignment?.shipmentId) {
+        await prisma.notification.create({
+          data: {
+            shipmentId: latestAssignment.shipmentId,
+            tenantId: session?.tenantId,
+            message: `${latestAssignment.shipment.trackingNumber}: Driver telah tiba di gudang`,
+          },
+        });
+      }
+
       await logAudit(session, 'DRIVER_RETURN_COMPLETE', 'DRIVER', { newData: { returning: false, returnedAt: now.toISOString(), driverStatus: 'ACTIVE', vehicleStatus: 'AVAILABLE' } }, req);
       return NextResponse.json({ driver: updated, deliveredCount: todayDelivered });
     }

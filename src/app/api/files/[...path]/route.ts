@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pat
   if (!parts.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   if (session.role !== 'SUPER_ADMIN') {
-    const fileTenant = parts[0];
+    const fileTenant = parts[0] === 'tenant' ? parts[1] : parts[0];
     if (!session.tenantId || fileTenant !== session.tenantId) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }

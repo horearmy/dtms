@@ -9,6 +9,24 @@ const securityHeaders = [
   { key: 'X-XSS-Protection', value: '1; mode=block' },
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'production' ? '' : " 'unsafe-eval'"}`,
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https://*.google.com https://*.basemaps.cartocdn.com",
+      "media-src 'self' blob:",
+      "worker-src 'self' blob:",
+      "connect-src 'self' https://tile.openstreetmap.org https://*.openstreetmap.org https://nominatim.openstreetmap.org https://*.google.com https://*.basemaps.cartocdn.com https://router.project-osrm.org",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests",
+    ].join('; '),
+  },
 ];
 
 /** @type {import('next').NextConfig} */
@@ -19,6 +37,10 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@base-ui/react', 'recharts'],
   },
   headers: async () => [
+    {
+      source: '/:path*',
+      headers: securityHeaders,
+    },
     {
       source: '/_next/static/:path*',
       headers: securityHeaders,

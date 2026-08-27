@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'Tenant Onboarding | DTMS' };
 
 export default async function TenantOnboardingPage() {
   const session = await getSession();
-  if (!session || !['SUPER_ADMIN', 'ADMIN_OPERASIONAL'].includes(session.role)) redirect('/dashboard');
+  if (!session || session.role !== 'SUPER_ADMIN') redirect('/dashboard');
 
   return (
     <div>

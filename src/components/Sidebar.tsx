@@ -35,6 +35,8 @@ import {
   Server,
   Download,
   Calendar,
+  ScanLine,
+  QrCode,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -139,6 +141,8 @@ export default function Sidebar({ name, role, tenantPlan, planFeatures, whiteLab
             { href: '/drivers', label: 'Kurir', icon: <Truck size={18} /> },
             { href: '/vehicles', label: 'Kendaraan', icon: <Car size={18} /> },
             { href: '/warehouses', label: 'Gudang', icon: <Warehouse size={18} />, locked: !hasFeature('warehouse_management'), feature: 'warehouse_management' },
+            { href: '/warehouse/scan', label: 'Scan Gudang', icon: <ScanLine size={18} />, locked: !hasFeature('warehouse_management'), feature: 'warehouse_management' },
+            { href: '/geofences', label: 'Geofencing', icon: <MapPin size={18} />, locked: !hasFeature('geofencing'), feature: 'geofencing' },
             { href: '/map', label: 'Live Tracking Map', icon: <Radar size={18} />, locked: !hasFeature('gps_tracking'), feature: 'gps_tracking' },
           ],
         },
@@ -158,7 +162,6 @@ export default function Sidebar({ name, role, tenantPlan, planFeatures, whiteLab
             ...(showUsers ? [{ href: '/branches', label: 'Branches', icon: <Building size={18} />, locked: !hasFeature('branch_management'), feature: 'branch_management' }] : []),
             ...(showUsers ? [{ href: '/departments', label: 'Departemen', icon: <Building2 size={18} />, locked: !hasFeature('branch_management'), feature: 'branch_management' }] : []),
             ...(showUsers ? [{ href: '/hubs', label: 'Hub', icon: <MapPin size={18} />, locked: !hasFeature('branch_management'), feature: 'branch_management' }] : []),
-            ...(showUsers ? [{ href: '/tenant-onboarding', label: 'Onboarding', icon: <ClipboardList size={18} /> }] : []),
             ...(showUsers ? [{ href: '/tenant-health', label: 'Health Monitor', icon: <Activity size={18} /> }] : []),
             { href: '/exceptions', label: 'Exceptions', icon: <ShieldAlert size={18} />, locked: !hasFeature('sla'), feature: 'sla' },
             { href: '/sla', label: 'SLA Policies', icon: <TrendingUp size={18} />, locked: !hasFeature('sla'), feature: 'sla' },

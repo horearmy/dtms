@@ -14,10 +14,11 @@ export async function POST(req: NextRequest) {
         data: { status: 'READ' },
       });
     } else {
-      // Scope to current tenant via shipment relation
+      // Notification memiliki tenantId sendiri; gunakan itu agar tidak bergantung
+      // pada nama relation shipment dan tetap mengikutsertakan notifikasi personal.
       const tenantFilter = session?.tenantId
         ? { OR: [
-            { Shipment: { tenantId: session.tenantId } },
+            { tenantId: session.tenantId },
             { userId: session!.id },
           ] }
         : { userId: session!.id };

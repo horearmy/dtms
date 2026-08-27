@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
-    const form = await req.formData();
+    try {
+      const form = await req.formData();
     const file = form.get('file');
     const category = (form.get('category') as string) || 'general';
     const shipmentId = (form.get('shipmentId') as string) || null;
@@ -93,5 +94,13 @@ export async function POST(req: NextRequest) {
       size: file.size,
       mimeType: file.type,
     }, { status: 201 });
+    } catch (e) {
+      console.error('[upload] error', e);
+      const msg = e instanceof Error ? e.message : 'Gagal upload';
+      if (msg.includes('TENANT_CONTEXT_MISSING') || msg.includes('TENANT_MISMATCH')) {
+        return NextResponse.json({ error: 'Konteks tenant hilang. Silakan login ulang.' }, { status: 401 });
+      }
+      return NextResponse.json({ error: msg || 'Gagal upload' }, { status: 500 });
+    }
   });
 }

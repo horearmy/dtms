@@ -4,6 +4,7 @@ import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
 import SignaturePad from '@/components/SignaturePad';
+import ShipmentQR from '@/components/ShipmentQR';
 import { getGPS } from '@/lib/gps';
 import { inputCls, btnPrimary, btnGhost } from '@/components/ui';
 import { STATUS_LABELS, formatDateTime, formatNumber } from '@/lib/constants';
@@ -170,8 +171,8 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
     } catch {
       setMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
-    setBusy(false);
     await load();
+    setBusy(false);
   }
 
   return (
@@ -213,6 +214,21 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
           <span>Kendaraan: <b>{vehicle?.vehicleNumber || '-'}</b></span>
         </div>
       </div>
+
+      {!pod && s.status === 'DISPATCHED' && (
+        <div className="rounded-2xl border-2 border-[#0D6EFD]/20 bg-gradient-to-br from-[#EFF6FF] to-white p-5 text-center shadow-sm">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#0D6EFD] text-white font-bold text-xs">QR</div>
+          <h3 className="mt-3 text-sm font-bold text-[#101828]">QR Code Keberangkatan</h3>
+          <p className="mx-auto mt-1 max-w-xs text-xs text-[#667085]">Tunjukkan QR ini kepada penjaga gudang untuk di-scan sebagai konfirmasi keberangkatan</p>
+          <div className="mt-4 flex justify-center">
+            <div className="rounded-2xl bg-white p-3 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+              <ShipmentQR value={s.trackingNumber} size={180} />
+            </div>
+          </div>
+          <div className="mt-3 font-mono text-sm font-bold tracking-wider text-[#0D6EFD]">{s.trackingNumber}</div>
+          <div className="mt-1 text-[11px] text-[#667085]">Scan di menu Warehouse → Scan</div>
+        </div>
+      )}
 
       {!pod && ['WAREHOUSE_RECEIVED', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB'].includes(s.status) && (
         <div className="rounded-xl border border-[#E4E7EC] bg-white p-4">
@@ -322,13 +338,14 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-amber-800">
-                  {returning ? 'Dalam perjalanan kembali ke gudang asal' : 'Pengiriman selesai'}
+                  {returning ? 'Dalam perjalanan kembali ke gudang asal' : returnedAt ? 'Tugas selesai' : 'Pengiriman selesai'}
                 </p>
                 <p className="text-xs text-amber-600">
                   {returning
                     ? 'Aktifkan GPS supaya rute kembali tampil kuning di peta admin, lalu tandai saat tiba.'
-                    : 'Tandai untuk mulai perjalanan kembali ke gudang asal (rute kembali tampil kuning di peta admin).'}
-                  {!returning && returnedAt && ` · Kembali terakhir: ${formatDateTime(returnedAt)}`}
+                    : returnedAt
+                      ? `Anda telah tiba di gudang asal pada ${formatDateTime(returnedAt)}.`
+                      : 'Tandai untuk mulai perjalanan kembali ke gudang asal (rute kembali tampil kuning di peta admin).'}
                 </p>
               </div>
               {returning ? (
@@ -339,7 +356,7 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
                 >
                   {retBusy ? 'Menyimpan...' : 'Tiba di Gudang - Selesai'}
                 </button>
-              ) : (
+              ) : !returnedAt ? (
                 <button
                   onClick={() => toggleReturn('start')}
                   disabled={retBusy}
@@ -347,7 +364,7 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
                 >
                   {retBusy ? 'Menyimpan...' : 'Kembali ke Gudang Asal'}
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

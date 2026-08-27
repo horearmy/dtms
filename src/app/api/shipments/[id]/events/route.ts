@@ -127,6 +127,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       },
     });
 
+    if (trimmedStatus === 'IN_TRANSIT' && session?.role === 'DRIVER') {
+      await prisma.notification.create({
+        data: {
+          userId: session.id,
+          tenantId: session.tenantId,
+          type: 'INFO',
+          title: 'Hati-hati selama perjalanan',
+          message: `Hati-hati selama perjalanan — ${shipment.trackingNumber} telah berangkat menuju ${shipment.destination}. Selamat bertugas!`,
+        },
+      });
+    }
+
     await logAudit(
       session,
       'UPDATE_STATUS',

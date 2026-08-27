@@ -54,6 +54,7 @@ export async function GET() {
         id: driver.id,
         name: driver.name,
         employeeId: driver.employeeId,
+        photo: driver.photo,
         status: driver.status,
         returning: driver.returning,
         returnedAt: driver.returnedAt,

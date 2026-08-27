@@ -18,7 +18,7 @@ type ShipPos = {
   stops?: { seq: number; label: string; latitude: number; longitude: number }[];
 };
 type Geofence = {
-  id: string; name: string; latitude: number; longitude: number; radiusMeters: number; type: string; active: boolean;
+  id: string; name: string; latitude: number; longitude: number; radiusMeters: number; shape?: string; points?: { lat: number; lng: number }[] | null; type: string; active: boolean;
 };
 type RouteLine = { id: string; trackingNumber: string; points: [number, number][]; status: string };
 type ReturnRoute = { id: string; name: string; points: [number, number][] };
@@ -182,15 +182,22 @@ export default function MapPage() {
       if (cancelled) return;
       geofenceLayer.current?.clearLayers();
       geofences.filter((g) => g.active).forEach((g) => {
-        const circle = L.circle([g.latitude, g.longitude], {
-          radius: g.radiusMeters,
-          color: '#7c3aed',
-          weight: 1.5,
-          dashArray: '6 4',
-          fillColor: '#7c3aed',
-          fillOpacity: 0.06,
-        }).addTo(geofenceLayer.current!);
-        circle.bindPopup(`<div style="font-size:12px;"><b>${g.name}</b><br/>${g.type} · radius ${g.radiusMeters} m</div>`);
+        const isPoly = (g as any).shape === 'POLYGON' && Array.isArray((g as any).points) && (g as any).points.length >= 3;
+        if (isPoly) {
+          const pts = ((g as any).points as any[]).map((p: any) => Array.isArray(p) ? [Number(p[0]), Number(p[1])] as [number, number] : [Number(p.lat), Number(p.lng)] as [number, number]);
+          const poly = L.polygon(pts as any, { color: '#7c3aed', weight: 2, fillColor: '#7c3aed', fillOpacity: 0.12 }).addTo(geofenceLayer.current!);
+          poly.bindPopup(`<div style="font-size:12px;"><b>${g.name}</b><br/>${g.type} · polygon ${pts.length} titik</div>`);
+        } else {
+          const circle = L.circle([g.latitude, g.longitude], {
+            radius: g.radiusMeters,
+            color: '#7c3aed',
+            weight: 1.5,
+            dashArray: '6 4',
+            fillColor: '#7c3aed',
+            fillOpacity: 0.06,
+          }).addTo(geofenceLayer.current!);
+          circle.bindPopup(`<div style="font-size:12px;"><b>${g.name}</b><br/>${g.type} · radius ${g.radiusMeters} m</div>`);
+        }
       });
     })();
     return () => { cancelled = true; };

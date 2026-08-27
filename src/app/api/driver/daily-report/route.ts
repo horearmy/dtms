@@ -12,12 +12,29 @@ export async function POST(req: NextRequest) {
     if (!driver) return NextResponse.json({ error: 'Driver tidak terdaftar' }, { status: 403 });
 
     const body = await req.json();
-    const { deliveredCount, failedCount, rescheduledCount, fuelLiter, notes } = body;
+    const { reportDate, deliveredCount, failedCount, rescheduledCount, fuelLiter, notes } = body;
 
-    const report = await prisma.dailyReport.create({
-      data: {
+    const dateInput = reportDate ? new Date(reportDate) : new Date();
+    if (isNaN(dateInput.getTime())) {
+      return NextResponse.json({ error: 'Tanggal laporan tidak valid' }, { status: 400 });
+    }
+    const reportDateStart = new Date(dateInput);
+    reportDateStart.setHours(0, 0, 0, 0);
+
+    const report = await prisma.dailyReport.upsert({
+      where: {
+        driverId_reportDate: { driverId: driver.id, reportDate: reportDateStart },
+      },
+      create: {
         driverId: driver.id,
-        reportDate: new Date(),
+        reportDate: reportDateStart,
+        deliveredCount: deliveredCount || 0,
+        failedCount: failedCount || 0,
+        rescheduledCount: rescheduledCount || 0,
+        fuelLiter: fuelLiter || 0,
+        notes: notes || null,
+      },
+      update: {
         deliveredCount: deliveredCount || 0,
         failedCount: failedCount || 0,
         rescheduledCount: rescheduledCount || 0,
@@ -26,7 +43,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(report, { status: 201 });
+    return NextResponse.json(report);
   });
 }
 

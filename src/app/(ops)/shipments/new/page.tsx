@@ -81,10 +81,10 @@ export default function NewShipmentPage() {
         photo2: photo2 || null,
       }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({} as any));
     setLoading(false);
     if (!res.ok) {
-      setMsg(data.error || 'Gagal membuat shipment');
+      setMsg((data as any).error || `Gagal membuat shipment (${res.status})`);
       return;
     }
     router.push(`/shipments/${data.id}`);

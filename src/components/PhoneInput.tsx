@@ -90,6 +90,8 @@ export default function PhoneInput({ value, onChange, className = '', placeholde
         <svg className={`h-3 w-3 text-[#667085] transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 4l4 4 4-4" /></svg>
       </button>
       <input
+        id="phone-number"
+        name="phone"
         required
         value={number}
         onChange={(e) => handleNumberChange(e.target.value)}
@@ -101,6 +103,8 @@ export default function PhoneInput({ value, onChange, className = '', placeholde
         <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border border-[#E4E7EC] bg-white shadow-lg">
           <div className="p-2">
             <input
+              id="phone-country-search"
+              name="countrySearch"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Cari negara..."

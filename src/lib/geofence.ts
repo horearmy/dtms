@@ -1,5 +1,18 @@
 import { prisma } from './prisma';
 import { haversineKm } from './eta';
+import { isPointInPolygon, parsePoints } from './geofence-polygon';
+
+function isInsideGeofence(latitude: number, longitude: number, g: any): boolean {
+  const shape = (g.shape as string) || 'CIRCLE';
+  if (shape === 'POLYGON') {
+    const pts = parsePoints((g as any).points);
+    if (!pts || pts.length < 3) return false;
+    return isPointInPolygon({ lat: latitude, lng: longitude }, pts);
+  }
+  const dist = haversineKm(latitude, longitude, g.latitude, g.longitude);
+  const radiusKm = (g.radiusMeters as number) / 1000;
+  return dist <= radiusKm;
+}
 
 export async function checkGeofences(driverId: string, latitude: number, longitude: number, shipmentId?: string) {
   const geofences = await prisma.geofence.findMany({ where: { active: true } });
@@ -8,9 +21,7 @@ export async function checkGeofences(driverId: string, latitude: number, longitu
   if (!driver) return created;
 
   for (const g of geofences) {
-    const dist = haversineKm(latitude, longitude, g.latitude, g.longitude);
-    const radiusKm = g.radiusMeters / 1000;
-    const inside = dist <= radiusKm;
+    const inside = isInsideGeofence(latitude, longitude, g);
 
     const last = await prisma.geofenceEvent.findFirst({
       where: { geofenceId: g.id, driverId },
@@ -28,9 +39,10 @@ export async function checkGeofences(driverId: string, latitude: number, longitu
           longitude,
         },
       });
+      const radiusLabel = (g.shape as string) === 'POLYGON' ? 'polygon' : `${g.radiusMeters} m`;
       await prisma.notification.create({
         data: {
-          message: `Driver masuk area: ${g.name} — ${driver.name} masuk perimeter ${g.name} (${g.radiusMeters} m).`,
+          message: `Driver masuk area: ${g.name} — ${driver.name} masuk perimeter ${g.name} (${radiusLabel}).`,
           userId: driver.userId,
         },
       });

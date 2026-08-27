@@ -122,6 +122,7 @@ function BillingPageInner() {
   const [cancellingConfirm, setCancellingConfirm] = useState(false);
   const [addons, setAddons] = useState<Addon[]>([]);
   const [purchasingAddon, setPurchasingAddon] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState('');
 
   const currentPlanCode = subscription?.plan?.code || 'FREE';
   const trialEndsAt = subscription?.trialEndsAt ? new Date(subscription.trialEndsAt) : null;
@@ -134,31 +135,52 @@ function BillingPageInner() {
     PLAN_ORDER.indexOf(code) < currentPlanIndex && periodActive;
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
     try {
-      const [billingRes, invoicesRes, addonsRes] = await Promise.all([
-        fetch('/api/billing'),
-        fetch('/api/billing/invoices'),
-        fetch('/api/billing/addons').catch(() => null),
+      const billingRes = await Promise.race([
+        fetch('/api/billing', { credentials: 'same-origin', cache: 'no-store' }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('billing timeout')), 8000)),
       ]);
+      if (billingRes.status === 401) {
+        window.location.assign('/login');
+        return;
+      }
       if (billingRes.ok) {
         const data = await billingRes.json();
         setPlans(data.plans || []);
         setSubscription(data.subscription);
         setUsage(data.usage?.usage || null);
+      } else {
+        setLoadError('Data paket belum dapat dimuat. Silakan coba lagi.');
       }
-      if (invoicesRes.ok) {
-        const data = await invoicesRes.json();
-        setInvoices(data.invoices || []);
-      }
-      if (addonsRes?.ok) {
-        const data = await addonsRes.json();
-        setAddons(data.addons || []);
-      }
-    } catch { /* ignore */ }
-    setLoading(false);
+    } catch {
+      setLoadError('Koneksi ke layanan billing terlalu lama. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
+    }
+
+    // Paket utama harus tampil segera; data sekunder tidak boleh menahan halaman.
+    Promise.all([
+      fetch('/api/billing/invoices', { credentials: 'same-origin', cache: 'no-store' }).then((res) => res.ok ? res.json() : null).catch(() => null),
+      fetch('/api/billing/addons', { credentials: 'same-origin', cache: 'no-store' }).then((res) => res.ok ? res.json() : null).catch(() => null),
+    ]).then(([invoiceData, addonData]) => {
+      if (invoiceData) setInvoices(invoiceData.invoices || []);
+      if (addonData) setAddons(addonData.addons || []);
+    });
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setLoading((current) => {
+        if (current) setLoadError('Halaman billing tidak merespons. Silakan muat ulang halaman.');
+        return false;
+      });
+    }, 10000);
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   useEffect(() => {
     if (upgradeFeature && plans.length > 0) {
@@ -214,7 +236,16 @@ function BillingPageInner() {
     setCancelling(false);
   };
 
-  if (loading) return <div className="text-center py-8 text-gray-500">Memuat...</div>;
+  if (loading) return <div className="mx-auto max-w-6xl p-6"><div className="rounded-xl border border-blue-100 bg-blue-50 p-5 text-center text-sm text-blue-700">Memuat paket dan informasi billing...</div></div>;
+
+  if (loadError) return (
+    <div className="mx-auto max-w-6xl p-6">
+      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-center">
+        <p className="text-sm font-semibold text-red-800">{loadError}</p>
+        <button onClick={fetchData} className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Coba Lagi</button>
+      </div>
+    </div>
+  );
 
   const currentPlanName = subscription?.plan?.name || 'Free';
   const isOnFree = currentPlanCode === 'FREE';
@@ -433,11 +464,11 @@ function BillingPageInner() {
               <div className="mt-3 flex items-end justify-between">
                 <span className="text-lg font-bold text-gray-900">Rp {addon.priceMonthly.toLocaleString('id-ID')}<span className="text-xs text-gray-400">/bln</span></span>
                 <button
-                  onClick={() => handlePurchaseAddon(addon.id)}
-                  disabled={purchasingAddon === addon.id}
+                   onClick={() => handlePurchaseAddon(addon.slug)}
+                   disabled={purchasingAddon === addon.slug}
                   className="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {purchasingAddon === addon.id ? 'Memproses...' : 'Tambah'}
+                   {purchasingAddon === addon.slug ? 'Memproses...' : 'Tambah'}
                 </button>
               </div>
             </div>

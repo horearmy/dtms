@@ -7,6 +7,7 @@ import PhotoField from '@/components/PhotoField';
 import DriverDetailModal from '@/components/DriverDetailModal';
 import Pagination from '@/components/Pagination';
 import PhoneInput from '@/components/PhoneInput';
+import { csrfHeaders } from '@/lib/csrf';
 
 type Driver = {
   id: string;
@@ -80,17 +81,21 @@ export default function DriversPage() {
     try {
       const res = await fetch(edit ? `/api/drivers/${edit.id}` : '/api/drivers', {
         method: edit ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) return setMsg(data.error || 'Gagal menyimpan');
+      if (!res.ok) {
+        setMsg(data.error || 'Gagal menyimpan');
+        return;
+      }
       setOpen(false);
       await load();
     } catch {
       setMsg('Gagal terhubung ke server');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
   async function remove(d: Driver) {
     if (!confirm(`Hapus driver "${d.name}"?`)) return;
@@ -186,10 +191,10 @@ export default function DriversPage() {
             <div className="col-span-2 grid grid-cols-2 gap-3">
               <div className="flex flex-col">
                 <Field label="Employee ID" required>
-                  <input required value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className={inputCls} placeholder="DRV-XXX" />
+                  <input id="driver-employee-id" name="employeeId" required value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className={inputCls} placeholder="DRV-XXX" />
                 </Field>
                 <Field label="Nama" required>
-                  <input required value={form.name} onChange={(e) => {
+                  <input id="driver-name" name="driverName" required value={form.name} onChange={(e) => {
                     const name = e.target.value;
                     const updates: typeof form = { ...form, name };
                     if (!usernameEdited) {
@@ -203,11 +208,11 @@ export default function DriversPage() {
                 <PhotoField label="Foto Driver" value={form.photo} onChange={(photo) => setForm({ ...form, photo })} />
               </div>
             </div>
-            <Field label="Telepon" required>
+             <Field label="Telepon" required>
               <PhoneInput value={form.phone} onChange={(phone) => setForm({ ...form, phone })} className={inputCls} />
             </Field>
-            <Field label="Status">
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputCls}>
+             <Field label="Status">
+               <select id="driver-status" name="driverStatus" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputCls}>
                 <option value="ACTIVE">Aktif</option>
                 <option value="INACTIVE">Nonaktif</option>
               </select>

@@ -5,6 +5,7 @@ import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/compon
 import Pagination from '@/components/Pagination';
 import { ROLE_LABELS } from '@/lib/constants';
 import { formatDateTime } from '@/lib/constants';
+import { csrfHeaders } from '@/lib/csrf';
 
 type UserRow = {
   id: string;
@@ -118,7 +119,7 @@ export default function UsersPage() {
     setLoading(true);
     const res = await fetch(edit ? `/api/users/${edit.id}` : '/api/users', {
       method: edit ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(form),
     });
     const data = await res.json();

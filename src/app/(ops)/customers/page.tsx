@@ -196,12 +196,14 @@ export default function CustomersPage() {
         <form onSubmit={save} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Nama" required>
-              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
+                   <input id="customer-name" name="customerName" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
             </Field>
             <Field label="Telepon" required>
               <div className="flex gap-2">
                 <CountryCodeSelect value={dial} onChange={setDial} />
-                <input
+                 <input
+                   id="customer-phone"
+                   name="customerPhone"
                   required
                   inputMode="tel"
                   placeholder="812xxxxxxx"
@@ -212,20 +214,20 @@ export default function CustomersPage() {
               </div>
             </Field>
             <Field label="Email">
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
+               <input id="customer-email" name="customerEmail" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputCls} />
             </Field>
             <Field label="Kota">
-              <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} />
+               <input id="customer-city" name="customerCity" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} />
             </Field>
           </div>
           <Field label="Lokasi (peta)">
             <LocationPicker value={pickedLocation} onChange={onPick} />
           </Field>
           <Field label="Alamat">
-            <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputCls} rows={2} />
+           <textarea id="customer-address" name="customerAddress" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputCls} rows={2} />
           </Field>
           <Field label="Kode Pos">
-            <input value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} className={inputCls} />
+             <input id="customer-postal-code" name="customerPostalCode" value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} className={inputCls} />
           </Field>
           {msg && <div className="rounded-lg bg-[#F5222D]/10 px-3 py-2 text-sm text-[#F5222D]">{msg}</div>}
           <div className="flex justify-end gap-2 pt-2">

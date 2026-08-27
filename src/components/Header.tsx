@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -52,8 +52,6 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const pageTitle = Object.entries(PAGE_TITLES).find(([k]) => pathname === k || pathname.startsWith(k + '/'))?.[1] || 'Dashboard';
 
@@ -76,22 +74,6 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
     } catch {}
   }
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/');
-    router.refresh();
-  }
-
   return (
     <header className="sticky top-0 z-30 border-b border-[#E4E7EC] bg-white">
       <div className="flex items-center gap-4 px-4 py-3 lg:px-6">
@@ -112,6 +94,8 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]" />
             <input
+              id="header-search"
+              name="shipmentSearch"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari resi, nama penerima, lokasi..."
@@ -139,31 +123,26 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
           </button>
 
           {/* User Dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-100"
-            >
+          <details className="relative">
+            <summary className="flex max-w-[min(16rem,calc(100vw-8rem))] cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-100 [&::-webkit-details-marker]:hidden">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0D6EFD] text-xs font-bold text-white">
                 {name.charAt(0).toUpperCase()}
               </div>
-              <div className="hidden text-left sm:block">
-                <div className="text-sm font-semibold text-[#101828]">{name}</div>
+              <div className="hidden min-w-0 text-left sm:block">
+                <div className="max-w-32 truncate text-sm font-semibold text-[#101828]" title={name}>{name}</div>
                 <div className="text-[11px] text-[#667085]">{ROLE_LABELS[role] || role}</div>
               </div>
               <ChevronDown size={14} className="hidden text-[#667085] sm:block" />
-            </button>
+            </summary>
 
-            {dropdownOpen && (
-              <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-[#E4E7EC] bg-white py-1 shadow-lg">
+            <div role="menu" className="absolute right-0 z-50 mt-2 w-[min(14rem,calc(100vw-2rem))] rounded-xl border border-[#E4E7EC] bg-white py-1 shadow-lg">
                 <div className="border-b border-[#E4E7EC] px-4 py-3">
-                  <div className="text-sm font-semibold text-[#101828]">{name}</div>
+                  <div className="break-words text-sm font-semibold text-[#101828]">{name}</div>
                   <div className="text-xs text-[#667085]">{ROLE_LABELS[role] || role}</div>
                 </div>
                 <div className="py-1">
                   <Link
                     href="/account/security"
-                    onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm text-[#667085] hover:bg-gray-50 hover:text-[#101828]"
                   >
                     <Shield size={16} />
@@ -171,7 +150,6 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
                   </Link>
                   <Link
                     href="/account/password"
-                    onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm text-[#667085] hover:bg-gray-50 hover:text-[#101828]"
                   >
                     <KeyRound size={16} />
@@ -179,17 +157,16 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
                   </Link>
                 </div>
                 <div className="border-t border-[#E4E7EC] py-1">
-                  <button
-                    onClick={logout}
+                  <a
+                    href="/api/auth/logout"
                     className="flex w-full items-center gap-3 px-4 py-2 text-sm text-[#F5222D] hover:bg-red-50"
                   >
                     <LogOut size={16} />
                     Keluar
-                  </button>
+                  </a>
                 </div>
               </div>
-            )}
-          </div>
+          </details>
         </div>
       </div>
     </header>

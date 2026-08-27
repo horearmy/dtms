@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ShipmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { STATUS_LABELS } from '@/lib/constants';
+
+const VALID_SHIPMENT_STATUSES = [
+  'ORDER_CREATED', 'PICKUP_SCHEDULED', 'PICKED_UP', 'WAREHOUSE_RECEIVED', 'SORTING',
+  'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY', 'DELIVERED',
+  'DELIVERY_FAILED', 'RESCHEDULED', 'RETURN_TO_SENDER', 'RETURNED',
+] as const;
 
 const WAREHOUSE_FLOW: Record<string, string> = {
   ORDER_CREATED: 'WAREHOUSE_RECEIVED',
@@ -12,19 +17,40 @@ const WAREHOUSE_FLOW: Record<string, string> = {
   WAREHOUSE_RECEIVED: 'DISPATCHED',
   SORTING: 'DISPATCHED',
 };
-const ALLOWED = ['WAREHOUSE_RECEIVED', 'DISPATCHED'];
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { session, error } = await guardPermission(PERMISSIONS.WAREHOUSE.SCAN);
   if (error) return error;
-  return runWithTenant(session?.tenantId ?? null, async () => {
-    const body = await req.json();
-    const action = String(body.action || '');
-    const { latitude, longitude, notes } = body || {};
 
-    if (!ALLOWED.includes(action)) {
-      return NextResponse.json({ error: 'Langkah gudang tidak valid untuk shipment ini' }, { status: 400 });
+  return runWithTenant(session?.tenantId ?? null, async () => {
+    const body = await req.json().catch(() => ({}));
+    const { action, notes, lat, lng } = body || {};
+
+    const trimmedAction = String(action || '').trim();
+    if (!trimmedAction) {
+      return NextResponse.json({ error: 'Action wajib diisi' }, { status: 400 });
+    }
+    if (!(VALID_SHIPMENT_STATUSES as readonly string[]).includes(trimmedAction)) {
+      return NextResponse.json({ error: `Status tidak valid. Nilai yang diizinkan: ${VALID_SHIPMENT_STATUSES.join(', ')}` }, { status: 400 });
+    }
+
+    const sanitizedNotes = notes ? String(notes).trim().slice(0, 500) : null;
+    let parsedLat: number | null = null;
+    let parsedLng: number | null = null;
+    if (lat != null && lat !== '') {
+      const n = Number(lat);
+      if (isNaN(n) || n < -90 || n > 90) {
+        return NextResponse.json({ error: 'Latitude harus antara -90 dan 90' }, { status: 400 });
+      }
+      parsedLat = n;
+    }
+    if (lng != null && lng !== '') {
+      const n = Number(lng);
+      if (isNaN(n) || n < -180 || n > 180) {
+        return NextResponse.json({ error: 'Longitude harus antara -180 dan 180' }, { status: 400 });
+      }
+      parsedLng = n;
     }
 
     const shipment = await prisma.shipment.findUnique({ where: { id } });
@@ -35,14 +61,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const expected = WAREHOUSE_FLOW[shipment.status];
-    if (expected !== action && shipment.status !== action) {
+    if (!expected || trimmedAction !== expected) {
       return NextResponse.json(
-        { error: `Scan ${STATUS_LABELS[action] || action} tidak valid dari status ${STATUS_LABELS[shipment.status] || shipment.status}` },
+        {
+          error: expected
+            ? `Alur gudang hanya mengizinkan ${STATUS_LABELS[expected]} saat ini, bukan ${STATUS_LABELS[trimmedAction] || trimmedAction}`
+            : 'Status saat ini di luar alur gudang (ORDER_CREATED → WAREHOUSE_RECEIVED → DISPATCHED)',
+        },
         { status: 400 }
       );
     }
 
-    if (action === 'DISPATCHED') {
+    if (trimmedAction === 'DISPATCHED') {
       const assignment = await prisma.deliveryAssignment.findFirst({ where: { shipmentId: id } });
       if (!assignment?.driverId || !assignment?.vehicleId) {
         return NextResponse.json(
@@ -65,39 +95,48 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    const scan = await prisma.warehouseScan.create({
+    const event = await prisma.trackingEvent.create({
       data: {
         shipmentId: shipment.id,
-        action,
-        scannedBy: session?.id,
-        latitude: latitude != null ? Number(latitude) : null,
-        longitude: longitude != null ? Number(longitude) : null,
-        notes: notes || null,
+        status: trimmedAction as never,
+        latitude: parsedLat,
+        longitude: parsedLng,
+        notes: sanitizedNotes,
+        createdBy: session?.id,
       },
     });
 
-    const updated = await prisma.shipment.update({ where: { id }, data: { status: action as ShipmentStatus } });
+    const updated = await prisma.shipment.update({
+      where: { id },
+      data: { status: trimmedAction as never },
+    });
 
-    await prisma.trackingEvent.create({
+    await prisma.warehouseScan.create({
       data: {
         shipmentId: shipment.id,
-        status: action as ShipmentStatus,
-        latitude: latitude != null ? Number(latitude) : null,
-        longitude: longitude != null ? Number(longitude) : null,
-        notes: notes ? `Scan gudang: ${notes}` : 'Scan gudang (barcode/QR)',
-        createdBy: session?.id,
+        action: trimmedAction,
+        scannedBy: session?.id,
+        latitude: parsedLat,
+        longitude: parsedLng,
+        notes: sanitizedNotes,
       },
     });
 
     await prisma.notification.create({
       data: {
-        shipmentId: shipment.id,
-        message: `${shipment.trackingNumber}: scan gudang → ${STATUS_LABELS[action] || action}`,
+        shipmentId: id,
+        message: `${shipment.trackingNumber}: ${STATUS_LABELS[trimmedAction] || trimmedAction}`,
       },
     });
 
-    await logAudit(session, 'WAREHOUSE_SCAN', 'SHIPMENT', { newData: { trackingNumber: shipment.trackingNumber, action } }, req);
+    await logAudit(
+      session,
+      'WAREHOUSE_SCAN',
+      'SHIPMENT',
+      { oldData: { status: shipment.status }, newData: { status: trimmedAction, notes: sanitizedNotes } },
+      req
+    );
 
-    return NextResponse.json({ scan, shipment: updated }, { status: 201 });
+    return NextResponse.json({ event, shipment: updated });
   });
 }

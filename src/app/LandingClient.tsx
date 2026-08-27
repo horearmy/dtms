@@ -1,13 +1,25 @@
 'use client';
 
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { FEATURES, STATS, PRICING_PLANS } from '@/lib/landing-data';
 import DemoRequestForm from './DemoRequestForm';
 
 const LoginModal = lazy(() => import('./LoginModal'));
 
+const GALLERY_SLIDES = [
+  { eyebrow: '01 / VISIBILITY', title: 'Semua armada dalam satu pandangan.', text: 'Pantau posisi kendaraan, status pengiriman, dan ETA tanpa berpindah tools.', accent: 'from-blue-600 to-cyan-400', metric: '1,284', label: 'pengiriman aktif' },
+  { eyebrow: '02 / CONTROL', title: 'Exception terlihat sebelum terlambat.', text: 'Identifikasi SLA risk, keterlambatan, dan anomali operasional dengan cepat.', accent: 'from-violet-600 to-fuchsia-400', metric: '94.8%', label: 'on-time delivery' },
+  { eyebrow: '03 / INTELLIGENCE', title: 'Data operasional menjadi keputusan.', text: 'Baca performa delivery, fleet, dan driver melalui insight yang siap ditindaklanjuti.', accent: 'from-emerald-600 to-lime-400', metric: '24/7', label: 'operational visibility' },
+];
+
 export default function LandingClient() {
   const [showLogin, setShowLogin] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setActiveSlide((current) => (current + 1) % GALLERY_SLIDES.length), 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -18,6 +30,7 @@ export default function LandingClient() {
             <div><span className="block text-xl font-bold tracking-tight text-white">DTMS</span><span className="hidden text-[9px] font-semibold uppercase tracking-[0.2em] text-blue-200/70 sm:block">Logistics intelligence</span></div>
           </div>
           <div className="hidden items-center gap-8 md:flex">
+            <a href="#platform" className="text-sm font-medium text-blue-100/70 transition hover:text-white">Platform</a>
             <a href="#features" className="text-sm font-medium text-blue-100/70 transition hover:text-white">Fitur</a>
             <a href="#pricing" className="text-sm font-medium text-blue-100/70 transition hover:text-white">Harga</a>
             <a href="#demo" className="text-sm font-medium text-blue-100/70 transition hover:text-white">Demo</a>
@@ -85,6 +98,93 @@ export default function LandingClient() {
               <div key={stat.label} className="text-center">
                 <div className="text-2xl font-bold text-white sm:text-3xl">{stat.value}</div>
                 <div className="mt-1 text-xs text-blue-200/80">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section aria-label="Product gallery" className="bg-[#F7F9FC] px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0D6EFD]">Explore DTMS</p><h2 className="mt-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Dibuat untuk melihat lebih jauh.</h2></div>
+            <div className="flex items-center gap-2" aria-label="Gallery navigation">
+              {GALLERY_SLIDES.map((slide, index) => <button key={slide.eyebrow} type="button" aria-label={`Lihat slide ${index + 1}`} aria-current={activeSlide === index} onClick={() => setActiveSlide(index)} className={`h-2 rounded-full transition-all ${activeSlide === index ? 'w-8 bg-[#0D6EFD]' : 'w-2 bg-gray-300 hover:bg-gray-400'}`} />)}
+            </div>
+          </div>
+          <div className="relative overflow-hidden rounded-3xl bg-[#061B41] shadow-xl shadow-blue-100/60">
+            {GALLERY_SLIDES.map((slide, index) => (
+              <div key={slide.eyebrow} className={`${activeSlide === index ? 'grid' : 'hidden'} min-h-[320px] items-center gap-10 p-7 sm:p-12 lg:grid-cols-[0.8fr_1.2fr]`}>
+                <div className="text-white"><p className="text-xs font-bold tracking-[0.2em] text-blue-300">{slide.eyebrow}</p><h3 className="mt-4 max-w-md text-3xl font-bold leading-tight sm:text-4xl">{slide.title}</h3><p className="mt-4 max-w-md leading-7 text-blue-100/70">{slide.text}</p><a href="#demo" className="mt-7 inline-flex rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-[#061B41] hover:bg-blue-50">Lihat cara kerja</a></div>
+                <div className="relative rounded-2xl border border-white/15 bg-white/5 p-4 backdrop-blur-sm sm:p-6"><div className="flex items-center justify-between border-b border-white/10 pb-4"><span className="text-xs font-semibold text-white/70">DTMS / {slide.eyebrow.split(' / ')[1]}</span><span className="text-[10px] text-emerald-300">● LIVE</span></div><div className="mt-5 flex items-end justify-between gap-5"><div><p className="text-5xl font-extrabold text-white sm:text-6xl">{slide.metric}</p><p className="mt-2 text-sm text-blue-100/60">{slide.label}</p></div><div className={`h-28 w-28 rounded-full bg-gradient-to-br ${slide.accent} opacity-90 blur-[1px] sm:h-36 sm:w-36`} /></div><div className="mt-7 grid grid-cols-4 items-end gap-2">{[42, 66, 54, 78, 62, 86, 72, 94].map((height, barIndex) => <div key={barIndex} className="rounded-t bg-white/50" style={{ height: `${height}px` }} />)}</div></div>
+              </div>
+            ))}
+            <div className="absolute bottom-5 right-6 flex gap-2"><button type="button" aria-label="Slide sebelumnya" onClick={() => setActiveSlide((activeSlide - 1 + GALLERY_SLIDES.length) % GALLERY_SLIDES.length)} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10">←</button><button type="button" aria-label="Slide berikutnya" onClick={() => setActiveSlide((activeSlide + 1) % GALLERY_SLIDES.length)} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10">→</button></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="platform" className="scroll-mt-20 bg-[#F7F9FC] px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-2xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0D6EFD]">Platform overview</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Satu platform. Visibilitas penuh.</h2>
+            <p className="mt-4 text-gray-500">Hubungkan seluruh proses delivery dalam satu sumber data yang dapat dipantau, diukur, dan ditingkatkan.</p>
+          </div>
+          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              { number: '01', title: 'Fleet', text: 'Pantau kendaraan, driver, status, utilisasi, dan maintenance.' },
+              { number: '02', title: 'Delivery', text: 'Kelola order, dispatch, route, ETA, status, dan SLA.' },
+              { number: '03', title: 'Intelligence', text: 'Ubah data operasional menjadi KPI, forecast, dan rekomendasi.' },
+              { number: '04', title: 'Control', text: 'Kelola tenant, permission, audit, dan integrasi enterprise.' },
+            ].map((item) => (
+              <div key={item.number} className="group rounded-2xl border border-gray-200 bg-white p-6 transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-100/50">
+                <span className="text-xs font-bold text-[#0D6EFD]">{item.number}</span>
+                <h3 className="mt-8 text-lg font-bold text-gray-900">{item.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-gray-500">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" className="scroll-mt-20 bg-white px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0D6EFD]">How it works</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Dari order hingga delivery, tanpa blind spot.</h2>
+          </div>
+          <div className="relative mt-14 grid gap-8 md:grid-cols-4">
+            <div className="absolute left-[12%] right-[12%] top-6 hidden h-px bg-blue-100 md:block" />
+            {[
+              { step: '01', title: 'Plan', text: 'Masukkan order dan tetapkan tujuan delivery.' },
+              { step: '02', title: 'Dispatch', text: 'Assign driver dan rute sesuai kapasitas.' },
+              { step: '03', title: 'Monitor', text: 'Pantau posisi, ETA, SLA, dan exception real-time.' },
+              { step: '04', title: 'Improve', text: 'Analisis performa untuk keputusan yang lebih baik.' },
+            ].map((item) => (
+              <div key={item.step} className="relative text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-[#0D6EFD] text-xs font-bold text-white shadow-lg shadow-blue-200">{item.step}</div>
+                <h3 className="mt-5 text-base font-bold text-gray-900">{item.title}</h3>
+                <p className="mx-auto mt-2 max-w-[190px] text-sm leading-6 text-gray-500">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#061B41] px-4 py-20 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">Enterprise ready</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Dibangun untuk operasi yang terus berkembang.</h2>
+            <p className="mt-5 max-w-xl leading-7 text-blue-100/70">Mulai dari satu tim hingga jaringan multi-tenant, DTMS menjaga kontrol, keamanan, dan visibilitas tetap terukur.</p>
+            <a href="#demo" className="mt-8 inline-flex rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#061B41] transition hover:bg-blue-50">Diskusikan kebutuhan Anda</a>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {['Multi-tenant architecture', 'RBAC, 2FA & audit trail', 'API & webhook ready', 'Scalable operational analytics'].map((item) => (
+              <div key={item} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-sm font-medium text-blue-50">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">✓</span>
+                {item}
               </div>
             ))}
           </div>

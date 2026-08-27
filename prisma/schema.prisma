@@ -244,6 +244,8 @@ model Geofence {
   latitude      Float
   longitude     Float
   radiusMeters  Float           @default(500)
+  shape         String          @default("CIRCLE")
+  points        Json?
   type          GeofenceType    @default(OPERATIONAL_AREA)
   description   String?
   active        Boolean         @default(true)

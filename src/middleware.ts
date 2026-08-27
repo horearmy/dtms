@@ -103,6 +103,9 @@ function verifyCsrf(req: NextRequest): boolean {
 }
 
 function addSecurityHeaders(res: NextResponse): NextResponse {
+  const scriptSources = process.env.NODE_ENV === 'production'
+    ? "script-src 'self' 'unsafe-inline'"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
   res.headers.set('X-Frame-Options', 'DENY');
   res.headers.set('X-Content-Type-Options', 'nosniff');
   res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -113,7 +116,7 @@ function addSecurityHeaders(res: NextResponse): NextResponse {
   res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   res.headers.set('Content-Security-Policy', [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    scriptSources,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://*.google.com https://*.basemaps.cartocdn.com",
@@ -179,7 +182,7 @@ export async function middleware(req: NextRequest) {
     }
 
     if (isMutationMethod(req.method)) {
-      const isPublicAuth = pathname === '/api/auth/login' || pathname.startsWith('/api/auth/two-factor') || pathname === '/api/auth/forgot-password' || pathname === '/api/auth/reset-password';
+      const isPublicAuth = pathname === '/api/auth/login' || pathname.startsWith('/api/auth/two-factor') || pathname === '/api/auth/forgot-password' || pathname === '/api/auth/reset-password' || pathname === '/api/auth/logout';
       const authHeader = req.headers.get('authorization');
       const isApiKeyRequest = authHeader && authHeader.toLowerCase().startsWith('bearer dtms_');
       if (!isPublicAuth && !isApiKeyRequest && !verifyCsrf(req)) {

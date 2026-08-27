@@ -24,8 +24,10 @@ type ShipmentHit = {
   trackingNumber: string;
   status: string;
   destination: string;
-  Customer_Shipment_senderIdToCustomer: { name: string };
-  Customer_Shipment_receiverIdToCustomer: { name: string };
+  sender?: { name: string } | null;
+  receiver?: { name: string } | null;
+  Customer_Shipment_senderIdToCustomer?: { name: string };
+  Customer_Shipment_receiverIdToCustomer?: { name: string };
 };
 
 type ScanItem = {
@@ -202,8 +204,8 @@ function ScanInner() {
                 <StatusBadge status={hit.status} />
               </div>
               <div className="mt-2 grid gap-1 text-xs text-[#667085] sm:grid-cols-3">
-                <div><b>Pengirim:</b> {hit.Customer_Shipment_senderIdToCustomer.name}</div>
-                <div><b>Penerima:</b> {hit.Customer_Shipment_receiverIdToCustomer.name}</div>
+                <div><b>Pengirim:</b> {(hit.sender?.name || hit.Customer_Shipment_senderIdToCustomer?.name) || '-'}</div>
+                <div><b>Penerima:</b> {(hit.receiver?.name || hit.Customer_Shipment_receiverIdToCustomer?.name) || '-'}</div>
                 <div><b>Tujuan:</b> {hit.destination}</div>
               </div>
               <div className="mt-3">

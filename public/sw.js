@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dtms-v2';
+const CACHE_NAME = 'dtms-v4';
 const PRECACHE = [
   '/login',
   '/icons/icon-192.png',
@@ -23,16 +23,24 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('/api/')) return;
+  // Jangan cache Next.js internals — biarkan network langsung
+  if (e.request.url.includes('/_next/')) return;
 
   e.respondWith(
     fetch(e.request)
       .then((res) => {
-        if (res.ok) {
+        if (res.ok && e.request.url.startsWith(self.location.origin)) {
           const clone = res.clone();
           caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
         }
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() =>
+        caches.match(e.request).then((cached) => {
+          if (cached) return cached;
+          // Kembalikan response 503 yang valid agar tidak TypeError: Failed to convert value to 'Response'
+          return new Response('Offline — tidak ada cache', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+        })
+      )
   );
 });

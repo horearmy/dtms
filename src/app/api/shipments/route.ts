@@ -99,59 +99,86 @@ export async function POST(req: NextRequest) {
     }
 
     let trackingNumber = '';
-    const created = await prisma.$transaction(async (tx) => {
-      const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      let seq = await tx.shipment.count({ where: { trackingNumber: { startsWith: `DTMS-${ymd}-` } } });
-      do {
-        seq++;
-        trackingNumber = `DTMS-${ymd}-${String(seq).padStart(6, '0')}`;
-      } while (await tx.shipment.findUnique({ where: { trackingNumber } }));
+    let created: Awaited<ReturnType<typeof prisma.shipment.create>> | null = null;
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        created = await prisma.$transaction(async (tx) => {
+        const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const prefix = `DTMS-${ymd}-`;
+        const countRes = await (tx as any).$queryRaw`SELECT COUNT(*)::bigint as cnt FROM "Shipment" WHERE "trackingNumber" LIKE ${prefix + '%'}`;
+        let seq = Number((countRes as any)[0]?.cnt ?? 0) + attempt;
+        do {
+          seq++;
+          trackingNumber = `DTMS-${ymd}-${String(seq).padStart(6, '0')}`;
+          const existsRes = await (tx as any).$queryRaw`SELECT EXISTS(SELECT 1 FROM "Shipment" WHERE "trackingNumber" = ${trackingNumber}) as exists`;
+          const exists = (existsRes as any)[0]?.exists;
+          if (!exists) break;
+        } while (true);
 
-      const origin = senderStop.label;
-      const destination = lastStop.label;
-      const validServiceTypes = ['REGULAR', 'NEXT_DAY', 'SAME_DAY'];
-      const serviceType = validServiceTypes.includes(String(body.serviceType)) ? String(body.serviceType) as 'REGULAR' | 'NEXT_DAY' | 'SAME_DAY' : 'REGULAR';
+        const origin = senderStop.label;
+        const destination = lastStop.label;
+        const validServiceTypes = ['REGULAR', 'NEXT_DAY', 'SAME_DAY'];
+        const serviceType = validServiceTypes.includes(String(body.serviceType)) ? String(body.serviceType) as 'REGULAR' | 'NEXT_DAY' | 'SAME_DAY' : 'REGULAR';
 
-      const shipment = await tx.shipment.create({
-        data: {
-          trackingNumber,
-          tenantId: session?.tenantId ?? null,
-          senderId: senderStop.customerId as string,
-          receiverId,
-          origin,
-          destination,
-          originLat: senderStop.latitude,
-          originLng: senderStop.longitude,
-          destLat: lastStop.latitude,
-          destLng: lastStop.longitude,
-          weight,
-          volume: body.volume ? Number(body.volume) : null,
-          serviceType,
-          fragile: !!body.fragile,
-          itemName: String(body.itemName || 'Paket'),
-          itemCount: Number(body.itemCount) || 1,
-          itemCategory: body.itemCategory ? String(body.itemCategory) : null,
-          itemValue: body.itemValue ? Number(body.itemValue) : null,
-          distanceKm: toNum(body.distanceKm),
-          durationMin: toNum(body.durationMin) != null ? Math.round(toNum(body.durationMin) as number) : null,
-          photo1: typeof body.photo1 === 'string' && body.photo1 ? body.photo1.slice(0, 500) : null,
-          photo2: typeof body.photo2 === 'string' && body.photo2 ? body.photo2.slice(0, 500) : null,
-          slaDeadline: slaDeadlineFor(serviceType, new Date()),
-          deliveryTarget: body.deliveryTarget ? new Date(String(body.deliveryTarget)) : null,
-          stops: { create: stopsData },
-          items: Array.isArray(body.items) && body.items.length
-            ? { create: (body.items as Array<Record<string, unknown>>).map((it) => ({ itemName: String(it.itemName || 'Paket'), quantity: Number(it.quantity) || 1, weight: it.weight != null ? Number(it.weight) : null, dimension: it.dimension ? String(it.dimension) : null })) }
-            : { create: { itemName: String(body.itemName || 'Paket'), quantity: Number(body.itemCount) || 1, weight } },
-        },
+        const shipment = await tx.shipment.create({
+          data: {
+            trackingNumber,
+            tenantId: session?.tenantId ?? null,
+            senderId: senderStop.customerId as string,
+            receiverId,
+            origin,
+            destination,
+            originLat: senderStop.latitude,
+            originLng: senderStop.longitude,
+            destLat: lastStop.latitude,
+            destLng: lastStop.longitude,
+            weight,
+            volume: body.volume ? Number(body.volume) : null,
+            serviceType,
+            fragile: !!body.fragile,
+            itemName: String(body.itemName || 'Paket'),
+            itemCount: Number(body.itemCount) || 1,
+            itemCategory: body.itemCategory ? String(body.itemCategory) : null,
+            itemValue: body.itemValue ? Number(body.itemValue) : null,
+            distanceKm: toNum(body.distanceKm),
+            durationMin: toNum(body.durationMin) != null ? Math.round(toNum(body.durationMin) as number) : null,
+            photo1: typeof body.photo1 === 'string' && body.photo1 ? body.photo1.slice(0, 500) : null,
+            photo2: typeof body.photo2 === 'string' && body.photo2 ? body.photo2.slice(0, 500) : null,
+            slaDeadline: slaDeadlineFor(serviceType, new Date()),
+            deliveryTarget: body.deliveryTarget ? new Date(String(body.deliveryTarget)) : null,
+            stops: { create: stopsData },
+            items: Array.isArray(body.items) && body.items.length
+              ? { create: (body.items as Array<Record<string, unknown>>).map((it) => ({ itemName: String(it.itemName || 'Paket'), quantity: Number(it.quantity) || 1, weight: it.weight != null ? Number(it.weight) : null, dimension: it.dimension ? String(it.dimension) : null })) }
+              : { create: { itemName: String(body.itemName || 'Paket'), quantity: Number(body.itemCount) || 1, weight } },
+          },
+        });
+        await tx.trackingEvent.create({
+          data: { shipmentId: shipment.id, status: 'ORDER_CREATED', createdBy: session?.id, notes: 'Order dibuat' },
+        });
+        await tx.notification.create({
+          data: { shipmentId: shipment.id, message: `Order baru: ${shipment.trackingNumber} dibuat` },
+        });
+        return shipment;
       });
-      await tx.trackingEvent.create({
-        data: { shipmentId: shipment.id, status: 'ORDER_CREATED', createdBy: session?.id, notes: 'Order dibuat' },
-      });
-      await tx.notification.create({
-        data: { shipmentId: shipment.id, message: `Order baru: ${shipment.trackingNumber} dibuat` },
-      });
-      return shipment;
-    });
+        lastErr = null;
+        break;
+      } catch (e: any) {
+        const msg = e?.message || String(e);
+        if (msg.includes('Unique constraint') && msg.includes('trackingNumber')) {
+          lastErr = e;
+          await new Promise((r) => setTimeout(r, 30 * (attempt + 1)));
+          continue;
+        }
+        console.error('[shipments POST] error', e, 'body', JSON.stringify(body).slice(0,2000));
+        const detail = e instanceof Error ? (e.stack || String(e)).slice(0,2000) : String(e);
+        return NextResponse.json({ error: msg, detail }, { status: 500 });
+      }
+    }
+    if (!created) {
+      console.error('[shipments POST] retry exhausted', lastErr, 'body', JSON.stringify(body).slice(0,2000));
+      return NextResponse.json({ error: 'Gagal membuat nomor resi unik, coba lagi' }, { status: 500 });
+    }
 
     await logAudit(session, 'CREATE_SHIPMENT', 'SHIPMENT', { newData: { trackingNumber, origin: created.origin, destination: created.destination, serviceType: created.serviceType } }, req);
     return NextResponse.json(created, { status: 201 });

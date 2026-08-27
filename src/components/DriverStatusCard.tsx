@@ -5,12 +5,14 @@ import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
 import DriverLiveMap from '@/components/DriverLiveMap';
 import { formatDateTime } from '@/lib/constants';
+import { ClipboardList, FileText } from 'lucide-react';
 
 type DriverStatus = {
   driver: {
     id: string;
     name: string;
     employeeId: string;
+    photo: string | null;
     status: string;
     returning: boolean;
     returnedAt: string | null;
@@ -67,17 +69,35 @@ export default function DriverStatusCard() {
 
   return (
     <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-bold text-[#101828]">🪪 Keterangan Driver</h2>
-          <p className="text-xs text-[#667085]">Data Anda &amp; kendaraan yang sedang digunakan</p>
-        </div>
+      {/* Menu akses cepat driver */}
+      <div className="flex flex-col items-center text-center">
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${onDuty ? 'bg-[#E6F9EF] text-[#16B364]' : 'bg-[#F7F9FC] text-[#667085]'}`}>
           {onDuty ? 'Sedang Bertugas' : 'Tidak Ada Tugas Aktif'}
         </span>
+
+        <div className="mt-4 grid w-full grid-cols-2 gap-3">
+          <a
+            href="#tugas"
+            className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[#E4E7EC] bg-[#F7F9FC] p-4 transition hover:border-[#0D6EFD]/30 hover:bg-[#EFF6FF] active:scale-[0.98]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0D6EFD] text-white">
+              <ClipboardList size={20} />
+            </span>
+            <span className="text-sm font-bold text-[#101828]">Tugas</span>
+          </a>
+          <Link
+            href="/driver/laporan"
+            className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[#E4E7EC] bg-[#F7F9FC] p-4 transition hover:border-[#0D6EFD]/30 hover:bg-[#EFF6FF] active:scale-[0.98]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#16B364] text-white">
+              <FileText size={20} />
+            </span>
+            <span className="text-sm font-bold text-[#101828]">Laporan</span>
+          </Link>
+        </div>
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-lg bg-[#F7F9FC] p-3">
           <div className="text-[11px] uppercase text-[#667085]">Nama / ID</div>
           <div className="mt-1 text-sm font-bold text-[#101828]">{d.name}</div>

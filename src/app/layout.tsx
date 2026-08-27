@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={cn('font-sans antialiased scroll-smooth', jakarta.variable)}>
+    <html lang="id" data-scroll-behavior="smooth" className={cn('font-sans antialiased scroll-smooth', jakarta.variable)}>
       <body>
         <TopLoader />
         <PWARegister />

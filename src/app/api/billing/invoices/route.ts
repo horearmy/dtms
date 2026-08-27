@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(url.get('page') || '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(url.get('limit') || '20', 10)));
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = session?.tenantId ? { tenantId: session.tenantId } : {};
     if (status) where.status = status;
 
     const [invoices, total] = await Promise.all([

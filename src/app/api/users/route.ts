@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       id: true, name: true, username: true, role: true, status: true, phone: true,
       mustChangePassword: true, lastPasswordChange: true, createdAt: true, tenantId: true,
       driver: { select: { id: true, employeeId: true, name: true } },
-      Tenant: { select: { id: true, name: true, slug: true } },
+      tenant: { select: { id: true, name: true, slug: true } },
     };
     const where = { ...tenantFilter };
     const [total, users] = await Promise.all([
