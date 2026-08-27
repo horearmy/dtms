@@ -264,7 +264,7 @@ export async function ensureTenantPermissions(tenantId: string) {
   }
 
   if (toCreate.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     await prisma.rolePermission.createMany({ data: toCreate as any, skipDuplicates: true });
   }
 

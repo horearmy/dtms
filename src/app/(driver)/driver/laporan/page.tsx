@@ -6,7 +6,7 @@ import StatusBadge from '@/components/StatusBadge';
 import SignaturePad from '@/components/SignaturePad';
 import { getGPS } from '@/lib/gps';
 import { inputCls, btnPrimary, btnGhost } from '@/components/ui';
-import { STATUS_LABELS, formatDateTime, formatNumber } from '@/lib/constants';
+import { formatDateTime, formatNumber } from '@/lib/constants';
 
 type Task = {
   id: string;
@@ -223,7 +223,7 @@ function TaskLaporCard({ task, onDone }: { task: Task; onDone: () => void }) {
 export default function DriverLaporanPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState('');
+  const [err] = useState('');
 
   const [returning, setReturning] = useState(false);
   const [returnedAt, setReturnedAt] = useState<string | null>(null);

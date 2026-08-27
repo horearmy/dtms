@@ -61,7 +61,7 @@ export default function GlobalControlTowerPage() {
   const [heatPoints, setHeatPoints] = useState<HeatPoint[]>([]);
   const [tenantStats, setTenantStats] = useState<Record<string, TenantStat>>({});
   const [totalPoints, setTotalPoints] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [editTenant, setEditTenant] = useState<TenantThrottle | null>(null);
   const [throttleForm, setThrottleForm] = useState({ apiMaxRequests: 300, gpsMaxRequests: 60, active: true, blocked: false });
   const [saving, setSaving] = useState(false);

@@ -25,6 +25,52 @@ async function clearLoginAttempts() {
   await p.$disconnect();
 }
 
+async function ensureIntegrationFixtures() {
+  const { PrismaClient } = await import('@prisma/client');
+  const bcrypt = await import('bcryptjs');
+  const p = new PrismaClient();
+  const passwordHash = await bcrypt.hash('admin123', 10);
+  const fixtures = [
+    { id: '357011aa-60f3-46cc-b3d6-7b5231c4747f', slug: 'integration-tenant-a', code: 'TEST-A', username: 'admin00001', name: 'Integration Admin A' },
+    { id: 'f7f63209-f17d-4da5-ac36-65171a291e8b', slug: 'integration-tenant-b', code: 'TEST-B', username: 'admin00002', name: 'Integration Admin B' },
+  ];
+
+  try {
+    for (const fixture of fixtures) {
+      await p.tenant.upsert({
+        where: { id: fixture.id },
+        update: { active: true, status: 'ACTIVE', plan: 'ENTERPRISE' },
+        create: {
+          id: fixture.id,
+          name: fixture.name,
+          slug: fixture.slug,
+          code: fixture.code,
+          active: true,
+          status: 'ACTIVE',
+          plan: 'ENTERPRISE',
+          maxUsers: 100,
+          maxDrivers: 100,
+          maxShipments: 10000,
+        },
+      });
+      await p.user.upsert({
+        where: { tenantId_username: { tenantId: fixture.id, username: fixture.username } },
+        update: { passwordHash, role: 'ADMIN_OPERASIONAL', status: 'ACTIVE', mustChangePassword: false },
+        create: {
+          tenantId: fixture.id,
+          username: fixture.username,
+          name: fixture.name,
+          passwordHash,
+          role: 'ADMIN_OPERASIONAL',
+          status: 'ACTIVE',
+        },
+      });
+    }
+  } finally {
+    await p.$disconnect();
+  }
+}
+
 function extractCookies(setCookie: string | null) {
   const tokenMatch = setCookie?.match(/dtms_token=([^;]+)/);
   const saMatch = setCookie?.match(/dtms_sa_token=([^;]+)/);
@@ -84,6 +130,7 @@ async function loginSuperAdmin(username: string, password: string): Promise<{ co
 }
 
 export async function setup() {
+  await ensureIntegrationFixtures();
   await clearLoginAttempts();
   const tokens: Record<string, { cookie: string; csrf: string }> = {};
 

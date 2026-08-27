@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { generateRegistrationOptions, verifyRegistrationResponse } from '@simplewebauthn/server';
+import { NextResponse } from 'next/server';
+import { generateRegistrationOptions } from '@simplewebauthn/server';
 import { prisma } from '@/lib/prisma';
-import { guard, logAudit } from '@/lib/api-guard';
-import { getRp, signWebauthnChallenge, verifyWebauthnChallenge } from '@/lib/webauthn';
+import { guard } from '@/lib/api-guard';
+import { getRp, signWebauthnChallenge } from '@/lib/webauthn';
 
 /**
  * POST /api/admin/auth/passkey/register/start — Blueprint §8/§36

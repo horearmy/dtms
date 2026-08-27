@@ -21,7 +21,7 @@ export default function KomunikasiPage() {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [total, setTotal] = useState(0);
+  const [, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showCompose, setShowCompose] = useState(false);

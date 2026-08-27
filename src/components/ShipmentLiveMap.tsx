@@ -91,7 +91,7 @@ export default function ShipmentLiveMap({ trackingNumber, origin, destination, o
       if (!cancelled) setLoadingRoute(false);
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [originLat, originLng, destLat, destLng]);
 
   // render marker + rute + fit bounds

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Building2, Globe, Building, DoorOpen, MapPin, Users, Warehouse, ChevronRight, Search, X } from 'lucide-react';
+import { Building2, Globe, Building, DoorOpen, MapPin, Users, ChevronRight, Search, X } from 'lucide-react';
 
 type Tenant = { id: string; name: string; slug: string; plan: string; status: string };
 

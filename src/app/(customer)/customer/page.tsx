@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Package, MapPin, Clock, CheckCircle, Truck } from 'lucide-react';
+import { Package, MapPin, CheckCircle, Truck } from 'lucide-react';
 
 type ShipmentSummary = {
   id: string;

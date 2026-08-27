@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Pagination from '@/components/Pagination';
 import { formatDateTime } from '@/lib/constants';
-import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
+import { Modal, Field, inputCls, btnPrimary, EmptyRow } from '@/components/ui';
 
 type TenantRef = { id: string; slug: string; name: string };
 

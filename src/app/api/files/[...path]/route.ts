@@ -3,10 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFile } from '@/lib/storage';
 import { getSession } from '@/lib/auth';
 
-const MIME: Record<string, string> = {
-  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf',
-};
-
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const session = await getSession();
   if (!session) {
@@ -33,7 +29,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pat
   return new NextResponse(new Uint8Array(result.buffer), {
     headers: {
       'Content-Type': result.mimeType,
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      // File dilindungi autentikasi dan tidak boleh masuk shared cache.
+      'Cache-Control': 'private, no-store',
     },
   });
 }

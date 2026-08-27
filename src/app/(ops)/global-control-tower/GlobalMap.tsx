@@ -14,16 +14,16 @@ function HeatmapLayer({ points }: { points: DriverPoint[] }) {
 
   useEffect(() => {
     if (!map || readyRef.current) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     (window as any).L = L;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     try { require('leaflet.heat'); } catch {}
     readyRef.current = true;
   }, [map]);
 
   useEffect(() => {
     if (!map || !readyRef.current) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const LMod = (window as any).L as typeof L & { heatLayer?: (...args: unknown[]) => L.Layer };
     if (layerRef.current) {
       map.removeLayer(layerRef.current);

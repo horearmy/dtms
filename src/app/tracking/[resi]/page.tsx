@@ -39,7 +39,7 @@ export default async function TrackingResultPage({ params }: { params: Promise<{
   const refLng = lastEvent?.longitude ?? shipment.originLng ?? 106.8456;
 
   let eta = dynamicETA({ distanceKm: shipment.destLat ? haversineKm(refLat, refLng, shipment.destLat, shipment.destLng ?? refLng) : 0 });
-  let sla = getSLA(shipment.status, shipment.slaDeadline, shipment.serviceType);
+  const sla = getSLA(shipment.status, shipment.slaDeadline, shipment.serviceType);
   if (!shipment.destLat) eta = new Date(Date.now() + 12 * 3600000);
 
   const slaBadge =

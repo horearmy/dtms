@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
 import SignaturePad from '@/components/SignaturePad';
@@ -80,7 +80,7 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
     setRetBusy(false);
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/driver/tasks/${assignmentId}`);
@@ -96,8 +96,8 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
       setErr('Gagal terhubung ke server');
     }
     setLoading(false);
-  }
-  useEffect(() => { load(); loadDriverStatus(); }, [assignmentId]);
+  }, [assignmentId]);
+  useEffect(() => { load(); loadDriverStatus(); }, [assignmentId, load]);
 
   function updateStatus(status: string, statusNotes?: string, lat?: number | null, lng?: number | null) {
     return fetch(`/api/shipments/${task!.shipment.id}/events`, {

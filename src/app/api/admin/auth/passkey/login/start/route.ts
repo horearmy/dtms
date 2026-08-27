@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateAuthenticationOptions } from '@simplewebauthn/server';
 import { prisma } from '@/lib/prisma';
-import {
-  verifySuperAdminStep1Token, buildFingerprint,
-} from '@/lib/superadmin-auth';
+import { verifySuperAdminStep1Token } from '@/lib/superadmin-auth';
 import { getRp, signWebauthnChallenge } from '@/lib/webauthn';
 
 /**
@@ -13,7 +11,6 @@ import { getRp, signWebauthnChallenge } from '@/lib/webauthn';
  */
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
     const body = await req.json();
     const { sessionToken, username } = body || {};
     if (!sessionToken || !username) {

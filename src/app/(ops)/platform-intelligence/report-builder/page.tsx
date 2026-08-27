@@ -73,7 +73,7 @@ export default function ReportBuilderPage() {
   useEffect(() => {
     const dims = dsOption.dimensions;
     if (!dims.find((d) => d.value === dimension)) setDimension(dims[0].value);
-  }, [dataset]);
+  }, [dataset, dimension, dsOption.dimensions]);
 
   const fetchReport = useCallback(async (signal?: AbortSignal) => {
     setLoading(true); setError('');

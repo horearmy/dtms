@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PLAN_ORDER } from '@/lib/plan-constants';
 
@@ -60,9 +60,7 @@ export default function TenantList() {
   const [deleting, setDeleting] = useState(false);
   const [success, setSuccess] = useState('');
 
-  useEffect(() => { fetchTenants(); }, [statusFilter]);
-
-  async function fetchTenants() {
+  const fetchTenants = useCallback(async () => {
     setLoading(true);
     try {
       const url = statusFilter ? `/api/tenants?status=${statusFilter}` : '/api/tenants';
@@ -73,7 +71,9 @@ export default function TenantList() {
       }
     } catch {}
     setLoading(false);
-  }
+  }, [statusFilter]);
+
+  useEffect(() => { fetchTenants(); }, [fetchTenants]);
 
   function openCreate() {
     setEditTenant(null);

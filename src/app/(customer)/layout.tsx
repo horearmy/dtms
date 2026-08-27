@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Package, MapPin, FileText, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, MapPin, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const nav = [

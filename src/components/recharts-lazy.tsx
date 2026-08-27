@@ -13,12 +13,12 @@ const ChartLoading = () => (
   <div className="h-full w-full min-h-[120px] animate-pulse rounded-lg bg-[#F2F4F7]" />
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type AnyComponent = ComponentType<any>;
 
 const lazyChart = (name: string): AnyComponent =>
   dynamic(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     async () => ({ default: (await import('recharts') as any)[name] as AnyComponent }),
     { ssr: false, loading: ChartLoading },
   );

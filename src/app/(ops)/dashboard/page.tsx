@@ -20,9 +20,7 @@ export default async function DashboardPage() {
   todayStart.setHours(0, 0, 0, 0);
 
   const data = await runWithTenant(session?.tenantId ?? null, async () => {
-    const tenantFilter = session?.tenantId ? { tenantId: session.tenantId } : {};
-
-    const [totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches] = await Promise.all([
+    const [totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, _returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches] = await Promise.all([
       prisma.shipment.count({ where: { createdAt: { gte: todayStart } } }),
       prisma.shipment.count(),
       prisma.shipment.findMany({
@@ -92,10 +90,10 @@ export default async function DashboardPage() {
       }),
     ]);
 
-    return { totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches };
+    return { totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches };
   });
 
-  const { totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches } = data;
+  const { totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches } = data;
 
   // SLA monitoring
   let slaRisk = 0;
@@ -251,7 +249,7 @@ export default async function DashboardPage() {
             <p className="text-sm text-[#667085]">Tidak ada shipment berisiko / terlambat SLA.</p>
           ) : (
             <div className="space-y-2">
-              {atRiskList.slice(0, 4).map(({ shipment: s, remainingMs }) => (
+              {atRiskList.slice(0, 4).map(({ shipment: s }) => (
                 <Link key={s.id} href={`/shipments/${s.id}`} className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs hover:bg-amber-100">
                   <span className="font-mono font-semibold text-amber-800">{s.trackingNumber}</span>
                   <span className="text-amber-700">At Risk Â· {s.destination}</span>

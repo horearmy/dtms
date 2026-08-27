@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import StatusBadge from '@/components/StatusBadge';
@@ -59,7 +59,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignForm, setAssignForm] = useState({ driverId: '', vehicleId: '' });
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/shipments/${id}`);
     if (!res.ok) {
@@ -69,9 +69,9 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
     }
     setShipment(await res.json());
     setLoading(false);
-  }
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     fetch('/api/auth/me').then((r) => r.ok ? r.json() : null).then((d) => {

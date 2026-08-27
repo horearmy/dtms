@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import QRCode from 'qrcode';
@@ -22,7 +22,7 @@ export default function SecurityPage() {
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     const res = await fetch('/api/auth/2fa/setup');
     if (res.status === 401) {
       router.push('/login');
@@ -34,11 +34,11 @@ export default function SecurityPage() {
       const qr = await QRCode.toDataURL(data.otpauth, { width: 240, margin: 1 });
       setQrData(qr);
     }
-  }
+  }, [router]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   async function enable(e: React.FormEvent) {
     e.preventDefault();

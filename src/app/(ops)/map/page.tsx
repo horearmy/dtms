@@ -324,7 +324,7 @@ export default function MapPage() {
       });
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [routes, showRoutes, returnRoutes]);
 
   const routeFallback = (r: RouteLine) => r.points.length === 2;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { inputCls, btnPrimary, btnGhost, Field } from '@/components/ui';
+import { inputCls, btnPrimary, Field } from '@/components/ui';
 
 type WhatsAppConfig = {
   enabled: boolean;

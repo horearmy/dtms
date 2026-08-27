@@ -149,10 +149,13 @@ export async function middleware(req: NextRequest) {
 
     if (isMutationMethod(req.method)) {
       const contentLength = parseInt(req.headers.get('content-length') || '0', 10);
-      const MAX_BODY_BYTES = 1_048_576;
+      // Upload memiliki validasi ukuran sendiri (10 MB) setelah multipart
+      // parsing; beri sedikit ruang untuk overhead multipart boundary.
+      const isUpload = pathname === '/api/upload';
+      const MAX_BODY_BYTES = isUpload ? 11 * 1_048_576 : 1_048_576;
       if (contentLength > MAX_BODY_BYTES) {
         return addSecurityHeaders(NextResponse.json(
-          { error: 'Request body terlalu besar. Maks 1MB.' },
+          { error: `Request body terlalu besar. Maks ${isUpload ? '11MB' : '1MB'}.` },
           { status: 413 }
         ));
       }

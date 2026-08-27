@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type Exception = {
   id: string; type: string; severity: string; status: string; title: string; description: string | null;
@@ -44,9 +44,7 @@ export default function ExceptionsList() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ type: 'DELIVERY_FAILED', severity: 'MEDIUM', title: '', description: '' });
 
-  useEffect(() => { fetchData(); }, [statusFilter, severityFilter, page]);
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (statusFilter) params.set('status', statusFilter);
@@ -54,7 +52,9 @@ export default function ExceptionsList() {
     const res = await fetch(`/api/exceptions?${params}`);
     if (res.ok) setData(await res.json());
     setLoading(false);
-  }
+  }, [statusFilter, severityFilter, page]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   async function createException(e: React.FormEvent) {
     e.preventDefault();

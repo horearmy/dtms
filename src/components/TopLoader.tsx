@@ -85,7 +85,7 @@ export default function TopLoader() {
       if (failsafeTimer.current) clearTimeout(failsafeTimer.current);
       activeRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   return (

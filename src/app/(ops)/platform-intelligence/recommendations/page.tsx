@@ -142,8 +142,6 @@ export default function RecommendationsPage() {
     (catFilter === 'all' || r.category === catFilter) && (prioFilter === 'all' || r.priority === prioFilter)
   );
 
-  const catPieData = Object.entries(data.summary.byCategory).filter(([, v]) => v > 0).map(([k, v]) => ({ name: k.charAt(0).toUpperCase() + k.slice(1), value: v }));
-
   return (
     <div className="mx-auto max-w-7xl space-y-4 p-4 lg:p-6">
       <div className="flex items-center justify-between">

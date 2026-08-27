@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Modal, Field, inputCls, btnPrimary, btnGhost, EmptyRow } from '@/components/ui';
 import { formatNumber, formatDateTime, formatDate, MAINTENANCE_DISTANCE_KM } from '@/lib/constants';
@@ -91,7 +91,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     const res = await fetch(`/api/vehicles/${id}`);
     if (!res.ok) {
       setErr('Kendaraan tidak ditemukan');
@@ -100,8 +100,8 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
     }
     setV(await res.json());
     setLoading(false);
-  }
-  useEffect(() => { load(); }, [id]);
+  }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   async function addMaintenance(e: React.FormEvent) {
     e.preventDefault();

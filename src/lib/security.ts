@@ -134,7 +134,7 @@ async function getRedis() {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return null;
-  const { Redis } = await import('@upstash/redis').catch(() => ({ Redis: null as any }));
+  const { Redis } = await import('@upstash/redis').catch(() => ({ Redis: null }));
   if (!Redis) return null;
   return new Redis({ url, token });
 }

@@ -141,7 +141,7 @@ export default function ReportPdfExport({ data }: { data: ReportData }) {
         margin: { left: M, right: M },
         styles: { cellPadding: 2 },
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       y = (doc as any).lastAutoTable.finalY + 8;
 
       // ── DRIVER SCORING ──
@@ -165,7 +165,7 @@ export default function ReportPdfExport({ data }: { data: ReportData }) {
           styles: { cellPadding: 2 },
           columnStyles: { 2: { cellWidth: 18 }, 3: { cellWidth: 22 }, 4: { cellWidth: 18 }, 5: { cellWidth: 22 } },
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         y = (doc as any).lastAutoTable.finalY + 8;
       }
 
@@ -188,7 +188,7 @@ export default function ReportPdfExport({ data }: { data: ReportData }) {
           styles: { cellPadding: 2 },
           columnStyles: { 1: { cellWidth: 35 } },
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         y = (doc as any).lastAutoTable.finalY + 8;
       }
 
@@ -211,7 +211,7 @@ export default function ReportPdfExport({ data }: { data: ReportData }) {
           styles: { cellPadding: 2 },
           columnStyles: { 0: { cellWidth: 12 }, 2: { cellWidth: 25 } },
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         y = (doc as any).lastAutoTable.finalY + 8;
       }
 
@@ -243,7 +243,7 @@ export default function ReportPdfExport({ data }: { data: ReportData }) {
             5: { cellWidth: 30 },
           },
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         y = (doc as any).lastAutoTable.finalY + 10;
       }
 

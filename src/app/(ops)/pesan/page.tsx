@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { formatDateTime } from '@/lib/constants';
 import { useNotification } from '@/components/ui/NotificationContext';
 
@@ -18,16 +18,15 @@ type Message = {
 export default function PesanPage() {
   const { notify } = useNotification();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [total, setTotal] = useState(0);
+  const [, setTotal] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showCompose, setShowCompose] = useState(false);
   const [form, setForm] = useState({ subject: '', body: '' });
   const [sending, setSending] = useState(false);
   const [selected, setSelected] = useState<Message | null>(null);
   const [error, setError] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
   const pageSize = 20;
 
   const load = useCallback(async () => {

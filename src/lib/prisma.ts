@@ -9,7 +9,7 @@ const basePrisma = globalForPrisma.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = basePrisma;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type AnyArgs = Record<string, any>;
 
 // Only models that ACTUALLY have a tenantId column in the schema
@@ -72,7 +72,7 @@ function modelExtension(modelName: string) {
       if (!result) return null;
       const tenantId = tenantStore.getStore() ?? null;
       if (tenantId && TENANT_SCOPED.has(modelName)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const r = result as any;
         // Fail closed: record tanpa tenantId tidak boleh terlihat dari konteks tenant.
         if ('tenantId' in r && r.tenantId !== tenantId) return null;

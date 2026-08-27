@@ -1,7 +1,7 @@
 // src/app/api/events/route.ts
 // Server-Sent Events endpoint for real-time dashboard updates.
 import { subscribe } from '@/lib/sse-bus';
-import { getSession, COOKIE_NAME } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

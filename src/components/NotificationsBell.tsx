@@ -83,7 +83,7 @@ export default function NotificationsBell() {
     }
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [unread]);
 
   function onItemClick(n: Notif) {

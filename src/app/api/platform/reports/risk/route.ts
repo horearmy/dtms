@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { ExceptionStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guardPermission, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
@@ -28,18 +29,12 @@ function riskLevel(score: number): RiskLevel {
   return 'MINIMAL';
 }
 
-function riskColor(level: RiskLevel): string {
-  const m: Record<RiskLevel, string> = { CRITICAL: '#F5222D', HIGH: '#FF8A00', MEDIUM: '#0D6EFD', LOW: '#16B364', MINIMAL: '#667085' };
-  return m[level];
-}
-
-export async function GET(req: NextRequest) {
+export async function GET() {
   const { session, error } = await guardPermission(PERMISSIONS.ANALYTICS.VIEW);
   if (error) return error;
 
   return runWithTenant(session?.tenantId ?? null, async () => {
-    const where = session?.tenantId ? { tenantId: session.tenantId } as Record<string, any> : {} as Record<string, any>;
-    const tenantFilter = session?.tenantId ? { tenantId: session.tenantId } as Record<string, any> : {} as Record<string, any>;
+    const tenantFilter: Prisma.TenantWhereInput = session?.tenantId ? { id: session.tenantId } : {};
 
     const tenants = await prisma.tenant.findMany({
       where: tenantFilter,
@@ -52,8 +47,6 @@ export async function GET(req: NextRequest) {
 
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
     const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000);
-    const now = new Date();
-
     const tenantIds = tenants.map((t) => t.id);
 
     const [overdueInvoices, breachedSla, failedShipments, openExceptions, currentShipments, prevShipments] = await Promise.all([
@@ -75,7 +68,7 @@ export async function GET(req: NextRequest) {
       }),
       prisma.exception.groupBy({
         by: ['tenantId'],
-        where: { tenantId: { in: tenantIds }, status: { in: ['OPEN', 'ASSIGNED', 'INVESTIGATING', 'ACTION_REQUIRED'] as any } },
+        where: { tenantId: { in: tenantIds }, status: { in: ['OPEN', 'ASSIGNED', 'INVESTIGATING', 'ACTION_REQUIRED'] as ExceptionStatus[] } },
         _count: true,
       }),
       prisma.shipment.groupBy({

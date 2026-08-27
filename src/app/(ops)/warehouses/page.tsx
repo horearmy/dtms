@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Warehouse, Plus, Pencil, Trash2, MapPin, Search } from 'lucide-react';
+import { Warehouse, Plus, MapPin, Search } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 
 type WarehouseItem = {

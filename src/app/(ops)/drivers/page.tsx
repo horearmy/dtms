@@ -7,7 +7,6 @@ import PhotoField from '@/components/PhotoField';
 import DriverDetailModal from '@/components/DriverDetailModal';
 import Pagination from '@/components/Pagination';
 import PhoneInput from '@/components/PhoneInput';
-import { formatDate } from '@/lib/constants';
 
 type Driver = {
   id: string;
