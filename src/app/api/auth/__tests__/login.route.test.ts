@@ -116,7 +116,8 @@ describe('POST /api/auth/login', () => {
     expect(body).toMatchObject({ id: 'u1', name: 'Admin Utama', role: 'SUPER_ADMIN' });
     expect(mockRecordLoginAttempt).toHaveBeenCalledWith('admin', '203.0.113.9', true);
     expect(mockSetSession).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'u1', username: 'admin', role: 'SUPER_ADMIN', pwdVersion: 1 })
+      expect.objectContaining({ id: 'u1', username: 'admin', role: 'SUPER_ADMIN', pwdVersion: 1 }),
+      { secure: false }
     );
   });
 

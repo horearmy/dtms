@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 
 type Tenant = { id: string; name: string; slug: string; primaryColor: string };
 
 function LoginFormInner() {
-  const router = useRouter();
   const search = useSearchParams();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenant, setSelectedTenant] = useState('');
@@ -39,8 +38,8 @@ function LoginFormInner() {
 
   async function finishLogin(data: { mustChangePassword?: boolean; role?: string }) {
     const target = data.mustChangePassword ? '/account/password?first=1' : data.role === 'DRIVER' ? '/driver' : data.role === 'SUPER_ADMIN' ? '/tenants' : '/dashboard';
-    router.push(target);
-    router.refresh();
+    // Force a fresh request so the browser includes the session cookie set by the API response.
+    window.location.assign(target);
   }
 
   async function submit(e: React.FormEvent) {
@@ -111,10 +110,12 @@ function LoginFormInner() {
           <form onSubmit={submit} className="space-y-4">
             {tenants.length > 1 && (
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#101828]">Perusahaan</label>
+                 <label htmlFor="tenant" className="mb-1.5 block text-sm font-medium text-[#101828]">Perusahaan</label>
                 {tenants.length > 30 ? (
                   <>
-                    <input
+                     <input
+                       id="tenant"
+                       name="tenantSearch"
                       type="text"
                       value={tenantSearch}
                       onChange={(e) => { setTenantSearch(e.target.value); setSelectedTenant(''); }}
@@ -143,7 +144,9 @@ function LoginFormInner() {
                     )}
                   </>
                 ) : (
-                  <select
+                   <select
+                     id="tenant"
+                     name="tenantId"
                     value={selectedTenant}
                     onChange={(e) => setSelectedTenant(e.target.value)}
                     required
@@ -157,11 +160,13 @@ function LoginFormInner() {
                 )}
               </div>
             )}
-            {tenants.length === 1 && <input type="hidden" value={tenants[0].id} />}
+            {tenants.length === 1 && <input id="tenantId" name="tenantId" type="hidden" value={tenants[0].id} readOnly />}
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-[#101828]">Username</label>
-              <input
+               <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-[#101828]">Username</label>
+               <input
+                 id="username"
+                 name="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -173,9 +178,11 @@ function LoginFormInner() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-[#101828]">Password</label>
+               <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-[#101828]">Password</label>
               <div className="relative">
-                <input
+                 <input
+                   id="password"
+                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -237,8 +244,10 @@ function LoginFormInner() {
         ) : (
           <form onSubmit={submitOtp} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-[#101828]">Kode 6 digit</label>
-              <input
+               <label htmlFor="otp" className="mb-1.5 block text-sm font-medium text-[#101828]">Kode 6 digit</label>
+               <input
+                 id="otp"
+                 name="otp"
                 type="text"
                 inputMode="numeric"
                 maxLength={6}

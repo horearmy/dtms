@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
+    const secureCookies = req.nextUrl.protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https';
     const ip = getClientIp(req);
     await cleanupLoginAttempts();
     const body = await req.json();
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
       mustChangePassword: user.mustChangePassword,
     });
 
-    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword });
+    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword }, { secure: secureCookies });
 
     if (user.tenantId) {
       const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { slug: true } });
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
         const cookie = setTenantCookie(tenant.slug);
         response.cookies.set(cookie.name, cookie.value, {
           httpOnly: cookie.httpOnly,
-          secure: cookie.secure,
+          secure: secureCookies,
           sameSite: cookie.sameSite,
           path: cookie.path,
           maxAge: cookie.maxAge,

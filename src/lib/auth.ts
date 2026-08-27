@@ -207,12 +207,12 @@ export async function getSession(): Promise<SessionUser | null> {
   return null;
 }
 
-export async function setSession(user: SessionUser & { pwdVersion?: number }) {
+export async function setSession(user: SessionUser & { pwdVersion?: number }, options?: { secure?: boolean }) {
   const token = await signToken(user);
   const store = await cookies();
   store.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: options?.secure ?? process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * (Number(process.env.SESSION_HOURS) || 12),

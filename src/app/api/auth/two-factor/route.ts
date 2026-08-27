@@ -5,9 +5,11 @@ import { logAudit } from '@/lib/api-guard';
 import { verifyTotp, verifyBackupCode, removeBackupCode } from '@/lib/totp';
 import { getClientIp, recordLoginAttempt, isLoginBlocked, getRemainingAttempts, getLockoutDuration } from '@/lib/security';
 import { logger } from '@/lib/logger';
+import { setTenantCookie } from '@/lib/tenant';
 
 export async function POST(req: NextRequest) {
   try {
+    const secureCookies = req.nextUrl.protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https';
     const ip = getClientIp(req);
     const body = await req.json();
     const { token, code } = body || {};
@@ -53,15 +55,23 @@ export async function POST(req: NextRequest) {
     }
 
     await recordLoginAttempt(user.username, ip, true);
-    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword });
+    await setSession({ id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, pwdVersion: user.pwdVersion, mustChangePassword: user.mustChangePassword }, { secure: secureCookies });
     await logAudit(null, 'TWO_FACTOR_LOGIN_SUCCESS', 'AUTH', { newData: { username: user.username } }, req);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       id: user.id,
       name: user.name,
       role: user.role,
       mustChangePassword: user.mustChangePassword,
     });
+    if (user.tenantId) {
+      const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { slug: true } });
+      if (tenant) {
+        const cookie = setTenantCookie(tenant.slug);
+        response.cookies.set(cookie.name, cookie.value, { ...cookie, secure: secureCookies });
+      }
+    }
+    return response;
   } catch (e) {
     logger.error('Two-factor auth error', { context: 'two_factor', error: String(e) });
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });
