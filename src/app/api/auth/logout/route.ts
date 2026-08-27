@@ -21,7 +21,7 @@ async function logout(req?: NextRequest) {
   await clearSession();
   await clearSuperAdminSession();
   const response = req
-    ? NextResponse.redirect(new URL('/login', req.url))
+    ? NextResponse.redirect(new URL('/', req.url))
     : NextResponse.json({ ok: true });
   // Hapus juga secara eksplisit agar cookie lama dengan path yang sama tidak tersisa.
   for (const name of ['dtms_token', SUPERADMIN_COOKIE, 'dtms_csrf']) {
