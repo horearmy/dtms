@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 
@@ -67,5 +68,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     });
   }
 
+  revalidateTag('tenant-meta');
   return NextResponse.json(wl);
 }

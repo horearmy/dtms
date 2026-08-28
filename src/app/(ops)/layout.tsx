@@ -13,12 +13,12 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
   const tenantPlan = session.plan ?? null;
   const planFeatures = session.planFeatures ?? [];
 
-  let whiteLabel: { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null = null;
+  let whiteLabel: { appName: string | null; logoUrl: string | null; primaryColor: string | null; secondaryColor: string | null; accentColor: string | null } | null = null;
   if (session.tenantId) {
     const getWhiteLabel = cacheData(
       async () => prisma.whiteLabel.findUnique({
         where: { tenantId: session.tenantId! },
-        select: { appName: true, logoUrl: true, primaryColor: true },
+        select: { appName: true, logoUrl: true, primaryColor: true, secondaryColor: true, accentColor: true },
       }),
       [CACHE_TAGS.TENANT_META, session.tenantId],
       { revalidate: 60, tags: [CACHE_TAGS.TENANT_META] }

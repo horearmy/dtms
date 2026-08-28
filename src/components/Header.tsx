@@ -45,7 +45,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/hubs': 'Hub',
 };
 
-type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null;
+type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null; secondaryColor: string | null; accentColor: string | null } | null;
 
 export default function Header({ name, role, whiteLabel, onMenuClick }: { name: string; role: string; whiteLabel?: WhiteLabel; onMenuClick?: () => void }) {
   const pathname = usePathname();
@@ -75,7 +75,7 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#E4E7EC] bg-white">
+    <header className="sticky top-0 z-30 border-b border-t-2 border-[#E4E7EC] bg-white" style={{ borderTopColor: 'var(--brand-accent)' }}>
       <div className="flex items-center gap-4 px-4 py-3 lg:px-6">
         {/* Left: Hamburger + Title */}
         {onMenuClick && (
@@ -125,7 +125,7 @@ export default function Header({ name, role, whiteLabel, onMenuClick }: { name: 
           {/* User Dropdown */}
           <details className="relative">
             <summary className="flex max-w-[min(16rem,calc(100vw-8rem))] cursor-pointer list-none items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-100 [&::-webkit-details-marker]:hidden">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0D6EFD] text-xs font-bold text-white">
+             <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: 'var(--brand-primary)' }}>
                 {name.charAt(0).toUpperCase()}
               </div>
               <div className="hidden min-w-0 text-left sm:block">

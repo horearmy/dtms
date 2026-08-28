@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { logAudit } from '@/lib/api-guard';
@@ -101,6 +102,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   if (Object.keys(data).length > 0) {
     await prisma.tenant.update({ where: { id }, data });
+    revalidateTag('tenant-meta');
   }
 
   const updated = await prisma.tenant.findUnique({ where: { id }, include: { subscription: { include: { plan: true } } } });

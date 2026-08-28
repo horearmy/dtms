@@ -43,7 +43,7 @@ import { cn } from '@/lib/utils';
 type NavItem = { href: string; label: string; icon: React.ReactNode; locked?: boolean; feature?: string };
 type NavGroup = { title: string; items: NavItem[] };
 
-type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null } | null;
+type WhiteLabel = { appName: string | null; logoUrl: string | null; primaryColor: string | null; secondaryColor: string | null; accentColor: string | null } | null;
 
 export default function Sidebar({ name, role, tenantPlan, planFeatures, whiteLabel, open, onClose }: { name: string; role: string; tenantPlan: string | null; planFeatures?: string[]; whiteLabel?: WhiteLabel; open?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
@@ -193,9 +193,10 @@ export default function Sidebar({ name, role, tenantPlan, planFeatures, whiteLab
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-[240px] flex-col bg-[#061B41] transition-transform duration-200 lg:flex lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-[240px] flex-col transition-transform duration-200 lg:flex lg:translate-x-0',
           open ? 'flex' : 'hidden -translate-x-full lg:flex'
         )}
+        style={{ backgroundColor: 'var(--brand-secondary)' }}
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5">
@@ -266,11 +267,12 @@ export default function Sidebar({ name, role, tenantPlan, planFeatures, whiteLab
                             className={cn(
                               'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                               active && !item.locked
-                                ? 'bg-[#0D6EFD] text-white'
+                                 ? 'text-white'
                                 : item.locked
                                   ? 'text-amber-200/40 hover:bg-white/5 hover:text-amber-200/70'
                                   : 'text-white/60 hover:bg-white/5 hover:text-white'
                             )}
+                            style={active && !item.locked ? { backgroundColor: 'var(--brand-primary)' } : undefined}
                           >
                             {item.icon}
                             <span className="flex-1">{item.label}</span>
