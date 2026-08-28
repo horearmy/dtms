@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 type TenantProfile = {
   id: string;
@@ -28,6 +28,9 @@ export default function TenantProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [wlLoaded, setWlLoaded] = useState(false);
+  const [uploadingBrand, setUploadingBrand] = useState<'logo' | 'favicon' | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: '', contactName: '', contactEmail: '', contactPhone: '',
     logoUrl: '', faviconUrl: '', appName: '',
@@ -94,6 +97,49 @@ export default function TenantProfilePage() {
       loadProfile();
     } catch { setError('Terjadi kesalahan'); }
     setSaving(false);
+  }
+
+  async function uploadBrandAsset(file: File | undefined, field: 'logoUrl' | 'faviconUrl') {
+    if (!file) return;
+    const isFavicon = field === 'faviconUrl';
+    const allowed = isFavicon
+      ? ['image/png', 'image/webp', 'image/x-icon']
+      : ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      setError(isFavicon ? 'Favicon harus PNG, WebP, atau ICO' : 'Logo harus JPG, PNG, atau WebP');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Ukuran logo maksimal 2MB');
+      return;
+    }
+
+    setUploadingBrand(isFavicon ? 'favicon' : 'logo');
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'branding');
+      const csrf = document.cookie.match(/(?:^|;\s*)dtms_csrf=([^;]*)/)?.[1] || '';
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: csrf ? { 'x-csrf-token': csrf } : undefined,
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setError(data.error || 'Upload gagal');
+        return;
+      }
+      setForm((current) => ({ ...current, [field]: data.url }));
+      setSuccess(`${isFavicon ? 'Favicon' : 'Logo'} berhasil diunggah. Klik Simpan Perubahan.`);
+    } catch {
+      setError('Upload gagal, coba lagi');
+    } finally {
+      setUploadingBrand(null);
+      if (isFavicon && faviconInputRef.current) faviconInputRef.current.value = '';
+      if (!isFavicon && logoInputRef.current) logoInputRef.current.value = '';
+    }
   }
 
   if (loading) return <div className="py-12 text-center text-sm text-[#667085]">Memuat profil...</div>;
@@ -168,19 +214,41 @@ export default function TenantProfilePage() {
 
         <div className="rounded-xl border border-[#E4E7EC] bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <h2 className="mb-4 text-sm font-semibold text-[#101828]">Branding</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#667085]">Logo URL</label>
-              <input type="text" value={form.logoUrl} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
-                placeholder="https://example.com/logo.png" className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
-              {form.logoUrl && <img src={form.logoUrl} alt="Preview" className="mt-2 h-10 rounded border border-[#E4E7EC] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+              <label className="mb-1 block text-sm font-medium text-[#667085]">Logo Perusahaan</label>
+              <div className="flex min-h-28 items-center gap-4 rounded-xl border border-dashed border-[#D0D5DD] bg-[#F9FAFB] p-3">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-white p-2 shadow-sm">
+                  {form.logoUrl ? <img src={form.logoUrl} alt="Preview logo" className="max-h-full max-w-full object-contain" /> : <span className="text-xs text-[#98A2B3]">Logo</span>}
+                </div>
+                <div>
+                  <button type="button" onClick={() => logoInputRef.current?.click()} disabled={uploadingBrand === 'logo'}
+                    className="rounded-lg bg-[#0D6EFD] px-3 py-2 text-xs font-semibold text-white hover:bg-[#0B5FD5] disabled:opacity-60">
+                    {uploadingBrand === 'logo' ? 'Mengunggah...' : 'Pilih Logo'}
+                  </button>
+                  {form.logoUrl && <button type="button" onClick={() => setForm({ ...form, logoUrl: '' })} className="ml-2 text-xs font-semibold text-red-600 hover:underline">Hapus</button>}
+                  <p className="mt-2 text-xs text-[#98A2B3]">JPG, PNG, WebP · maksimal 2MB</p>
+                </div>
+              </div>
+              <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => uploadBrandAsset(e.target.files?.[0], 'logoUrl')} />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-[#667085]">Favicon URL</label>
-              <input type="text" value={form.faviconUrl} onChange={(e) => setForm({ ...form, faviconUrl: e.target.value })}
-                placeholder="https://example.com/favicon.ico" className="w-full rounded-lg border border-[#E4E7EC] px-3 py-2 text-sm focus:border-[#0D6EFD] focus:outline-none" />
+              <label className="mb-1 block text-sm font-medium text-[#667085]">Favicon Perusahaan</label>
+              <div className="flex min-h-28 items-center gap-4 rounded-xl border border-dashed border-[#D0D5DD] bg-[#F9FAFB] p-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white p-2 shadow-sm">
+                  {form.faviconUrl ? <img src={form.faviconUrl} alt="Preview favicon" className="h-full w-full object-contain" /> : <span className="text-[10px] text-[#98A2B3]">Icon</span>}
+                </div>
+                <div>
+                  <button type="button" onClick={() => faviconInputRef.current?.click()} disabled={uploadingBrand === 'favicon'}
+                    className="rounded-lg border border-[#D0D5DD] bg-white px-3 py-2 text-xs font-semibold text-[#344054] hover:bg-[#F2F4F7] disabled:opacity-60">
+                    {uploadingBrand === 'favicon' ? 'Mengunggah...' : 'Pilih Favicon'}
+                  </button>
+                  {form.faviconUrl && <button type="button" onClick={() => setForm({ ...form, faviconUrl: '' })} className="ml-2 text-xs font-semibold text-red-600 hover:underline">Hapus</button>}
+                  <p className="mt-2 text-xs text-[#98A2B3]">PNG, WebP, ICO · maksimal 2MB</p>
+                </div>
+              </div>
+              <input ref={faviconInputRef} type="file" accept="image/png,image/webp,image/x-icon,.ico" className="hidden" onChange={(e) => uploadBrandAsset(e.target.files?.[0], 'faviconUrl')} />
             </div>
-            <div />
           </div>
           <div className="mt-4 grid grid-cols-3 gap-4">
             <div>

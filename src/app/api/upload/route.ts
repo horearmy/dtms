@@ -5,13 +5,14 @@ import { prisma } from '@/lib/prisma';
 import { PERMISSIONS } from '@/lib/permissions';
 import { uploadFile, getFileUrl } from '@/lib/storage';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/x-icon', 'application/pdf'];
 const MAX_BYTES = 10 * 1024 * 1024;
 
 const MAGIC_BYTES: Record<string, number[][]> = {
   'image/jpeg': [[0xff, 0xd8, 0xff]],
   'image/png': [[0x89, 0x50, 0x4e, 0x47]],
   'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF header
+  'image/x-icon': [[0x00, 0x00, 0x01, 0x00]], // ICO header
   'application/pdf': [[0x25, 0x50, 0x44, 0x46]], // %PDF
 };
 
@@ -32,14 +33,19 @@ export async function POST(req: NextRequest) {
     const category = (form.get('category') as string) || 'general';
     const shipmentId = (form.get('shipmentId') as string) || null;
 
+    if (category === 'branding' && !session?.tenantId) {
+      return NextResponse.json({ error: 'Upload branding harus terkait tenant' }, { status: 403 });
+    }
+
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'File tidak ditemukan' }, { status: 400 });
     }
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!ALLOWED_TYPES.includes(file.type) || (category === 'branding' && !file.type.startsWith('image/'))) {
       return NextResponse.json({ error: 'Format file harus JPG, PNG, WebP, atau PDF' }, { status: 400 });
     }
-    if (file.size > MAX_BYTES) {
-      return NextResponse.json({ error: 'Ukuran file maksimal 10MB' }, { status: 400 });
+    const maxBytes = category === 'branding' ? 2 * 1024 * 1024 : MAX_BYTES;
+    if (file.size > maxBytes) {
+      return NextResponse.json({ error: `Ukuran file maksimal ${category === 'branding' ? '2MB' : '10MB'}` }, { status: 400 });
     }
 
     // Check plan storage limit
