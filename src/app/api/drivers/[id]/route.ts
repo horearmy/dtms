@@ -6,6 +6,7 @@ import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { ON_ROAD_STATUSES } from '@/lib/constants';
 import { validatePassword, BCRYPT_COST } from '@/lib/security';
+import { isFileUrlAccessible } from '@/lib/storage';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,7 +57,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         employeeId: driver.employeeId,
         name: driver.name,
         phone: driver.phone,
-        photo: driver.photo,
+        photo: isFileUrlAccessible(driver.photo, session?.tenantId, session?.role === 'SUPER_ADMIN') ? `/api/drivers/${driver.id}/photo` : null,
         status: driver.status,
         returning: driver.returning,
         returnedAt: driver.returnedAt,

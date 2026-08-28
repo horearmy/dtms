@@ -103,6 +103,7 @@ function verifyCsrf(req: NextRequest): boolean {
 }
 
 function addSecurityHeaders(res: NextResponse): NextResponse {
+  const isProduction = process.env.NODE_ENV === 'production';
   const scriptSources = process.env.NODE_ENV === 'production'
     ? "script-src 'self' 'unsafe-inline'"
     : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
@@ -113,7 +114,9 @@ function addSecurityHeaders(res: NextResponse): NextResponse {
   res.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   res.headers.set('X-XSS-Protection', '1; mode=block');
   res.headers.set('X-DNS-Prefetch-Control', 'off');
-  res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  if (isProduction) {
+    res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  }
   res.headers.set('Content-Security-Policy', [
     "default-src 'self'",
      `${scriptSources}${process.env.VERCEL === '1' ? " https://va.vercel-scripts.com" : ''}`,
@@ -127,7 +130,7 @@ function addSecurityHeaders(res: NextResponse): NextResponse {
     "base-uri 'self'",
     "form-action 'self'",
     "object-src 'none'",
-    "upgrade-insecure-requests",
+     ...(isProduction ? ['upgrade-insecure-requests'] : []),
   ].join('; '));
   return res;
 }

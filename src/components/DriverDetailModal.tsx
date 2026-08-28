@@ -48,15 +48,26 @@ type DriverDetail = {
 export default function DriverDetailModal({ driverId, onClose }: { driverId: string | null; onClose: () => void }) {
   const [data, setData] = useState<DriverDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!driverId) { setData(null); return; }
+    if (!driverId) { setData(null); setError(null); return; }
     let cancelled = false;
     setLoading(true);
     async function load() {
-      const res = await fetch(`/api/drivers/${driverId}`);
-      if (res.ok && !cancelled) setData(await res.json());
-      setLoading(false);
+      try {
+        const res = await fetch(`/api/drivers/${driverId}`, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(res.status === 401 || res.status === 403 ? 'Sesi tidak valid atau akses ditolak.' : `Gagal memuat detail driver (${res.status}).`);
+        const nextData = await res.json() as DriverDetail;
+        if (!cancelled) {
+          setData(nextData);
+          setError(null);
+        }
+      } catch {
+        if (!cancelled) setError('Detail driver tidak dapat dimuat. Periksa koneksi lalu coba lagi.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
     load();
     const t = setInterval(load, 15000);
@@ -70,6 +81,15 @@ export default function DriverDetailModal({ driverId, onClose }: { driverId: str
   return (
     <Modal open onClose={onClose} title="Detail Driver" wide>
       {loading && !d && <div className="py-10 text-center text-sm text-[#667085]">Memuat detail driver...</div>}
+
+      {error && !d && (
+        <div className="space-y-3 py-8 text-center">
+          <p className="text-sm text-[#F5222D]">{error}</p>
+          <button onClick={() => window.location.reload()} className={btnGhost}>Muat ulang halaman</button>
+        </div>
+      )}
+
+      {error && d && <p className="text-xs text-[#B54708]">Pembaruan terakhir gagal. Data yang tampil mungkin belum terbaru.</p>}
 
       {d && (
         <div className="space-y-4">

@@ -60,6 +60,12 @@ export function getFileUrl(key: string): string {
   return `/api/files/${key}`;
 }
 
+export function isFileUrlAccessible(url: string | null | undefined, tenantId: string | null | undefined, isSuperAdmin = false): boolean {
+  if (!url || isSuperAdmin) return true;
+  const match = url.match(/\/api\/files\/tenant\/([^/]+)/);
+  return !match || match[1] === tenantId;
+}
+
 // ─── Key Builder ─────────────────────────────────────────
 const SAFE_SEGMENT = /^[a-z0-9_-]+$/i;
 const EXT_MIME_MAP: Record<string, string[]> = {

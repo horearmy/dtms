@@ -12,14 +12,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pat
   const { path: parts } = await params;
   if (!parts.length) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const key = parts.join('/');
+  const tenantMatch = key.match(/^tenant\/([^/]+)(?:\/|$)/);
   if (session.role !== 'SUPER_ADMIN') {
-    const fileTenant = parts[0] === 'tenant' ? parts[1] : parts[0];
-    if (!session.tenantId || fileTenant !== session.tenantId) {
+    const fileTenant = tenantMatch?.[1];
+    if (!session.tenantId || !fileTenant || fileTenant !== session.tenantId) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
   }
 
-  const key = parts.join('/');
   const result = await getFile(key);
 
   if (!result) {

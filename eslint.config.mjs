@@ -1,5 +1,6 @@
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
+import nextPlugin from "@next/eslint-plugin-next";
 
 export default tseslint.config(
   ...tseslint.configs.recommended,
@@ -7,6 +8,7 @@ export default tseslint.config(
     files: ["src/**/*.{ts,tsx}"],
     plugins: {
       "react-hooks": reactHooks,
+      "@next/next": nextPlugin,
     },
     rules: {
       // Several route handlers intentionally destructure values only to
@@ -20,6 +22,10 @@ export default tseslint.config(
       "react-hooks/exhaustive-deps": "warn",
       "prefer-const": "warn",
     },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: nextPlugin.configs.recommended.rules,
   },
   {
     ignores: ["**/dist/**", "**/.next/**", "**/node_modules/**", "public/**", "prisma/migrations/**", "scripts/**", "prisma/seed.js", "next-env.d.ts", "**/*.config.*", "**/*.test.*"],

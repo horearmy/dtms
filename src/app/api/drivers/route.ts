@@ -7,6 +7,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 
 import { ON_ROAD_STATUSES } from '@/lib/constants';
 import { validatePassword, BCRYPT_COST } from '@/lib/security';
+import { isFileUrlAccessible } from '@/lib/storage';
 
 export async function GET(req: NextRequest) {
   const { session, error } = await guardPermission(PERMISSIONS.DRIVER.READ);
@@ -95,6 +96,7 @@ export async function GET(req: NextRequest) {
 
     const scored = drivers.map((d) => ({
       ...d,
+      photo: isFileUrlAccessible(d.photo, session?.tenantId, session?.role === 'SUPER_ADMIN') ? `/api/drivers/${d.id}/photo` : null,
       stat: scoreMap.get(d.id) || { score: 0, total: 0, delivered: 0, onTime: 0, failed: 0 },
       busy: !!tripMap.get(d.id) || d.returning,
       activeTracking: tripMap.get(d.id) || null,
