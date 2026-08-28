@@ -12,6 +12,7 @@ function LoginFormInner() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenant, setSelectedTenant] = useState('');
   const [tenantSearch, setTenantSearch] = useState('');
+  const [tenantOpen, setTenantOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -125,21 +126,23 @@ function LoginFormInner() {
                        id="tenant"
                        name="tenantSearch"
                       type="text"
-                      value={tenantSearch}
-                      onChange={(e) => { setTenantSearch(e.target.value); setSelectedTenant(''); }}
+                       value={tenantSearch}
+                       onFocus={() => setTenantOpen(true)}
+                       onChange={(e) => { setTenantSearch(e.target.value); setSelectedTenant(''); setTenantOpen(true); }}
                       placeholder="Ketik nama perusahaan..."
                        className="w-full rounded-xl border border-[#D0D5DD] bg-white px-3.5 py-3 text-sm text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#0D6EFD] focus:ring-4 focus:ring-[#0D6EFD]/10"
                     />
-                    {tenantSearch && (
+                     {tenantOpen && tenantSearch && (
                       <div className="relative mt-1 max-h-48 overflow-y-auto rounded-lg border border-[#E4E7EC] bg-white shadow-lg">
                         {tenants
                           .filter((t) => t.name.toLowerCase().includes(tenantSearch.toLowerCase()))
                           .slice(0, 50)
                           .map((t) => (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => { setSelectedTenant(t.id); setTenantSearch(t.name); }}
+                             <button
+                               key={t.id}
+                               type="button"
+                               onMouseDown={(e) => e.preventDefault()}
+                               onClick={() => { setSelectedTenant(t.id); setTenantSearch(t.name); setTenantOpen(false); }}
                               className={`w-full px-3 py-2 text-left text-sm hover:bg-[#F7F9FC] ${selectedTenant === t.id ? 'bg-[#E7F0FF] font-semibold text-[#0D6EFD]' : 'text-[#101828]'}`}
                             >
                               {t.name}

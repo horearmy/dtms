@@ -132,21 +132,23 @@ async function getSessionInternal(): Promise<SessionUser | null> {
       // Verifikasi fingerprint: token SA terikat pada IP+User-Agent saat login
       const h = await headers();
       if (p.fp !== buildFingerprintFromHeaders(h)) {
-        return null;
-      }
-      // Server-side session: revoked / expired / idle -> tolak (Blueprint §14)
-      const { validateSuperAdminSid } = await import('./superadmin-auth');
-      if (!(await validateSuperAdminSid(p.sid as string | undefined))) {
-        return null;
-      }
-      const user = await prisma.user.findUnique({
-        where: { id: p.id as string },
-        select: { id: true, name: true, username: true, role: true, tenantId: true, branchId: true, status: true, pwdVersion: true, securityVersion: true },
-      });
-      if (user && user.status === 'ACTIVE' && user.pwdVersion === p.pwd) {
-        // securityVersion (Blueprint §13): perubahan MFA/passkey -> semua sesi lama mati
-        if ((user.securityVersion ?? 0) !== (p.sv as number | undefined)) return null;
-        return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan: 'FREE', planFeatures: [] };
+        // Jangan memblokir sesi reguler jika browser masih membawa cookie SA lama.
+        // Sesi reguler di bawah tetap boleh diverifikasi.
+      } else {
+        // Server-side session: revoked / expired / idle -> tolak (Blueprint §14)
+        const { validateSuperAdminSid } = await import('./superadmin-auth');
+        if (await validateSuperAdminSid(p.sid as string | undefined)) {
+          const user = await prisma.user.findUnique({
+            where: { id: p.id as string },
+            select: { id: true, name: true, username: true, role: true, tenantId: true, branchId: true, status: true, pwdVersion: true, securityVersion: true },
+          });
+          if (user && user.status === 'ACTIVE' && user.pwdVersion === p.pwd) {
+            // securityVersion (Blueprint §13): perubahan MFA/passkey -> semua sesi lama mati
+            if ((user.securityVersion ?? 0) === (p.sv as number | undefined)) {
+              return { id: user.id, name: user.name, username: user.username, role: user.role, tenantId: user.tenantId, branchId: user.branchId, plan: 'FREE', planFeatures: [] };
+            }
+          }
+        }
       }
     }
   }
