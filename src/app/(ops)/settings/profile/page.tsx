@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import { csrfHeaders } from '@/lib/csrf';
 
 type TenantProfile = {
   id: string;
@@ -76,7 +77,7 @@ export default function TenantProfilePage() {
     try {
       const res = await fetch(`/api/tenants/${profile.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: csrfHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           name: form.name, contactName: form.contactName || null, contactEmail: form.contactEmail || null,
           contactPhone: form.contactPhone || null, logoUrl: form.logoUrl || null, faviconUrl: form.faviconUrl || null,
@@ -86,12 +87,17 @@ export default function TenantProfilePage() {
       });
       if (!res.ok) { const d = await res.json(); setError(d.error || 'Gagal menyimpan'); setSaving(false); return; }
       if (wlLoaded) {
-        try {
-          await fetch(`/api/tenants/${profile.id}/white-label`, {
-            method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ appName: form.appName || null }),
-          });
-        } catch {}
+        const brandingRes = await fetch(`/api/tenants/${profile.id}/white-label`, {
+          method: 'PUT',
+          headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ appName: form.appName || null }),
+        });
+        if (!brandingRes.ok) {
+          const d = await brandingRes.json().catch(() => ({}));
+          setError(d.error || 'Informasi branding gagal disimpan');
+          setSaving(false);
+          return;
+        }
       }
       setSuccess('Profil berhasil disimpan');
       loadProfile();
