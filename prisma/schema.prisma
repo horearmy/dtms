@@ -209,6 +209,7 @@ model Driver {
   gpsLogs             GpsLog[]
 
   @@index([tenantId])
+  @@index([tenantId, status])
 }
 
 model Exception {
@@ -270,6 +271,8 @@ model GeofenceEvent {
   geofence   Geofence          @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
 
   @@index([geofenceId, driverId])
+  @@index([geofenceId, createdAt])
+  @@index([driverId, createdAt])
 }
 
 model GpsLog {
@@ -513,6 +516,7 @@ model Notification {
 
   @@index([tenantId])
   @@index([userId])
+  @@index([tenantId, createdAt])
 }
 
 model Organization {
@@ -714,6 +718,9 @@ model Shipment {
   @@index([senderId])
   @@index([status])
   @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status, createdAt])
 }
 
 model ShipmentEvent {
@@ -968,6 +975,9 @@ model TrackingEvent {
   createdBy  String?
   createdAt  DateTime       @default(now())
   shipment   Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([shipmentId, createdAt])
 }
 
 model UploadedFile {

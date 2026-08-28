@@ -5,7 +5,21 @@ export const tenantStore = new AsyncLocalStorage<string | null>();
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-const basePrisma = globalForPrisma.prisma ?? new PrismaClient();
+function buildDatabaseUrl(): string | undefined {
+  const url = process.env.DATABASE_URL;
+  if (!url) return undefined;
+  const connectionLimit = process.env.DATABASE_CONNECTION_LIMIT;
+  if (!connectionLimit || url.includes('connection_limit=')) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}connection_limit=${connectionLimit}`;
+}
+
+const basePrisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    datasources: { db: { url: buildDatabaseUrl() } },
+    log: process.env.NODE_ENV === 'production' ? ['error'] : ['query', 'error', 'warn'],
+  });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = basePrisma;
 

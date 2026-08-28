@@ -59,7 +59,7 @@ export const LIVE_TRACKING_TABS = [
     label: 'Real-time GPS',
     title: 'Lacak posisi driver secara live',
     description: 'Pantau lokasi, kecepatan, dan rute driver setiap 15 detik. Semua armada terlihat dalam satu peta tanpa blind spot.',
-    image: '/images/landing/shipment-dashboard.png',
+    image: '/images/landing/shipment-dashboard.webp',
     highlights: ['Update GPS 15 detik', 'Multi-armada dalam satu peta', 'History perjalanan'],
   },
   {
@@ -67,7 +67,7 @@ export const LIVE_TRACKING_TABS = [
     label: 'Geofencing',
     title: 'Alert otomatis masuk & keluar area',
     description: 'Buat perimeter digital untuk gudang, hub, dan destinasi. Dapatkan notifikasi instan saat driver melewati batas area.',
-    image: '/images/landing/geofencing.png',
+    image: '/images/landing/geofencing.webp',
     highlights: ['Polygon & radius area', 'Event masuk/keluar', 'Notifikasi real-time'],
   },
   {
@@ -75,7 +75,7 @@ export const LIVE_TRACKING_TABS = [
     label: 'Driver App',
     title: 'Aplikasi driver yang terhubung',
     description: 'Driver menerima tugas, scan QR gudang, update status, POD digital, dan laporan harian langsung dari ponsel.',
-    image: '/images/landing/driver-app.png',
+    image: '/images/landing/driver-app.webp',
     highlights: ['Task list & QR scan', 'POD tanda tangan + foto', 'Laporan harian digital'],
   },
   {
@@ -83,7 +83,7 @@ export const LIVE_TRACKING_TABS = [
     label: 'Smart Alerts',
     title: 'Notifikasi WhatsApp otomatis',
     description: 'Kirim update status pengiriman, peringatan SLA, dan alert GPS disconnect langsung ke WhatsApp penerima atau tim operasional.',
-    image: '/images/landing/whatsapp-notification.png',
+    image: '/images/landing/whatsapp-notification.webp',
     highlights: ['WhatsApp Business API', 'Status pengiriman otomatis', 'SLA breach alert'],
   },
 ];
@@ -118,7 +118,7 @@ export const FEATURE_CATEGORIES = [
     code: 'analyze',
     label: 'Analisis',
     features: [
-      { icon: '📊', title: 'Analytics & Report', description: 'Dashboard KPI real-time, tren 7 hari, top destinasi, scoring driver, dan export CSV.', image: '/images/landing/report-export.png' },
+      { icon: '📊', title: 'Analytics & Report', description: 'Dashboard KPI real-time, tren 7 hari, top destinasi, scoring driver, dan export CSV.', image: '/images/landing/report-export.webp' },
       { icon: '⚡', title: 'PWA & Offline', description: 'Progressive Web App dengan service worker offline caching. Installable di semua perangkat.' },
     ],
   },

@@ -11,89 +11,73 @@ import {
   STATUS_COLORS,
   formatDateTime,
 } from '@/lib/constants';
-
-export const dynamic = 'force-dynamic';
+import { cacheData, CACHE_TAGS } from '@/lib/cache';
 
 export default async function DashboardPage() {
   const session = await getSession();
+  const tenantId = session?.tenantId ?? null;
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const data = await runWithTenant(session?.tenantId ?? null, async () => {
-    const [totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, _returnedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches] = await Promise.all([
-      prisma.shipment.count({ where: { createdAt: { gte: todayStart } } }),
-      prisma.shipment.count(),
-      prisma.shipment.findMany({
-        where: {
-          status: { notIn: ['DELIVERED', 'RETURNED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'] },
-          ...(session?.tenantId ? { tenantId: session.tenantId } : {}),
-        },
-        include: { sender: true, receiver: true, assignments: { include: { driver: true } } },
-        take: 500,
-      }),
-      prisma.shipment.count({ where: { status: 'DELIVERED', ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
-      prisma.shipment.count({ where: { status: { in: ACTIVE_STATUSES as never[] }, ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
-      prisma.shipment.count({ where: { status: 'DELIVERY_FAILED', ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
-      prisma.shipment.count({ where: { status: 'RETURNED', ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
-      prisma.driver.count({ where: { status: 'ACTIVE', ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
-      prisma.vehicle.count({ where: { status: { in: ['AVAILABLE', 'IN_USE'] }, ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
-      prisma.shipment.findMany({
-        where: session?.tenantId ? { tenantId: session.tenantId } : {},
-        orderBy: { createdAt: 'desc' },
-        take: 8,
-        include: { sender: true, receiver: true, assignments: { include: { driver: true } } },
-      }),
-      prisma.trackingEvent.findMany({
-        where: {
-          status: 'ORDER_CREATED',
-          ...(session?.tenantId ? { shipment: { tenantId: session.tenantId } } : {}),
-        },
-        select: { shipmentId: true, createdAt: true },
-        take: 200,
-      }),
-      prisma.trackingEvent.findMany({
-        where: {
-          status: 'DELIVERED',
-          ...(session?.tenantId ? { shipment: { tenantId: session.tenantId } } : {}),
-        },
-        select: { shipmentId: true, createdAt: true },
-        take: 200,
-      }),
-      prisma.geofenceEvent.findMany({
-        where: session?.tenantId ? { geofence: { tenantId: session.tenantId } } : {},
-        orderBy: { createdAt: 'desc' },
-        take: 6,
-        include: { geofence: true, driver: true },
-      }),
-      prisma.notification.findMany({
-        where: {
-          message: { startsWith: 'SLA' },
-          ...(session?.tenantId ? { OR: [
-            { shipment: { tenantId: session.tenantId } },
-            { userId: { not: null } },
-          ] } : {}),
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      }),
-      prisma.branch.count({ where: session?.tenantId ? { tenantId: session.tenantId } : {} }),
-      prisma.branch.count({ where: { active: true, ...(session?.tenantId ? { tenantId: session.tenantId } : {}) } }),
-      prisma.branch.findMany({
-        where: session?.tenantId ? { tenantId: session.tenantId } : {},
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          organization: { select: { name: true } },
-          region: { select: { name: true } },
-          _count: { select: { users: true, warehouses: true, hubs: true } },
-        },
-      }),
-    ]);
+  const tenantFilter = tenantId ? { tenantId } : {};
 
-    return { totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches };
-  });
+  // Cache aggregate counts for 60 seconds to reduce DB load on repeated dashboard visits
+  const getCounts = cacheData(
+    async () => runWithTenant(tenantId, async () => {
+      const [totalToday, totalCount, deliveredCount, activeCount, failedCount, activeDrivers, activeVehicles, totalBranches, activeBranches] = await Promise.all([
+        prisma.shipment.count({ where: { createdAt: { gte: todayStart }, ...tenantFilter } }),
+        prisma.shipment.count({ where: tenantFilter }),
+        prisma.shipment.count({ where: { status: 'DELIVERED', ...tenantFilter } }),
+        prisma.shipment.count({ where: { status: { in: ACTIVE_STATUSES as never[] }, ...tenantFilter } }),
+        prisma.shipment.count({ where: { status: 'DELIVERY_FAILED', ...tenantFilter } }),
+        prisma.driver.count({ where: { status: 'ACTIVE', ...tenantFilter } }),
+        prisma.vehicle.count({ where: { status: { in: ['AVAILABLE', 'IN_USE'] }, ...tenantFilter } }),
+        prisma.branch.count({ where: tenantFilter }),
+        prisma.branch.count({ where: { active: true, ...tenantFilter } }),
+      ]);
+      return { totalToday, totalCount, deliveredCount, activeCount, failedCount, activeDrivers, activeVehicles, totalBranches, activeBranches };
+    }),
+    [CACHE_TAGS.DASHBOARD_STATS, tenantId || 'global'],
+    { revalidate: 60, tags: [CACHE_TAGS.DASHBOARD_STATS] }
+  );
 
-  const { totalToday, totalCount, shipments, deliveredCount, activeCount, failedCount, activeDrivers, activeVehicles, recent, orderEvents, deliveredEvents, geofenceEvents, slaAlerts, totalBranches, activeBranches, topBranches } = data;
+  const [counts, shipments, recent, geofenceEvents, topBranches] = await Promise.all([
+    getCounts(),
+    runWithTenant(tenantId, async () => prisma.shipment.findMany({
+      where: {
+        status: { notIn: ['DELIVERED', 'RETURNED', 'DELIVERY_FAILED', 'RETURN_TO_SENDER'] },
+        ...tenantFilter,
+      },
+      include: { sender: true, receiver: true, assignments: { include: { driver: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    })),
+    runWithTenant(tenantId, async () => prisma.shipment.findMany({
+      where: tenantFilter,
+      orderBy: { createdAt: 'desc' },
+      take: 8,
+      include: { sender: true, receiver: true, assignments: { include: { driver: true } } },
+    })),
+    runWithTenant(tenantId, async () => prisma.geofenceEvent.findMany({
+      where: tenantId ? { geofence: { tenantId } } : {},
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: { geofence: { select: { name: true } }, driver: { select: { name: true } } },
+    })),
+    runWithTenant(tenantId, async () => prisma.branch.findMany({
+      where: tenantFilter,
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        organization: { select: { name: true } },
+        region: { select: { name: true } },
+        _count: { select: { users: true, warehouses: true, hubs: true } },
+      },
+    })),
+  ]);
+
+  const { totalToday, totalCount, deliveredCount, activeCount, failedCount, activeDrivers, activeVehicles, totalBranches, activeBranches } = counts;
+  const slaAlerts: { id: string; message: string; createdAt: Date | string }[] = [];
 
   // SLA monitoring
   let slaRisk = 0;
@@ -119,19 +103,6 @@ export default async function DashboardPage() {
   const successRate = total > 0 ? Math.round((deliveredCount / total) * 100) : 0;
   const failedRate = total > 0 ? Math.round((failedCount / total) * 100) : 0;
 
-  // rata-rata waktu delivery (jam) dari event ORDER_CREATED -> DELIVERED
-  const orderMap = new Map(orderEvents.map((e) => [e.shipmentId, new Date(e.createdAt).getTime()]));
-  const durations: number[] = [];
-  deliveredEvents.forEach((e) => {
-    const start = orderMap.get(e.shipmentId);
-    if (start) {
-      const hours = (new Date(e.createdAt).getTime() - start) / 3600000;
-      if (hours >= 0) durations.push(hours);
-    }
-  });
-  const avgHours =
-    durations.length > 0 ? Math.round((durations.reduce((a, b) => a + b, 0) / durations.length) * 10) / 10 : 0;
-
   const orderByStatus = Object.entries(byStatus).sort((a, b) => b[1] - a[1]);
   const maxCount = Math.max(1, ...orderByStatus.map(([, c]) => c));
 
@@ -146,7 +117,6 @@ export default async function DashboardPage() {
         <StatCard label="Shipment Hari Ini" value={totalToday} sub={`${total} total shipment`} color="bg-white" />
         <StatCard label="Shipment Aktif" value={activeCount} sub="Sedang berjalan" color="bg-white" />
         <StatCard label="Delivered" value={deliveredCount} sub={`${successRate}% sukses`} color="bg-emerald-50" />
-        <StatCard label="Rata-rata Waktu" value={avgHours > 0 ? `${avgHours} jam` : '-'} sub="Order â†’ Delivered" color="bg-white" />
         <StatCard label="In Transit" value={byStatus['IN_TRANSIT'] || 0} sub="Dalam perjalanan" color="bg-amber-50" />
         <StatCard label="Out for Delivery" value={byStatus['OUT_FOR_DELIVERY'] || 0} sub="Sedang diantar" color="bg-yellow-50" />
         <StatCard label="Gagal Kirim" value={failedCount} sub={`${failedRate}% dari total`} color="bg-red-50" />

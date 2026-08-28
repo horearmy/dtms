@@ -4,7 +4,7 @@ import { ShipmentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant, guardPlanLimit } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
-import { driverScore } from '@/lib/scoring';
+
 import { ON_ROAD_STATUSES } from '@/lib/constants';
 import { validatePassword, BCRYPT_COST } from '@/lib/security';
 
@@ -47,20 +47,55 @@ export async function GET(req: NextRequest) {
     const nextEmployeeId = `DRV-${String(nextNum).padStart(3, '0')}`;
 
     const driverIds = drivers.map(d => d.id);
-    const [scores, activeTrips] = await Promise.all([
-      Promise.all(driverIds.map(id => driverScore(id))),
+    const [assignmentStats, activeTrips] = await Promise.all([
+      prisma.deliveryAssignment.findMany({
+        where: { driverId: { in: driverIds } },
+        select: {
+          driverId: true,
+          shipment: {
+            select: {
+              status: true,
+              slaDeadline: true,
+              updatedAt: true,
+              pods: { select: { deliveredAt: true }, orderBy: { deliveredAt: 'desc' }, take: 1 },
+            },
+          },
+        },
+      }),
       prisma.deliveryAssignment.findMany({
         where: { driverId: { in: driverIds }, shipment: { status: { in: ON_ROAD_STATUSES as ShipmentStatus[] } } },
         select: { driverId: true, shipment: { select: { trackingNumber: true } } },
       }),
     ]);
 
+    const scoreMap = new Map<string, { score: number; total: number; delivered: number; onTime: number; failed: number }>();
+    for (const a of assignmentStats) {
+      const s = a.shipment;
+      const stat = scoreMap.get(a.driverId) || { score: 0, total: 0, delivered: 0, onTime: 0, failed: 0 };
+      stat.total++;
+      if (s.status === 'DELIVERED') {
+        stat.delivered++;
+        const pod = s.pods[0];
+        const done = pod?.deliveredAt ? pod.deliveredAt.getTime() : new Date(s.updatedAt).getTime();
+        if (s.slaDeadline && done <= new Date(s.slaDeadline).getTime()) stat.onTime++;
+      }
+      if (['DELIVERY_FAILED', 'RETURNED'].includes(s.status)) stat.failed++;
+      scoreMap.set(a.driverId, stat);
+    }
+
+    for (const stat of scoreMap.values()) {
+      const completionRate = stat.total ? stat.delivered / stat.total : 0;
+      const onTimeRate = stat.delivered ? stat.onTime / stat.delivered : 0;
+      const failFactor = stat.failed === 0 ? 1 : 0.65;
+      stat.score = stat.total ? Math.round(100 * (0.5 * completionRate + 0.3 * onTimeRate) * failFactor) : 0;
+    }
+
     const tripMap = new Map<string, string>();
     for (const t of activeTrips) tripMap.set(t.driverId, t.shipment.trackingNumber);
 
-    const scored = drivers.map((d, i) => ({
+    const scored = drivers.map((d) => ({
       ...d,
-      stat: scores[i],
+      stat: scoreMap.get(d.id) || { score: 0, total: 0, delivered: 0, onTime: 0, failed: 0 },
       busy: !!tripMap.get(d.id) || d.returning,
       activeTracking: tripMap.get(d.id) || null,
     }));

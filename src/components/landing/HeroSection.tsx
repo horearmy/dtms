@@ -88,7 +88,7 @@ export default function HeroSection({ onLogin }: { onLogin: () => void }) {
             </div>
             <div className="relative overflow-hidden rounded-xl">
               <Image
-                src="/images/landing/shipment-dashboard.png"
+                src="/images/landing/shipment-dashboard.webp"
                 alt="DTMS Dashboard Live Tracking"
                 width={1200}
                 height={700}

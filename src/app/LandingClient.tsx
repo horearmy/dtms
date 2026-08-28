@@ -1,22 +1,31 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { Suspense, lazy, useState } from 'react';
 import Link from 'next/link';
 import { PRICING_PLANS } from '@/lib/landing-data';
 import DemoRequestForm from './DemoRequestForm';
 import HeroSection from '@/components/landing/HeroSection';
 import LogoCloud from '@/components/landing/LogoCloud';
-import LiveTrackingShowcase from '@/components/landing/LiveTrackingShowcase';
 import HowItWorks from '@/components/landing/HowItWorks';
-import FeatureGrid from '@/components/landing/FeatureGrid';
 import TrackingDemo from '@/components/landing/TrackingDemo';
-import TestimonialsSection from '@/components/landing/TestimonialsSection';
-import FAQSection from '@/components/landing/FAQSection';
 import MobileMenu from '@/components/landing/MobileMenu';
 import AnimatedSection from '@/components/landing/AnimatedSection';
 import { motion } from 'framer-motion';
 
 const LoginModal = lazy(() => import('./LoginModal'));
+const LiveTrackingShowcase = dynamic(() => import('@/components/landing/LiveTrackingShowcase'), {
+  loading: () => <div className="h-96 bg-[#F7F9FC]" />,
+});
+const FeatureGrid = dynamic(() => import('@/components/landing/FeatureGrid'), {
+  loading: () => <div className="h-96 bg-[#F7F9FC]" />,
+});
+const TestimonialsSection = dynamic(() => import('@/components/landing/TestimonialsSection'), {
+  loading: () => <div className="h-80 bg-white" />,
+});
+const FAQSection = dynamic(() => import('@/components/landing/FAQSection'), {
+  loading: () => <div className="h-80 bg-[#F7F9FC]" />,
+});
 
 export default function LandingClient() {
   const [showLogin, setShowLogin] = useState(false);
