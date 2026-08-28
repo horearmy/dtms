@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password baru harus berbeda dari password lama' }, { status: 400 });
     }
 
-    const hash = bcrypt.hashSync(newPassword, BCRYPT_COST);
+    const hash = await bcrypt.hash(newPassword, BCRYPT_COST);
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {

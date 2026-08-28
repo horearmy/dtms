@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   return runWithTenant(session?.tenantId ?? null, async () => {
     const plainPassword = generateRandomPassword(12);
-    const hash = bcrypt.hashSync(plainPassword, BCRYPT_COST);
+    const hash = await bcrypt.hash(plainPassword, BCRYPT_COST);
 
     try {
       const user = await prisma.user.create({

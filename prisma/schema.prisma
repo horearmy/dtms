@@ -632,6 +632,8 @@ model ProofOfDelivery {
   notes        String?
   deliveredAt  DateTime @default(now())
   shipment     Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
 }
 
 model Region {
@@ -753,6 +755,8 @@ model ShipmentItem {
   weight     Float?
   dimension  String?
   shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
 }
 
 model ShipmentStop {
@@ -768,6 +772,9 @@ model ShipmentStop {
   longitude  Float?
   customer   Customer? @relation(fields: [customerId], references: [id])
   shipment   Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@index([customerId])
 }
 
 model SlaEvent {
@@ -1157,6 +1164,7 @@ model WebhookSubscription {
   tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
+  @@index([integrationId])
 }
 
 model WhiteLabel {

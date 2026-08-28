@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies, headers } from 'next/headers';
+import { cache } from 'react';
 import { prisma } from './prisma';
 import { getTenantFeatures } from './billing';
 import crypto from 'crypto';
@@ -118,7 +119,7 @@ async function verifyApiKey(authHeader: string): Promise<SessionUser | null> {
   };
 }
 
-export async function getSession(): Promise<SessionUser | null> {
+async function getSessionInternal(): Promise<SessionUser | null> {
   const store = await cookies();
 
   // Check superadmin secure session first
@@ -206,6 +207,10 @@ export async function getSession(): Promise<SessionUser | null> {
 
   return null;
 }
+
+// Request-scoped memoization: avoids re-querying the user/plan on every call
+// within the same React render pass (layout + page + nested server components).
+export const getSession = cache(getSessionInternal);
 
 export async function setSession(user: SessionUser & { pwdVersion?: number }, options?: { secure?: boolean }) {
   const token = await signToken(user);

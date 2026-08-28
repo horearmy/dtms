@@ -18,4 +18,5 @@ export const CACHE_TAGS = {
   ACTIVE_SHIPMENTS: 'active-shipments',
   DRIVER_VEHICLE_COUNTS: 'driver-vehicle-counts',
   BRANCH_COUNTS: 'branch-counts',
+  TENANT_META: 'tenant-meta',
 } as const;

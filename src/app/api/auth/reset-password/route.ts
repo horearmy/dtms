@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   const user = resetToken.user;
-  const hash = bcrypt.hashSync(newPassword, BCRYPT_COST);
+  const hash = await bcrypt.hash(newPassword, BCRYPT_COST);
 
   return runWithTenant(user.tenantId, async () => {
     await prisma.$transaction([

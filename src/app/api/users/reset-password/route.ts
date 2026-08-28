@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     const newPassword = generateRandomPassword(12);
-    const hash = bcrypt.hashSync(newPassword, BCRYPT_COST);
+    const hash = await bcrypt.hash(newPassword, BCRYPT_COST);
 
     const updated = await prisma.user.update({
       where: { id: userId },

@@ -62,7 +62,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         status,
       };
       if (password) {
-        data.passwordHash = bcrypt.hashSync(password, BCRYPT_COST);
+        data.passwordHash = await bcrypt.hash(password, BCRYPT_COST);
         data.pwdVersion = { increment: 1 };
         data.mustChangePassword = false;
         data.lastPasswordChange = new Date();

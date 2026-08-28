@@ -58,11 +58,12 @@ export async function POST(req: NextRequest) {
       const password = generateRandomPassword(12);
 
       try {
+        const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
         await prisma.user.create({
           data: {
             name,
             username: username.toLowerCase(),
-            passwordHash: bcrypt.hashSync(password, BCRYPT_COST),
+            passwordHash,
             role: role as Role,
             phone: phone || null,
             tenantId,

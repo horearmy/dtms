@@ -3,9 +3,9 @@
 // Plans are seeded ONLY from prisma/seed.js (or ensurePlans fallback).
 import { prisma } from './prisma';
 import { logger } from './logger';
-import { PLAN_ORDER, PPN_RATE } from './plan-constants';
+import { PLAN_ORDER, PPN_RATE, ROUTE_FEATURE_MAP } from './plan-constants';
 
-export { PLAN_ORDER, PPN_RATE };
+export { PLAN_ORDER, PPN_RATE, ROUTE_FEATURE_MAP };
 
 const log = logger.child('billing');
 
@@ -438,21 +438,4 @@ export const PLAN_LABELS: Record<string, string> = {
   ENTERPRISE: 'Enterprise',
 };
 
-// ─── Route → Feature Mapping ─────────────────────────────
-export const ROUTE_FEATURE_MAP: Record<string, string> = {
-  '/control-tower': 'control_tower',
-  '/dispatch': 'dispatch',
-  '/reports': 'reports',
-  '/analytics': 'reports',
-  '/sla': 'sla',
-  '/exceptions': 'sla',
-  '/integrations': 'integrations',
-  '/map': 'gps_tracking',
-  '/warehouses': 'warehouse_management',
-  '/geofences': 'geofencing',
-  '/organizations': 'branch_management',
-  '/regions': 'branch_management',
-  '/branches': 'branch_management',
-  '/departments': 'branch_management',
-  '/hubs': 'branch_management',
-};
+

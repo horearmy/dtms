@@ -125,7 +125,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     try {
       if (password) {
-        const hash = bcrypt.hashSync(password, BCRYPT_COST);
+        const hash = await bcrypt.hash(password, BCRYPT_COST);
         if (driver.userId) {
           await prisma.user.update({ where: { id: driver.userId }, data: { passwordHash: hash, pwdVersion: { increment: 1 } } });
         } else {

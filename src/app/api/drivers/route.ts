@@ -135,11 +135,12 @@ export async function POST(req: NextRequest) {
           if (existing) {
             throw new Error('USERNAME_DUPLICATE');
           }
+          const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
           const user = await tx.user.create({
             data: {
               name: body.name,
               username,
-              passwordHash: bcrypt.hashSync(password, BCRYPT_COST),
+              passwordHash,
               role: 'DRIVER',
               status: 'ACTIVE',
               phone: body.phone,

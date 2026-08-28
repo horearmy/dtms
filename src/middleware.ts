@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { ROUTE_FEATURE_MAP } from '@/lib/billing';
+import { ROUTE_FEATURE_MAP } from '@/lib/plan-constants';
 
 const COOKIE_NAME = 'dtms_token';
 const CSRF_COOKIE = 'dtms_csrf';
