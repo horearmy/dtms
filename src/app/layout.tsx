@@ -38,6 +38,8 @@ export const metadata: Metadata = {
   },
 };
 
+const useVercelInsights = process.env.VERCEL === '1';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" data-scroll-behavior="smooth" className={cn('font-sans antialiased scroll-smooth', jakarta.variable)}>
@@ -49,8 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <TooltipProvider>{children}</TooltipProvider>
           </NotificationProvider>
         </CsrfProvider>
-        <Analytics />
-        <SpeedInsights />
+        {useVercelInsights && <Analytics />}
+        {useVercelInsights && <SpeedInsights />}
       </body>
     </html>
   );

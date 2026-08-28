@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, Building2, Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react';
 
 type Tenant = { id: string; name: string; slug: string; primaryColor: string };
 
@@ -98,13 +98,18 @@ function LoginFormInner() {
   }
 
   return (
-    <div className="w-full max-w-[400px]">
-      <div className="rounded-2xl border border-[#E4E7EC] bg-white p-8 shadow-sm">
+    <div className="w-full">
+      <div className="rounded-[1.75rem] border border-[#E4E7EC] bg-white p-6 shadow-[0_20px_60px_rgba(16,24,40,0.08)] sm:p-9">
         {/* Logo */}
-        <div className="mb-6 text-center">
-          <img src="/logo.png" alt="Logo DTMS" className="mx-auto mb-3 h-14 w-14 rounded-2xl object-contain" />
-          <h1 className="text-xl font-bold text-[#101828]">DTMS</h1>
-          <p className="mt-0.5 text-sm text-[#667085]">
+        <div className="mb-8">
+          <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-xl bg-[#E7F0FF] p-1 lg:hidden">
+            <img src="/logo.png" alt="Logo DTMS" className="h-full w-full rounded-lg object-contain" />
+          </div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0D6EFD]">Welcome back</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#101828]">
+            {twoFactorToken ? 'Verifikasi akses' : 'Masuk ke DTMS'}
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-[#667085]">
             {twoFactorToken ? 'Verifikasi 2 langkah' : 'Delivery Tracking Management System'}
           </p>
         </div>
@@ -113,7 +118,7 @@ function LoginFormInner() {
           <form onSubmit={submit} className="space-y-4">
             {tenants.length > 1 && (
               <div>
-                 <label htmlFor="tenant" className="mb-1.5 block text-sm font-medium text-[#101828]">Perusahaan</label>
+                     <label htmlFor="tenant" className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-[#344054]"><Building2 className="h-4 w-4 text-[#98A2B3]" />Perusahaan</label>
                 {tenants.length > 30 ? (
                   <>
                      <input
@@ -123,7 +128,7 @@ function LoginFormInner() {
                       value={tenantSearch}
                       onChange={(e) => { setTenantSearch(e.target.value); setSelectedTenant(''); }}
                       placeholder="Ketik nama perusahaan..."
-                      className="w-full rounded-lg border border-[#E4E7EC] bg-white px-3 py-2.5 text-sm text-[#101828] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
+                       className="w-full rounded-xl border border-[#D0D5DD] bg-white px-3.5 py-3 text-sm text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#0D6EFD] focus:ring-4 focus:ring-[#0D6EFD]/10"
                     />
                     {tenantSearch && (
                       <div className="relative mt-1 max-h-48 overflow-y-auto rounded-lg border border-[#E4E7EC] bg-white shadow-lg">
@@ -153,7 +158,7 @@ function LoginFormInner() {
                     value={selectedTenant}
                     onChange={(e) => setSelectedTenant(e.target.value)}
                     required
-                    className="w-full rounded-lg border border-[#E4E7EC] bg-white px-3 py-2.5 text-sm text-[#101828] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
+                     className="w-full rounded-xl border border-[#D0D5DD] bg-white px-3.5 py-3 text-sm text-[#101828] outline-none transition focus:border-[#0D6EFD] focus:ring-4 focus:ring-[#0D6EFD]/10"
                   >
                     <option value="">-- Pilih Perusahaan --</option>
                     {tenants.map((t) => (
@@ -166,8 +171,10 @@ function LoginFormInner() {
             {tenants.length === 1 && <input id="tenantId" name="tenantId" type="hidden" value={tenants[0].id} readOnly />}
 
             <div>
-               <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-[#101828]">Username</label>
-               <input
+                <label htmlFor="username" className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-[#344054]"><UserRound className="h-4 w-4 text-[#98A2B3]" />Username</label>
+                <div className="relative">
+                <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" />
+                <input
                  id="username"
                  name="username"
                 type="text"
@@ -175,14 +182,16 @@ function LoginFormInner() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoComplete="username"
-                className="w-full rounded-lg border border-[#E4E7EC] bg-white px-3 py-2.5 text-sm text-[#101828] placeholder:text-[#667085] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
-                placeholder="Masukkan username"
-              />
+                 className="w-full rounded-xl border border-[#D0D5DD] bg-white py-3 pl-11 pr-3.5 text-sm text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#0D6EFD] focus:ring-4 focus:ring-[#0D6EFD]/10"
+                 placeholder="Masukkan username"
+               />
+                </div>
             </div>
 
             <div>
-               <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-[#101828]">Password</label>
-              <div className="relative">
+                <label htmlFor="password" className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-[#344054]"><LockKeyhole className="h-4 w-4 text-[#98A2B3]" />Password</label>
+               <div className="relative">
+                 <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" />
                  <input
                    id="password"
                    name="password"
@@ -191,7 +200,7 @@ function LoginFormInner() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  className="w-full rounded-lg border border-[#E4E7EC] bg-white px-3 py-2.5 pr-10 text-sm text-[#101828] placeholder:text-[#667085] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
+                   className="w-full rounded-xl border border-[#D0D5DD] bg-white py-3 pl-11 pr-11 text-sm text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#0D6EFD] focus:ring-4 focus:ring-[#0D6EFD]/10"
                   placeholder="Masukkan password"
                 />
                 <button
@@ -213,9 +222,10 @@ function LoginFormInner() {
             <button
               type="submit"
               disabled={loading || (tenants.length > 1 && !selectedTenant)}
-              className="w-full rounded-lg bg-[#0D6EFD] py-2.5 text-sm font-semibold text-white transition hover:bg-[#0B5FD5] disabled:cursor-not-allowed disabled:opacity-60"
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D6EFD] py-3.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(13,110,253,0.22)] transition hover:bg-[#0B5FD5] hover:shadow-[0_10px_22px_rgba(13,110,253,0.28)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? 'Memproses...' : 'Masuk'}
+              {!loading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
             </button>
 
             <Link href="/forgot-password" className="block w-full text-center text-xs font-semibold text-[#667085] underline hover:text-[#101828]">
@@ -231,7 +241,7 @@ function LoginFormInner() {
                 </div>
                 <a
                   href="/api/auth/google"
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#E4E7EC] bg-white py-2.5 text-sm font-semibold text-[#101828] transition hover:bg-[#F7F9FC]"
+                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#D0D5DD] bg-white py-3 text-sm font-semibold text-[#344054] transition hover:border-[#98A2B3] hover:bg-[#F9FAFB]"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
@@ -247,7 +257,7 @@ function LoginFormInner() {
         ) : (
           <form onSubmit={submitOtp} className="space-y-4">
             <div>
-               <label htmlFor="otp" className="mb-1.5 block text-sm font-medium text-[#101828]">Kode 6 digit</label>
+               <label htmlFor="otp" className="mb-1.5 block text-sm font-semibold text-[#344054]">Kode 6 digit</label>
                <input
                  id="otp"
                  name="otp"
@@ -258,7 +268,7 @@ function LoginFormInner() {
                 onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
                 required
                 autoFocus
-                className="w-full rounded-lg border border-[#E4E7EC] bg-white px-3 py-2.5 text-center text-lg tracking-[0.5em] text-[#101828] focus:border-[#0D6EFD] focus:outline-none focus:ring-1 focus:ring-[#0D6EFD]"
+                 className="w-full rounded-xl border border-[#D0D5DD] bg-white px-3 py-3.5 text-center text-lg tracking-[0.5em] text-[#101828] outline-none transition focus:border-[#0D6EFD] focus:ring-4 focus:ring-[#0D6EFD]/10"
                 placeholder="000000"
               />
               <p className="mt-2 text-xs text-[#667085]">
@@ -273,7 +283,7 @@ function LoginFormInner() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-[#0D6EFD] py-2.5 text-sm font-semibold text-white transition hover:bg-[#0B5FD5] disabled:opacity-60"
+               className="w-full rounded-xl bg-[#0D6EFD] py-3.5 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(13,110,253,0.22)] transition hover:bg-[#0B5FD5] disabled:opacity-60"
             >
               {loading ? 'Memverifikasi...' : 'Verifikasi'}
             </button>
