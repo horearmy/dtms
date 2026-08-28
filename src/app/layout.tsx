@@ -7,6 +7,8 @@ import CsrfProvider from '@/components/CsrfProvider';
 import PWARegister from '@/components/PWARegister';
 import TopLoader from '@/components/TopLoader';
 import { NotificationProvider } from '@/components/ui/NotificationContext';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -47,6 +49,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <TooltipProvider>{children}</TooltipProvider>
           </NotificationProvider>
         </CsrfProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
