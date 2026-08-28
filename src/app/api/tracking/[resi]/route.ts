@@ -24,15 +24,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ resi
 
   const { resi } = await params;
   const num = resi.toUpperCase().trim();
+  if (!/^[A-Z0-9][A-Z0-9-]{2,63}$/.test(num)) {
+    return NextResponse.json({ error: 'Nomor resi tidak valid' }, { status: 400 });
+  }
 
   const shipment = await prisma.shipment.findUnique({
     where: { trackingNumber: num },
     include: {
-      sender: true,
-      receiver: true,
-      events: { orderBy: { createdAt: 'asc' } },
-      pods: true,
-      assignments: { include: { driver: true, vehicle: true } },
+      receiver: { select: { name: true, phone: true } },
+      events: {
+        orderBy: { createdAt: 'asc' },
+        select: { status: true, notes: true, createdAt: true },
+      },
+      assignments: {
+        take: 1,
+        select: {
+          driver: { select: { name: true } },
+          vehicle: { select: { vehicleNumber: true } },
+        },
+      },
     },
   });
 

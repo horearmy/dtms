@@ -11,16 +11,24 @@ export async function scanAlerts() {
     include: { receiver: true },
   });
 
-  for (const s of shipments) {
-    if (['DELIVERED', 'RETURNED'].includes(s.status)) continue;
-    const deadline = s.slaDeadline!;
-    const remaining = deadline.getTime() - Date.now();
-    if (remaining >= 0) continue;
-
-    const existing = await prisma.notification.findFirst({
-      where: { message: { startsWith: `SLA Terlambat: ${s.trackingNumber}` } },
+  const overdueShipments = shipments.filter((s) =>
+    !['DELIVERED', 'RETURNED'].includes(s.status) &&
+    s.slaDeadline !== null &&
+    s.slaDeadline.getTime() < Date.now()
+  );
+  const existingSla = overdueShipments.length === 0
+    ? []
+    : await prisma.notification.findMany({
+      where: {
+        OR: overdueShipments.map((s) => ({ message: { startsWith: `SLA Terlambat: ${s.trackingNumber}` } })),
+      },
+      select: { message: true },
     });
-    if (existing) continue;
+
+  for (const s of overdueShipments) {
+    const deadline = s.slaDeadline!;
+
+    if (existingSla.some((n) => n.message.startsWith(`SLA Terlambat: ${s.trackingNumber}`))) continue;
 
     await prisma.notification.create({
       data: {
@@ -48,17 +56,31 @@ export async function scanAlerts() {
     },
   });
 
-  for (const d of staleDrivers) {
+  const staleDriverCandidates = staleDrivers.filter((d) => {
+    const last = d.gpsLogs[0];
+    return last !== undefined && (Date.now() - last.createdAt.getTime()) / 60000 >= STALE_GPS_MIN;
+  });
+  const existingGps = staleDriverCandidates.length === 0
+    ? []
+    : await prisma.notification.findMany({
+      where: {
+        OR: staleDriverCandidates.map((d) => ({ message: { startsWith: `GPS Driver Terputus: ${d.name}` } })),
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { message: true, createdAt: true },
+    });
+  const latestGps = new Map<string, Date>();
+  for (const notification of existingGps) {
+    const key = notification.message.match(/^GPS Driver Terputus: (.+?)(?: —|$)/)?.[1];
+    if (key && !latestGps.has(key)) latestGps.set(key, notification.createdAt);
+  }
+
+  for (const d of staleDriverCandidates) {
     const last = d.gpsLogs[0];
     if (!last) continue;
     const staleMin = (Date.now() - last.createdAt.getTime()) / 60000;
-    if (staleMin < STALE_GPS_MIN) continue;
-
-    const existing = await prisma.notification.findFirst({
-      where: { message: { startsWith: `GPS Driver Terputus: ${d.name}` } },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (existing && existing.createdAt > new Date(Date.now() - 6 * 3600000)) continue;
+    const existingAt = latestGps.get(d.name);
+    if (existingAt && existingAt > new Date(Date.now() - 6 * 3600000)) continue;
 
     await prisma.notification.create({
       data: {

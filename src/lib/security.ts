@@ -119,9 +119,12 @@ export function generateRandomPassword(length = 12): string {
   return combined.join('');
 }
 
-// Rate limiting — uses Redis if UPSTASH_REDIS_REST_URL is set, otherwise in-memory
+// Rate limiting — uses Redis if UPSTASH_REDIS_REST_URL is set, otherwise in-memory.
+// Set RATE_LIMIT_REQUIRE_REDIS=true in production to fail closed instead of
+// allowing a per-instance fallback that can be bypassed across instances.
 type RateLimitEntry = { count: number; resetAt: number };
 const rateLimitStore = new Map<string, RateLimitEntry>();
+let redisClient: { incr(key: string): Promise<number>; pexpire(key: string, ms: number): Promise<unknown> } | null | undefined;
 
 function cleanupRateLimits() {
   const now = Date.now();
@@ -131,12 +134,20 @@ function cleanupRateLimits() {
 }
 
 async function getRedis() {
+  if (redisClient !== undefined) return redisClient;
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
+  if (!url || !token) {
+    redisClient = null;
+    return null;
+  }
   const { Redis } = await import('@upstash/redis').catch(() => ({ Redis: null }));
-  if (!Redis) return null;
-  return new Redis({ url, token });
+  if (!Redis) {
+    redisClient = null;
+    return null;
+  }
+  redisClient = new Redis({ url, token }) as unknown as NonNullable<typeof redisClient>;
+  return redisClient;
 }
 
 const PRIVATE_IP_PATTERNS = [
@@ -177,9 +188,11 @@ export async function checkRateLimit(key: string, maxRequests: number, windowMs:
       }
       return current <= maxRequests;
     } catch {
+      if (process.env.RATE_LIMIT_REQUIRE_REDIS === 'true') return false;
       // Fall through to in-memory
     }
   }
+  if (!redis && process.env.RATE_LIMIT_REQUIRE_REDIS === 'true') return false;
   cleanupRateLimits();
   const now = Date.now();
   const entry = rateLimitStore.get(key);
