@@ -58,11 +58,11 @@ npm run dev
 
 | Role | Username | Password | Tenant |
 |------|----------|----------|--------|
-| Super Admin | `superadmin` | `admin123` | None |
-| Admin Operasional | `admin` | `admin123` | Seed tenant |
-| Dispatcher | `dispatcher` | `admin123` | Seed tenant |
-| Warehouse | `warehouse` | `admin123` | Seed tenant |
-| Driver | `driver1` | `driver123` | Seed tenant |
+| Super Admin | `superadmin` | `<SEED_SUPERADMIN_PASSWORD>` | None |
+| Admin Operasional | `admin` | `<SEED_ADMIN_PASSWORD>` | Seed tenant |
+| Dispatcher | `dispatcher` | `<SEED_ADMIN_PASSWORD>` | Seed tenant |
+| Warehouse | `warehouse` | `<SEED_ADMIN_PASSWORD>` | Seed tenant |
+| Driver | `driver1` | `<SEED_DRIVER_PASSWORD>` | Seed tenant |
 
 ---
 

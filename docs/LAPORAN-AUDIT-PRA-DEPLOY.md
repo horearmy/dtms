@@ -137,7 +137,7 @@ Request
 ## 7. Checklist Go-Live
 
 ### Wajib sebelum deploy produksi
-- [ ] Ganti semua password default (`superadmin/Admin1234`, akun tenant `admin123`) — seed memakai password lemah.
+- [x] Seed kini memakai password dari environment dan menolak nilai default di production. Rotasi credential environment tetap wajib.
 - [ ] Gunakan **DB produksi fresh**, jalankan migrasi skema + `seed.js` (plans saja bila tidak butuh data dummy).
 - [ ] Set env produksi: `AUTH_SECRET`, `SUPERADMIN_SECRET_KEY` (nilai kuat/acak), `APP_URL`, kredensial WhatsApp gateway.
 - [ ] (Opsional tapi disarankan multi-instance) Set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`.

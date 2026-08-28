@@ -203,7 +203,7 @@ RATE_GPS_LIMIT=9999
 MAX_IP_FAILURES=100
 
 # Superadmin
-SUPERADMIN_SECRET_KEY="DTMS-SEC-2026-XK9!mPz#vR"
+SUPERADMIN_SECRET_KEY="<set-in-secret-manager>"
 SUPERADMIN_ALLOWED_IPS=""
 ```
 
@@ -979,15 +979,15 @@ Content-Security-Policy: (full CSP with tile sources allowed)
 
 | Role | Username | Password | Tenant |
 |------|----------|----------|--------|
-| Super Admin | superadmin | Admin1234 | None |
-| Admin Operasional | admin | admin123 | Seed tenant |
-| Dispatcher | dispatcher | admin123 | Seed tenant |
-| Warehouse | warehouse | admin123 | Seed tenant |
-| Customer Service | cs | admin123 | Seed tenant |
-| Supervisor | supervisor | admin123 | Seed tenant |
-| Management | management | admin123 | Seed tenant |
-| Driver 1 | driver1 | driver123 | Seed tenant |
-| Driver 2 | driver2 | driver123 | Seed tenant |
+| Super Admin | superadmin | `<local seed secret>` | None |
+| Admin Operasional | admin | `<local seed secret>` | Seed tenant |
+| Dispatcher | dispatcher | `<local seed secret>` | Seed tenant |
+| Warehouse | warehouse | `<local seed secret>` | Seed tenant |
+| Customer Service | cs | `<local seed secret>` | Seed tenant |
+| Supervisor | supervisor | `<local seed secret>` | Seed tenant |
+| Management | management | `<local seed secret>` | Seed tenant |
+| Driver 1 | driver1 | `<local seed secret>` | Seed tenant |
+| Driver 2 | driver2 | `<local seed secret>` | Seed tenant |
 
 ### Special Tenants
 

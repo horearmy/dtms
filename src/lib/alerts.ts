@@ -34,6 +34,7 @@ export async function scanAlerts() {
       data: {
         message: `SLA Terlambat: ${s.trackingNumber} — ${s.receiver.name} melewati deadline pada ${deadline.toLocaleString('id-ID')}.`,
         userId: null,
+        tenantId: s.tenantId,
       },
     });
 
@@ -86,6 +87,7 @@ export async function scanAlerts() {
       data: {
         message: `GPS Driver Terputus: ${d.name} — posisi terakhir ${Math.round(staleMin)} menit lalu (${last.latitude.toFixed(5)}, ${last.longitude.toFixed(5)}).`,
         userId: null,
+        tenantId: d.tenantId,
       },
     });
 

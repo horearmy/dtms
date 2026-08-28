@@ -17,6 +17,8 @@
     "db:reset": "prisma migrate reset --force && node prisma/seed.js",
     "alerts:run": "node scripts/alert-scheduler.js --once",
     "alerts:scheduler": "node scripts/alert-scheduler.js",
+    "retention:dry-run": "node scripts/retention-cleanup.js",
+    "retention:execute": "node scripts/retention-cleanup.js --execute --confirm-retention",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",

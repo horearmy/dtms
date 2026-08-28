@@ -36,6 +36,7 @@ model AuditLog {
   path      String?
   userAgent String?
   tenantId  String?
+  legalHold Boolean  @default(false)
   tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user      User?    @relation(fields: [userId], references: [id])
 
@@ -277,6 +278,7 @@ model GeofenceEvent {
 
 model GpsLog {
   id        String   @id @default(cuid())
+  ingestKey String?  @unique
   driverId  String
   vehicleId String?
   latitude  Float
@@ -286,6 +288,7 @@ model GpsLog {
   accuracy  Float?
   battery   Float?
   createdAt DateTime @default(now())
+  legalHold Boolean  @default(false)
   driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
   vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
 
@@ -493,6 +496,7 @@ model Message {
   direction  String   @default("OUTBOUND")
   read       Boolean  @default(false)
   createdAt  DateTime @default(now())
+  legalHold  Boolean  @default(false)
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
@@ -510,6 +514,7 @@ model Notification {
   tenantId   String?
   title      String?
   type       String    @default("INFO")
+  legalHold  Boolean   @default(false)
   shipment   Shipment? @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -739,6 +744,7 @@ model ShipmentEvent {
   longitude      Float?
   occurredAt     DateTime          @default(now())
   createdAt      DateTime          @default(now())
+  legalHold      Boolean           @default(false)
   shipment       Shipment          @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   tenant         Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -999,6 +1005,7 @@ model UploadedFile {
   category     String   @default("general")
   shipmentId   String?
   createdAt    DateTime @default(now())
+  legalHold    Boolean  @default(false)
   tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([objectKey])

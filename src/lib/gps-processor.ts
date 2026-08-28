@@ -20,6 +20,7 @@ interface GpsPayload {
   accuracy?: number;
   battery?: number;
   sequence?: number;
+  ingestKey?: string;
 }
 
 export function ingestGps(payload: GpsPayload, sessionUserId?: string) {
@@ -40,10 +41,16 @@ registerJobHandler('GPS_INGEST', async (job) => {
     }
   }
 
+  if (p.ingestKey) {
+    const existing = await prisma.gpsLog.findUnique({ where: { ingestKey: p.ingestKey }, select: { id: true } });
+    if (existing) return;
+  }
+
   // 1. Store raw GPS
   await prisma.gpsLog.create({
     data: {
       driverId: p.driverId,
+      ingestKey: p.ingestKey ?? null,
       vehicleId: p.vehicleId ?? null,
       latitude: p.latitude,
       longitude: p.longitude,

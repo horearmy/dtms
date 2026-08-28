@@ -7,7 +7,7 @@ const {
 } = vi.hoisted(() => ({
   mockShipment: { findMany: vi.fn() },
   mockDriver: { findMany: vi.fn() },
-  mockNotification: { findFirst: vi.fn(), create: vi.fn() },
+  mockNotification: { findMany: vi.fn(), create: vi.fn() },
 }));
 
 vi.mock('../prisma', () => ({
@@ -35,7 +35,7 @@ describe('scanAlerts - SLA', () => {
         receiver: { name: 'Andi' },
       },
     ]);
-    mockNotification.findFirst.mockResolvedValue(null);
+    mockNotification.findMany.mockResolvedValue([]);
     mockDriver.findMany.mockResolvedValue([]);
 
     const created = await scanAlerts();
@@ -61,7 +61,7 @@ describe('scanAlerts - SLA', () => {
         receiver: { name: 'Andi' },
       },
     ]);
-    mockNotification.findFirst.mockResolvedValue({ id: 'existing', createdAt: new Date('2026-08-14T10:00:00Z') });
+    mockNotification.findMany.mockResolvedValue([{ message: 'SLA Terlambat: DTMS-2026-000001 — existing', createdAt: new Date('2026-08-14T10:00:00Z') }]);
     mockDriver.findMany.mockResolvedValue([]); // tanpa driver stale
 
     const created = await scanAlerts();
@@ -91,7 +91,7 @@ describe('scanAlerts - GPS putus', () => {
         gpsLogs: [{ latitude: -6.2, longitude: 106.816, createdAt: new Date(NOW.getTime() - 60 * 60000) }],
       },
     ]);
-    mockNotification.findFirst.mockResolvedValue(null);
+    mockNotification.findMany.mockResolvedValue([]);
 
     const created = await scanAlerts();
     expect(created).toBe(1);
@@ -122,7 +122,7 @@ describe('scanAlerts - GPS putus', () => {
         gpsLogs: [{ latitude: -6.2, longitude: 106.816, createdAt: new Date(NOW.getTime() - 60 * 60000) }],
       },
     ]);
-    mockNotification.findFirst.mockResolvedValue({ id: 'existing', createdAt: new Date(NOW.getTime() - 3600000) }); // 1 jam lalu
+    mockNotification.findMany.mockResolvedValue([{ message: 'GPS Driver Terputus: Budi Santoso — existing', createdAt: new Date(NOW.getTime() - 3600000) }]); // 1 jam lalu
 
     const created = await scanAlerts();
     expect(created).toBe(0);
@@ -139,7 +139,7 @@ describe('scanAlerts - GPS putus', () => {
         gpsLogs: [{ latitude: -6.2, longitude: 106.816, createdAt: new Date(NOW.getTime() - 60 * 60000) }],
       },
     ]);
-    mockNotification.findFirst.mockResolvedValue({ id: 'existing', createdAt: new Date(NOW.getTime() - 7 * 3600000) }); // 7 jam lalu
+    mockNotification.findMany.mockResolvedValue([{ message: 'GPS Driver Terputus: Budi Santoso — existing', createdAt: new Date(NOW.getTime() - 7 * 3600000) }]); // 7 jam lalu
 
     const created = await scanAlerts();
     expect(created).toBe(1);

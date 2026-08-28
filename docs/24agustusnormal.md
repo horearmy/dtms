@@ -137,7 +137,7 @@ JOIN "Driver" d ON d."id" = g."driverId" ... AND d."tenantId" = ...
 
 | Item | Detail |
 |---|---|
-| Fallback secret dihapus | `'DTMS-SEC-2026-XK9!mPz#vR'` tidak ada lagi di `superadmin-auth.ts`; tanpa env `SUPERADMIN_SECRET_KEY` semua upaya ditolak (fail-closed) |
+| Fallback secret dihapus | Nilai fallback secret tidak disimpan di source; tanpa env `SUPERADMIN_SECRET_KEY` semua upaya ditolak (fail-closed) |
 | XFF anti-spoof | `getClientIp` & `getClientIpSa` kini mengambil **hop paling kanan** dari `X-Forwarded-For` (IP proxy tepercaya), bukan hop pertama yang bisa dipalsukan klien |
 | Fingerprint sesi SA | `getSession()` memverifikasi fingerprint (`sha256(ip:user-agent)`) setiap request; cookie curian dari browser/IP lain ditolak |
 | Logout menyeluruh | `/api/auth/logout` menghapus **kedua** cookie (`dtms_token` + `dtms_sa_token`) |
@@ -160,8 +160,8 @@ JOIN "Driver" d ON d."id" = g."driverId" ... AND d."tenantId" = ...
   benar (mencegah kebocoran info lintas tenant); test dibalik menjadi ekspektasi
   401/403.
 - **XFF**: test IP diperbarui ke hop paling kanan.
-- **Password superadmin**: DB memakai `Admin1234` (bukan `admin123`);
-  `global-setup.ts` kini membaca `TEST_SA_PASSWORD || 'Admin1234'` dan test
+- **Password superadmin**: test memakai password dari environment secret manager;
+  tidak ada password default yang didokumentasikan.
   auth mengikuti.
 
 ### 5.2 Mock unit test disesuaikan ke schema baru
@@ -226,9 +226,9 @@ Halaman: `/admin/secure-login` · API: `POST /api/auth/superadmin-login`
 
 | Akun | Username | Password |
 |---|---|---|
-| Tenant A | `admin00001` | `admin123` (tenantId `357011aa-...`) |
-| Tenant B | `admin00002` | `admin123` (tenantId `f7f63209-...`) |
-| Superadmin | `superadmin` | `Admin1234` (+ secret key dari env) |
+| Tenant A | `admin00001` | `<local test secret>` (tenantId redacted) |
+| Tenant B | `admin00002` | `<local test secret>` (tenantId redacted) |
+| Superadmin | `superadmin` | `<local test secret>` (+ secret key dari env) |
 
 - `global-setup.ts` mendukung override: `TEST_SA_PASSWORD`.
 - Nilai `.env` ditulis berkutip (`KEY="value"`); dotenv mengupas kutip saat load,

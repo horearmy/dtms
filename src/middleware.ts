@@ -70,6 +70,9 @@ async function rateLimit(key: string, limit: number): Promise<{ allowed: boolean
       // Redis gagal → jatuh ke memori lokal
     }
   }
+  if (process.env.RATE_LIMIT_REQUIRE_REDIS === 'true') {
+    return { allowed: false, remaining: 0, retryAfterSec: Math.ceil(RATE_WINDOW_MS / 1000) };
+  }
   const b = buckets.get(key);
   if (!b || b.resetAt <= now) {
     buckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });

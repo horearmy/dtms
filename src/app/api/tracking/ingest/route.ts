@@ -23,12 +23,17 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  const requestKey = req.headers.get('idempotency-key')?.trim();
+  if (requestKey && (requestKey.length < 8 || requestKey.length > 200)) {
+    return NextResponse.json({ error: 'Idempotency-Key harus berukuran 8-200 karakter' }, { status: 400 });
+  }
+
   // Accept single point or batch
   const points: GpsIngestRequest[] = Array.isArray(body.points) ? body.points : [body];
 
   const jobs: { id: string }[] = [];
-  for (const pt of points.slice(0, 100)) {
-    if (!pt.driverId || typeof pt.latitude !== 'number' || typeof pt.longitude !== 'number') continue;
+  for (const [index, pt] of points.slice(0, 100).entries()) {
+    if (!pt.driverId || !Number.isFinite(pt.latitude) || !Number.isFinite(pt.longitude) || pt.latitude < -90 || pt.latitude > 90 || pt.longitude < -180 || pt.longitude > 180) continue;
     ingestGps({
       tenantId: session?.tenantId ?? undefined,
       driverId: pt.driverId,
@@ -41,6 +46,7 @@ export async function POST(req: NextRequest) {
       accuracy: pt.accuracy,
       battery: pt.battery,
       sequence: pt.sequence,
+      ingestKey: requestKey ? `${requestKey}:${index}` : undefined,
     }, session?.id);
     jobs.push({ id: 'queued' });
   }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { scanAlerts } from '@/lib/alerts';
-import { guard, logAudit } from '@/lib/api-guard';
+import { guard, logAudit, runWithTenant } from '@/lib/api-guard';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +35,7 @@ async function run(req: Request) {
 
   try {
     const started = Date.now();
-    const created = await scanAlerts();
+    const created = await runWithTenant(session?.tenantId ?? null, () => scanAlerts());
     const elapsedMs = Date.now() - started;
 
     await logAudit(session, 'ALERT_SCAN', 'SYSTEM', `created=${created}, ms=${elapsedMs}`);

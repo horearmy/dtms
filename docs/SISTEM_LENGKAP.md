@@ -60,15 +60,15 @@ DTMS adalah sistem manajemen dan pelacakan pengiriman berbasis web (responsive) 
 
 | Role | Username | Password |
 |------|----------|----------|
-| Super Admin | `superadmin` | `admin123` |
-| Admin Operasional | `admin` | `admin123` |
-| Dispatcher | `dispatcher` | `admin123` |
-| Warehouse | `warehouse` | `admin123` |
-| Customer Service | `cs` | `admin123` |
-| Supervisor | `supervisor` | `admin123` |
-| Management | `management` | `admin123` |
-| Driver 1 | `driver1` | `driver123` |
-| Driver 2 | `driver2` | `driver123` |
+| Super Admin | `superadmin` | `<SEED_SUPERADMIN_PASSWORD>` |
+| Admin Operasional | `admin` | `<SEED_ADMIN_PASSWORD>` |
+| Dispatcher | `dispatcher` | `<SEED_ADMIN_PASSWORD>` |
+| Warehouse | `warehouse` | `<SEED_ADMIN_PASSWORD>` |
+| Customer Service | `cs` | `<SEED_ADMIN_PASSWORD>` |
+| Supervisor | `supervisor` | `<SEED_ADMIN_PASSWORD>` |
+| Management | `management` | `<SEED_ADMIN_PASSWORD>` |
+| Driver 1 | `driver1` | `<SEED_DRIVER_PASSWORD>` |
+| Driver 2 | `driver2` | `<SEED_DRIVER_PASSWORD>` |
 
 ---
 

@@ -1,6 +1,17 @@
 const { PrismaClient, ShipmentStatus, ServiceType, Role, GeofenceType, TenantStatus } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
+const seedPassword = (name, fallback) => {
+  const value = process.env[name] || fallback;
+  if (process.env.NODE_ENV === 'production' && (!process.env[name] || value === fallback)) {
+    throw new Error(`${name} must be set to a non-default value in production`);
+  }
+  return value;
+};
+const ADMIN_PASSWORD = seedPassword('SEED_ADMIN_PASSWORD', 'admin123');
+const DRIVER_PASSWORD = seedPassword('SEED_DRIVER_PASSWORD', 'driver123');
+const SUPERADMIN_PASSWORD = seedPassword('SEED_SUPERADMIN_PASSWORD', 'admin123');
+
 const P = {
   TENANT: { READ: 'tenant.read', CREATE: 'tenant.create', UPDATE: 'tenant.update', DELETE: 'tenant.delete' },
   USER: { READ: 'user.read', CREATE: 'user.create', UPDATE: 'user.update', DELETE: 'user.delete' },
@@ -277,32 +288,32 @@ async function main() {
   }
 
   const superAdmin = await prisma.user.create({
-    data: { name: 'Super Admin', username: 'superadmin', passwordHash: hash('admin123'), role: Role.SUPER_ADMIN, email: 'superadmin@dtms.local' },
+    data: { name: 'Super Admin', username: 'superadmin', passwordHash: hash(SUPERADMIN_PASSWORD), role: Role.SUPER_ADMIN, email: 'superadmin@dtms.local', mustChangePassword: true },
   });
   await prisma.user.create({
-    data: { name: 'Admin Operasional', username: 'admin', passwordHash: hash('admin123'), role: Role.ADMIN_OPERASIONAL, email: 'admin@dtms.local', tenantId: tenant.id },
+    data: { name: 'Admin Operasional', username: 'admin', passwordHash: hash(ADMIN_PASSWORD), role: Role.ADMIN_OPERASIONAL, email: 'admin@dtms.local', tenantId: tenant.id, mustChangePassword: true },
   });
   await prisma.user.create({
-    data: { name: 'Dispatcher', username: 'dispatcher', passwordHash: hash('admin123'), role: Role.DISPATCHER, tenantId: tenant.id },
+    data: { name: 'Dispatcher', username: 'dispatcher', passwordHash: hash(ADMIN_PASSWORD), role: Role.DISPATCHER, tenantId: tenant.id, mustChangePassword: true },
   });
   await prisma.user.create({
-    data: { name: 'Staff Gudang', username: 'warehouse', passwordHash: hash('admin123'), role: Role.WAREHOUSE, tenantId: tenant.id },
+    data: { name: 'Staff Gudang', username: 'warehouse', passwordHash: hash(ADMIN_PASSWORD), role: Role.WAREHOUSE, tenantId: tenant.id, mustChangePassword: true },
   });
   await prisma.user.create({
-    data: { name: 'Customer Service', username: 'cs', passwordHash: hash('admin123'), role: Role.CUSTOMER_SERVICE, tenantId: tenant.id },
+    data: { name: 'Customer Service', username: 'cs', passwordHash: hash(ADMIN_PASSWORD), role: Role.CUSTOMER_SERVICE, tenantId: tenant.id, mustChangePassword: true },
   });
   await prisma.user.create({
-    data: { name: 'Supervisor', username: 'supervisor', passwordHash: hash('admin123'), role: Role.SUPERVISOR, tenantId: tenant.id },
+    data: { name: 'Supervisor', username: 'supervisor', passwordHash: hash(ADMIN_PASSWORD), role: Role.SUPERVISOR, tenantId: tenant.id, mustChangePassword: true },
   });
   await prisma.user.create({
-    data: { name: 'Manajemen', username: 'management', passwordHash: hash('admin123'), role: Role.MANAGEMENT, tenantId: tenant.id },
+    data: { name: 'Manajemen', username: 'management', passwordHash: hash(ADMIN_PASSWORD), role: Role.MANAGEMENT, tenantId: tenant.id, mustChangePassword: true },
   });
 
   const driverUser1 = await prisma.user.create({
-    data: { name: 'Budi Santoso', username: 'driver1', passwordHash: hash('driver123'), role: Role.DRIVER, phone: '081234567801', email: 'driver1@dtms.local', tenantId: tenant.id },
+    data: { name: 'Budi Santoso', username: 'driver1', passwordHash: hash(DRIVER_PASSWORD), role: Role.DRIVER, phone: '081234567801', email: 'driver1@dtms.local', tenantId: tenant.id, mustChangePassword: true },
   });
   const driverUser2 = await prisma.user.create({
-    data: { name: 'Agus Wijaya', username: 'driver2', passwordHash: hash('driver123'), role: Role.DRIVER, phone: '081234567802', tenantId: tenant.id },
+    data: { name: 'Agus Wijaya', username: 'driver2', passwordHash: hash(DRIVER_PASSWORD), role: Role.DRIVER, phone: '081234567802', tenantId: tenant.id, mustChangePassword: true },
   });
 
   const customers = await Promise.all([
@@ -510,7 +521,7 @@ async function main() {
   });
 
   await prisma.$disconnect();
-  console.log('Seed selesai. Tenant: default. Akun: superadmin/admin123, admin/admin123, driver1/driver123');
+  console.log('Seed selesai. Tenant: default. Password akun berasal dari environment seed.');
 }
 
 main().catch((e) => {

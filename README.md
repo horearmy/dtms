@@ -77,17 +77,17 @@ Aplikasi berjalan di `http://localhost:3000` (jika port dipakai, gunakan `npm ru
 
 | Role | Username | Password |
 |---|---|---|
-| Super Admin | `superadmin` | `admin123` |
-| Admin Operasional | `admin` | `admin123` |
-| Dispatcher | `dispatcher` | `admin123` |
-| Warehouse | `warehouse` | `admin123` |
-| Customer Service | `cs` | `admin123` |
-| Supervisor | `supervisor` | `admin123` |
-| Manajemen | `management` | `admin123` |
-| Driver 1 | `driver1` | `driver123` |
-| Driver 2 | `driver2` | `driver123` |
+| Super Admin | `superadmin` | `<SEED_SUPERADMIN_PASSWORD>` |
+| Admin Operasional | `admin` | `<SEED_ADMIN_PASSWORD>` |
+| Dispatcher | `dispatcher` | `<SEED_ADMIN_PASSWORD>` |
+| Warehouse | `warehouse` | `<SEED_ADMIN_PASSWORD>` |
+| Customer Service | `cs` | `<SEED_ADMIN_PASSWORD>` |
+| Supervisor | `supervisor` | `<SEED_ADMIN_PASSWORD>` |
+| Manajemen | `management` | `<SEED_ADMIN_PASSWORD>` |
+| Driver 1 | `driver1` | `<SEED_DRIVER_PASSWORD>` |
+| Driver 2 | `driver2` | `<SEED_DRIVER_PASSWORD>` |
 
-> Ganti password default sebelum digunakan di produksi.
+> Untuk seed lokal, isi `SEED_SUPERADMIN_PASSWORD`, `SEED_ADMIN_PASSWORD`, dan `SEED_DRIVER_PASSWORD`. Production menolak password default.
 
 ## Script npm
 

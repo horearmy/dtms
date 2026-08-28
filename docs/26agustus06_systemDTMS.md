@@ -449,7 +449,7 @@ npm test          # unit + integration (306 tes / 24 file)
 | `npm run db:seed` / `db:reset` | Seed / reset+seed |
 | `npm run alerts:run` / `alerts:scheduler` | Alert SLA/ETA sekali / daemon |
 
-**Kredensial dev:** Superadmin portal → Secret `DTMS-SEC-2026-XK9!mPz#vR`, `superadmin / Admin1234`. Tenant seed: `admin00001/admin123` (PT Transportindo 1), `admin00002/admin123` (PT Transportindo 2). *(Wajib diganti di produksi.)*
+**Kredensial dev:** Tidak disimpan di repository. Gunakan secret lokal sementara dari environment dan ganti seluruh credential sebelum deployment.
 
 ---
 
@@ -468,14 +468,14 @@ npm test          # unit + integration (306 tes / 24 file)
 | `ADMIN_REQUIRE_MFA` | `true` = tolak login SA tanpa 2FA | false |
 | `ADMIN_RISK_BLOCK_HIGH` | `true` = tolak login risiko HIGH | false |
 | `ADMIN_SESSION_MINUTES` / `ADMIN_IDLE_MINUTES` / `ADMIN_STEPUP_MINUTES` | Tuning sesi & step-up | 240 / 20 / 5 |
-| `TEST_SA_PASSWORD` / `TEST_SA_SECRET_KEY` / `TEST_URL` | Integrasi test | Admin1234 / default / :3000 |
+| `TEST_SA_PASSWORD` / `TEST_SA_SECRET_KEY` / `TEST_URL` | Integrasi test | secret manager / secret manager / :3000 |
 | `SENTRY_*`, `LOG_LEVEL`, WA credentials, S3 keys | Opsional | — |
 
 ---
 
 ## 19. Checklist Pra-Produksi
 
-- [ ] Ganti `superadmin/Admin1234` (seed) → password kuat; pertimbangkan set `mustChangePassword=true` pada akun baru
+- [x] Seed tidak lagi menyimpan password default dan akun seed dipaksa mengganti password
 - [ ] Aktifkan `ADMIN_REQUIRE_MFA=true` setelah semua SA enroll 2FA/Passkey
 - [ ] Set `SUPERADMIN_SECRET_KEY` kuat acak + isi `SUPERADMIN_ALLOWED_IPS` (kantor/VPN)
 - [ ] Rotasi `AUTH_SECRET` + `DATABASE_URL` credential; matikan logging verbose

@@ -57,6 +57,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Shipment sudah selesai (terminal status)' }, { status: 400 });
     }
 
+    // Status maju/perjalanan hanya dijalankan oleh driver (via aplikasi driver)
+    // atau scan gudang (via route scan / dispatch-driver yang khusus).
+    // Admin/ops setelah pembuatan shipment hanya memantau dan boleh menandai
+    // gagal/jadwal ulang/return — tidak boleh memajukan status perjalanan manual.
+    if (session?.role !== 'DRIVER') {
+      const forwardOnly = ['WAREHOUSE_RECEIVED', 'SORTING', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY', 'DELIVERED'];
+      if ((forwardOnly as readonly string[]).includes(trimmedStatus)) {
+        return NextResponse.json(
+          { error: `Status ${STATUS_LABELS[trimmedStatus] || trimmedStatus} tidak dapat diubah manual. Perjalanan dijalankan via scan gudang / driver.` },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Status DELIVERED hanya boleh dicapai lewat POD yang dibuat oleh driver yang ditugaskan.
+    if (trimmedStatus === 'DELIVERED' && session?.role !== 'DRIVER') {
+      return NextResponse.json(
+        { error: 'Penyelesaian pengiriman (DELIVERED) hanya dapat dilakukan oleh driver via laporan penerimaan (POD)' },
+        { status: 403 }
+      );
+    }
+
     if (session?.role === 'DRIVER') {
       const driver = await prisma.driver.findUnique({ where: { userId: session.id } });
       if (!driver) {

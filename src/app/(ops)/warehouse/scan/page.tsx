@@ -51,6 +51,7 @@ function ScanInner() {
   const [code, setCode] = useState(params.get('resi') || '');
   const [hit, setHit] = useState<ShipmentHit | null>(null);
   const [notFound, setNotFound] = useState('');
+  const [dispatchMsg, setDispatchMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [scans, setScans] = useState<ScanItem[]>([]);
   const [camOn, setCamOn] = useState(false);
@@ -70,7 +71,13 @@ function ScanInner() {
     setLoading(true);
     setNotFound('');
     setHit(null);
+    setDispatchMsg('');
     try {
+      if (/^DRV:.+:SHP:.+$/i.test(q)) {
+        await dispatchDriver(q);
+        setLoading(false);
+        return;
+      }
       const res = await fetch(`/api/shipments?q=${encodeURIComponent(q)}&pageSize=100`);
       const data = await res.json();
       const list = data.items || [];
@@ -81,6 +88,28 @@ function ScanInner() {
       setNotFound('Gagal mencari resi');
     }
     setLoading(false);
+  }
+
+  async function dispatchDriver(q: string) {
+    setDispatchMsg('');
+    setNotFound('');
+    try {
+      const res = await fetch('/api/warehouse/dispatch-driver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: q }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNotFound(data.error || 'Gagal memberangkatkan shipment');
+        return;
+      }
+      setDispatchMsg(`✅ ${data.shipment?.trackingNumber} diberangkatkan (${data.driver || 'driver'})`);
+      setCode('');
+      await loadScans();
+    } catch {
+      setNotFound('Gagal memproses scan driver');
+    }
   }
 
   async function doScan(action: string) {
@@ -161,7 +190,7 @@ function ScanInner() {
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-bold text-[#101828]">Warehouse Scan</h1>
-        <p className="text-sm text-[#667085]">Scan barcode/QR untuk proses verifikasi gudang – dispatch</p>
+        <p className="text-sm text-[#667085]">Scan barcode/QR untuk proses verifikasi gudang – dispatch. Scan QR driver (DRV:...) untuk memberangkatkan.</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -196,6 +225,7 @@ function ScanInner() {
           </div>
 
           {notFound && <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{notFound}</div>}
+          {dispatchMsg && <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{dispatchMsg}</div>}
 
           {hit && (
             <div className="mt-4 rounded-xl border border-[#E4E7EC] p-4">

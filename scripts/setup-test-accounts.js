@@ -6,14 +6,7 @@
  * ┌─────────────────────────────────────────────────────────────────┐
  * │ Role              │ Username         │ Password   │ Tenant      │
  * ├─────────────────────────────────────────────────────────────────┤
- * │ SUPER_ADMIN       │ superadmin       │ Admin1234  │ (none)      │
- * │ ADMIN_OPERASIONAL │ logistik_admin   │ Admin1234  │ LogNus      │
- * │ DISPATCHER        │ logistik_disp    │ Admin1234  │ LogNus      │
- * │ WAREHOUSE         │ logistik_wh      │ Admin1234  │ LogNus      │
- * │ DRIVER            │ logistik_driver  │ Admin1234  │ LogNus      │
- * │ CUSTOMER_SERVICE  │ logistik_cs      │ Admin1234  │ LogNus      │
- * │ SUPERVISOR        │ logistik_super   │ Admin1234  │ LogNus      │
- * │ MANAGEMENT        │ logistik_mgmt    │ Admin1234  │ LogNus      │
+ * Password is supplied through TEST_ACCOUNT_PASSWORD.
  * └─────────────────────────────────────────────────────────────────┘
  *
  * Usage:
@@ -24,7 +17,10 @@ const { PrismaClient, Role, TenantStatus } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const BCRYPT_COST = 12;
-const PASSWORD = 'Admin1234';
+const PASSWORD = process.env.TEST_ACCOUNT_PASSWORD;
+if (!PASSWORD || PASSWORD.length < 12) {
+  throw new Error('TEST_ACCOUNT_PASSWORD must be set and contain at least 12 characters');
+}
 
 const prisma = new PrismaClient();
 
@@ -272,14 +268,7 @@ async function main() {
   console.log('┌─────────────────────┬──────────────────┬──────────┬──────────────────────┐');
   console.log('│ Role                │ Username         │ Password │ URL Path             │');
   console.log('├─────────────────────┼──────────────────┼──────────┼──────────────────────┤');
-  console.log('│ SUPER_ADMIN         │ superadmin       │ Admin1234│ /tenants             │');
-  console.log('│ ADMIN_OPERASIONAL   │ logistik_admin   │ Admin1234│ /dashboard           │');
-  console.log('│ DISPATCHER          │ logistik_disp    │ Admin1234│ /dispatch            │');
-  console.log('│ WAREHOUSE           │ logistik_wh      │ Admin1234│ /warehouses          │');
-  console.log('│ DRIVER              │ logistik_driver  │ Admin1234│ /driver              │');
-  console.log('│ CUSTOMER_SERVICE    │ logistik_cs      │ Admin1234│ /customers           │');
-  console.log('│ SUPERVISOR          │ logistik_super   │ Admin1234│ /reports             │');
-  console.log('│ MANAGEMENT          │ logistik_mgmt    │ Admin1234│ /analytics           │');
+  console.log('Test accounts configured. Password is available only in TEST_ACCOUNT_PASSWORD.');
   console.log('└─────────────────────┴──────────────────┴──────────┴──────────────────────┘');
   console.log('\nBase URL: http://localhost:3000');
   console.log('Login URL: http://localhost:3000/login');

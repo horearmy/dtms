@@ -1,11 +1,13 @@
 # Test Account Credentials for Testsprite
 
+Credentials are intentionally not stored in the repository. Create temporary accounts locally with `scripts/setup-test-accounts.js` and obtain passwords from the local secret manager or environment. Never reuse these accounts in staging or production.
+
 ## Super Admin
 
 | Field | Value |
 |-------|-------|
 | Username | `superadmin` |
-| Password | `Admin1234` |
+| Password | `<local test secret>` |
 | Role | SUPER_ADMIN |
 | Tenant | (global — not bound to any tenant) |
 | URL | `http://localhost:3000` |
@@ -25,13 +27,13 @@
 
 | # | Username | Password | Role | Name |
 |---|----------|----------|------|------|
-| 1 | `logistik_admin` | `Admin1234` | ADMIN_OPERASIONAL | Admin Logistik |
-| 2 | `logistik_disp` | `Admin1234` | DISPATCHER | Dispatcher Logistik |
-| 3 | `logistik_wh` | `Admin1234` | WAREHOUSE | Staff Gudang |
-| 4 | `logistik_driver` | `Admin1234` | DRIVER | Driver Test |
-| 5 | `logistik_cs` | `Admin1234` | CUSTOMER_SERVICE | Customer Service |
-| 6 | `logistik_super` | `Admin1234` | SUPERVISOR | Supervisor Logistik |
-| 7 | `logistik_mgmt` | `Admin1234` | MANAGEMENT | Manajemen Logistik |
+| 1 | `logistik_admin` | `<local test secret>` | ADMIN_OPERASIONAL | Admin Logistik |
+| 2 | `logistik_disp` | `<local test secret>` | DISPATCHER | Dispatcher Logistik |
+| 3 | `logistik_wh` | `<local test secret>` | WAREHOUSE | Staff Gudang |
+| 4 | `logistik_driver` | `<local test secret>` | DRIVER | Driver Test |
+| 5 | `logistik_cs` | `<local test secret>` | CUSTOMER_SERVICE | Customer Service |
+| 6 | `logistik_super` | `<local test secret>` | SUPERVISOR | Supervisor Logistik |
+| 7 | `logistik_mgmt` | `<local test secret>` | MANAGEMENT | Manajemen Logistik |
 
 ---
 
@@ -45,7 +47,7 @@ Tenant users **must** include `tenantId` in the login request body:
 POST /api/auth/login
 {
   "username": "logistik_admin",
-  "password": "Admin1234",
+  "password": "<local test secret>",
   "tenantId": "cmt27rxey01e3chl4st8bjgop"
 }
 ```
@@ -56,7 +58,7 @@ Super Admin does not require `tenantId`:
 POST /api/auth/login
 {
   "username": "superadmin",
-  "password": "Admin1234"
+  "password": "<local test secret>"
 }
 ```
 

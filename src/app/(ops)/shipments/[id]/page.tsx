@@ -5,6 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import StatusBadge from '@/components/StatusBadge';
 import ReturnTimeline from '@/components/ReturnTimeline';
+import JourneyProgress from '@/components/JourneyProgress';
 
 const ShipmentQR = dynamic(() => import('@/components/ShipmentQR'), {
   ssr: false,
@@ -16,7 +17,7 @@ const ShipmentLiveMap = dynamic(() => import('@/components/ShipmentLiveMap'), {
 });
 import { btnPrimary, btnGhost, inputCls, Field, Modal } from '@/components/ui';
 import {
-  STATUS_LABELS, STATUS_COLORS, NEXT_STATUS, FAILURE_REASONS,
+  STATUS_LABELS, STATUS_COLORS, FAILURE_REASONS,
   formatDateTime, formatNumber,
 } from '@/lib/constants';
 import { csrfHeaders } from '@/lib/csrf';
@@ -160,7 +161,6 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
   if (err) return <div className="py-20 text-center text-[#667085]">{err}</div>;
 
   const s = shipment;
-  const next = NEXT_STATUS[s.status];
   const events: EventItem[] = s.events || [];
   const assignment = s.assignments?.[0];
   const hasAssignment = !!assignment?.driver?.id && !!assignment?.vehicle?.id;
@@ -228,31 +228,33 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
         status={s.status}
       />
 
-      {/* Aksi status — hanya untuk tenant, superadmin hanya memantau */}
+      {/* Estimasi progres perjalanan berdasarkan posisi driver */}
+      <JourneyProgress
+        originLat={s.originLat}
+        originLng={s.originLng}
+        destLat={s.destLat}
+        destLng={s.destLng}
+        currentLat={assignment?.driver?.gpsLogs?.[0]?.latitude ?? null}
+        currentLng={assignment?.driver?.gpsLogs?.[0]?.longitude ?? null}
+        status={s.status}
+        gpsUpdatedAt={assignment?.driver?.gpsLogs?.[0]?.createdAt ? formatDateTime(assignment?.driver?.gpsLogs?.[0]?.createdAt) : null}
+      />
+
+      {/* Aksi status — untuk tenant. Setelah pembuatan, admin hanya memantau
+          perjalanan; status maju dijalankan scan gudang/driver. Admin bisa
+          menandai gagal/jadwal ulang/return. */}
       {!terminal && !isSuperAdmin && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E4E7EC] bg-[#F7F9FC] p-4">
-          <span className="text-sm font-bold text-[#101828]">Aksi:</span>
-          {next && (() => {
-            const dispatchBlocked = next === 'DISPATCHED' && !hasAssignment;
-            return (
-              <button
-                onClick={() => changeStatus(next)}
-                disabled={busy || dispatchBlocked}
-                className={btnPrimary}
-                title={dispatchBlocked ? 'Pilih driver dan kendaraan terlebih dahulu' : undefined}
-              >
-                Lanjut → {STATUS_LABELS[next]}
-              </button>
-            );
-          })()}
-          {next === 'DISPATCHED' && !hasAssignment && (
-            <span className="text-xs font-semibold text-[#F5222D]">
-              ⚠ Pilih driver &amp; kendaraan dulu untuk keberangkatan
+          <span className="text-sm font-bold text-[#101828]">Status:</span>
+          <StatusBadge status={s.status} />
+          <span className="text-xs text-[#667085]">
+            Perjalanan dijalankan otomatis via scan gudang &amp; aplikasi driver. Admin hanya memantau.
+          </span>
+          {s.status === 'OUT_FOR_DELIVERY' && (
+            <span className="text-xs font-semibold text-[#16B364]">
+              ✅ Menunggu laporan penerimaan dari driver (POD) untuk menyelesaikan pengiriman
             </span>
           )}
-          <button onClick={() => { setStatusForm({ status: s.status, notes: '', lat: '', lng: '' }); setStatusOpen(true); }} disabled={busy} className={btnGhost}>
-            Update Status / Lokasi
-          </button>
           {s.status === 'OUT_FOR_DELIVERY' && (
             <button onClick={() => { setStatusForm({ status: 'DELIVERY_FAILED', notes: '', lat: '', lng: '' }); setFailReason(FAILURE_REASONS[0]); setStatusOpen(true); }} disabled={busy} className="rounded-lg bg-[#F5222D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#D41D25]">
               Gagal Delivery
@@ -507,7 +509,9 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
             <form onSubmit={submitManualStatus} className="space-y-4">
               <Field label="Status Baru" required>
                 <select required value={statusForm.status} onChange={(e) => setStatusForm({ ...statusForm, status: e.target.value })} className={inputCls}>
-                  {Object.keys(STATUS_LABELS).map((st) => (
+                  {Object.keys(STATUS_LABELS)
+                    .filter((st) => st !== 'DELIVERED' && !['WAREHOUSE_RECEIVED', 'SORTING', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY'].includes(st))
+                    .map((st) => (
                     <option key={st} value={st}>{STATUS_LABELS[st]}</option>
                   ))}
                 </select>

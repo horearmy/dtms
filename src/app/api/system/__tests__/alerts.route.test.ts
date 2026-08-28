@@ -15,7 +15,11 @@ const {
 }));
 
 vi.mock('@/lib/alerts', () => ({ scanAlerts: mockScanAlerts }));
-vi.mock('@/lib/api-guard', () => ({ guard: mockGuard, logAudit: mockLogAudit }));
+vi.mock('@/lib/api-guard', () => ({
+  guard: mockGuard,
+  logAudit: mockLogAudit,
+  runWithTenant: (_tenantId: string | null | undefined, fn: () => Promise<unknown>) => fn(),
+}));
 
 import { GET, POST } from '../alerts/route';
 

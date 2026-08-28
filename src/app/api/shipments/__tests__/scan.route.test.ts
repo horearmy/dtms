@@ -65,7 +65,7 @@ describe('POST /api/shipments/[id]/scan', () => {
 
   it('menolak action di luar ALLOWED (400)', async () => {
     mockGuard.mockResolvedValue({ session: SESSION, error: null });
-    const res = await POST(scanReq({ action: 'RETURNED' }), { params: Promise.resolve({ id: 's1' }) });
+    const res = await POST(scanReq({ action: 'NOT_A_STATUS' }), { params: Promise.resolve({ id: 's1' }) });
     expect(res.status).toBe(400);
   });
 
@@ -90,7 +90,7 @@ describe('POST /api/shipments/[id]/scan', () => {
     const res = await POST(scanReq({ action: 'DISPATCHED' }), { params: Promise.resolve({ id: 's1' }) });
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toContain('tidak valid');
+    expect(body.error).toContain('Alur gudang');
   });
 
   it('menolak DISPATCHED tanpa assignment driver+vehicle (400)', async () => {
@@ -114,7 +114,7 @@ describe('POST /api/shipments/[id]/scan', () => {
     expect(body.error).toContain('Kendaraan tidak tersedia');
   });
 
-  it('berhasil scan WAREHOUSE_RECEIVED -> DISPATCHED (201)', async () => {
+  it('berhasil scan WAREHOUSE_RECEIVED -> DISPATCHED (200)', async () => {
     mockGuard.mockResolvedValue({ session: SESSION, error: null });
     mockShipment.findUnique.mockResolvedValue(SHIPMENT);
     mockAssignment.findFirst.mockResolvedValue({ driverId: 'd1', vehicleId: 'v1' });
@@ -123,10 +123,10 @@ describe('POST /api/shipments/[id]/scan', () => {
     mockShipment.update.mockResolvedValue({ ...SHIPMENT, status: 'DISPATCHED' });
 
     const res = await POST(
-      scanReq({ action: 'DISPATCHED', latitude: -6.2, longitude: 106.8, notes: 'muat selesai' }),
+      scanReq({ action: 'DISPATCHED', lat: -6.2, lng: 106.8, notes: 'muat selesai' }),
       { params: Promise.resolve({ id: 's1' }) }
     );
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.shipment.status).toBe('DISPATCHED');
     expect(mockWarehouseScan.create).toHaveBeenCalledWith(
@@ -140,7 +140,7 @@ describe('POST /api/shipments/[id]/scan', () => {
       SESSION,
       'WAREHOUSE_SCAN',
       'SHIPMENT',
-      expect.objectContaining({ newData: expect.objectContaining({ action: 'DISPATCHED' }) }),
+       expect.objectContaining({ newData: expect.objectContaining({ status: 'DISPATCHED' }) }),
       expect.anything()
     );
   });

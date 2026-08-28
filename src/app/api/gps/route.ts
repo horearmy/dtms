@@ -28,17 +28,35 @@ export async function POST(req: NextRequest) {
 
     const lat = Number(latitude);
     const lng = Number(longitude);
+    const numeric = { lat, lng, speed: speed == null ? null : Number(speed), heading: heading == null ? null : Number(heading), accuracy: accuracy == null ? null : Number(accuracy), battery: battery == null ? null : Number(battery) };
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return NextResponse.json({ error: 'Koordinat GPS tidak valid' }, { status: 400 });
+    }
+    if ([numeric.speed, numeric.heading, numeric.accuracy, numeric.battery].some((value) => value !== null && !Number.isFinite(value))) {
+      return NextResponse.json({ error: 'Data telemetri GPS tidak valid' }, { status: 400 });
+    }
+    if (numeric.speed !== null && numeric.speed < 0) return NextResponse.json({ error: 'Speed tidak boleh negatif' }, { status: 400 });
+    if (numeric.heading !== null && (numeric.heading < 0 || numeric.heading > 360)) return NextResponse.json({ error: 'Heading harus antara 0 dan 360' }, { status: 400 });
+    if (numeric.accuracy !== null && numeric.accuracy < 0) return NextResponse.json({ error: 'Accuracy tidak boleh negatif' }, { status: 400 });
+    if (numeric.battery !== null && (numeric.battery < 0 || numeric.battery > 100)) return NextResponse.json({ error: 'Battery harus antara 0 dan 100' }, { status: 400 });
+    const ingestKey = req.headers.get('idempotency-key')?.trim() || null;
+    if (ingestKey && (ingestKey.length < 8 || ingestKey.length > 200)) return NextResponse.json({ error: 'Idempotency-Key harus berukuran 8-200 karakter' }, { status: 400 });
+    if (ingestKey) {
+      const existing = await prisma.gpsLog.findUnique({ where: { ingestKey }, select: { id: true } });
+      if (existing) return NextResponse.json({ ok: true, id: existing.id, duplicate: true, geofenceEvents: [] });
+    }
 
     const log = await prisma.gpsLog.create({
       data: {
         driverId: driver.id,
+        ingestKey,
         vehicleId: assignment?.vehicleId || null,
         latitude: lat,
         longitude: lng,
-        speed: speed != null ? Number(speed) : null,
-        heading: heading != null ? Number(heading) : null,
-        accuracy: accuracy != null ? Number(accuracy) : null,
-        battery: battery != null ? Number(battery) : null,
+        speed: numeric.speed,
+        heading: numeric.heading,
+        accuracy: numeric.accuracy,
+        battery: numeric.battery,
       },
     });
 
