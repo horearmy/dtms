@@ -15,7 +15,12 @@ export async function GET() {
 
   return runWithTenant(session?.tenantId ?? null, async () => {
     const assignments = await prisma.deliveryAssignment.findMany({
-      where: { shipment: { status: { in: ACTIVE } } },
+      where: {
+        shipment: {
+          status: { in: ACTIVE },
+          ...(session?.tenantId ? { tenantId: session.tenantId } : {}),
+        },
+      },
       include: {
         shipment: { select: { id: true, trackingNumber: true, status: true, origin: true, destination: true, tenantId: true } },
         driver: {

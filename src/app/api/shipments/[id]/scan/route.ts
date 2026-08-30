@@ -23,6 +23,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { session, error } = await guardPermission(PERMISSIONS.WAREHOUSE.SCAN);
   if (error) return error;
 
+  if (session?.role === 'DRIVER') {
+    return NextResponse.json(
+      { error: 'Scan gudang hanya untuk petugas gudang/ops, bukan driver' },
+      { status: 403 }
+    );
+  }
+
   return runWithTenant(session?.tenantId ?? null, async () => {
     const body = await req.json().catch(() => ({}));
     const { action, notes, lat, lng } = body || {};
