@@ -1,6 +1,6 @@
 // src/lib/gps-processor.ts
 // GPS processing pipeline: receive raw point → store → broadcast → ETA update.
-import { prisma } from './prisma';
+import { prisma, runWithTenant } from './prisma';
 import { enqueue, registerJobHandler, startQueueWorker } from './job-queue';
 import { broadcast } from './sse-bus';
 import { calculateEta } from './eta-engine';
@@ -46,20 +46,23 @@ registerJobHandler('GPS_INGEST', async (job) => {
     if (existing) return;
   }
 
-  // 1. Store raw GPS
-  await prisma.gpsLog.create({
-    data: {
-      driverId: p.driverId,
-      ingestKey: p.ingestKey ?? null,
-      vehicleId: p.vehicleId ?? null,
-      latitude: p.latitude,
-      longitude: p.longitude,
-      speed: p.speed ?? null,
-      heading: p.heading ?? null,
-      accuracy: p.accuracy ?? null,
-      battery: p.battery ?? null,
-    },
-  });
+  // 1. Store raw GPS (tenant-scoped; fail-closed if no tenant context provided)
+  const tenantId = p.tenantId ?? null;
+  await runWithTenant(tenantId, () =>
+    prisma.gpsLog.create({
+      data: {
+        driverId: p.driverId,
+        ingestKey: p.ingestKey ?? null,
+        vehicleId: p.vehicleId ?? null,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        speed: p.speed ?? null,
+        heading: p.heading ?? null,
+        accuracy: p.accuracy ?? null,
+        battery: p.battery ?? null,
+      },
+    })
+  );
 
   // 2. Broadcast current position to SSE subscribers
   const channel = p.tenantId ? `tenant:${p.tenantId}` : 'global';
