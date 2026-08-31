@@ -17,6 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       shipmentId: id,
       driverId: String(driverId),
       vehicleId: String(vehicleId),
+      tenantId: session?.tenantId ?? null,
       requireActiveDriver: false,
       requireShipmentAssignable: false,
       reassign: true,

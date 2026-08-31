@@ -37,11 +37,12 @@ export type CreateAssignmentOptions = {
   driverId: string;
   vehicleId: string;
   // Pemanggil boleh menegaskan pembeda:
-  requireActiveDriver?: boolean;      // dispatch board mewajibkan driver ACTIVE
+  tenantId?: string | null;        // tenant yang memiliki assignment (isolasi)
+  requireActiveDriver?: boolean;   // dispatch board mewajibkan driver ACTIVE
   requireShipmentAssignable?: boolean; // dispatch board: status harus bisa ditugaskan
-  reassign?: boolean;                 // assign ulang (hapus assignment lama)
-  branchId?: string | null;           // isolasi branch: tolak bila shipment punya branch berbeda
-  waProceed?: string;                 // kalimat lanjutan di pesan WhatsApp ke driver
+  reassign?: boolean;              // assign ulang (hapus assignment lama)
+  branchId?: string | null;        // isolasi branch: tolak bila shipment punya branch berbeda
+  waProceed?: string;              // kalimat lanjutan di pesan WhatsApp ke driver
 };
 
 export async function createAssignment(opts: CreateAssignmentOptions): Promise<AssignmentResult> {
@@ -133,7 +134,7 @@ export async function createAssignment(opts: CreateAssignmentOptions): Promise<A
       data: { returning: false, returnedAt: null },
     });
     return tx.deliveryAssignment.create({
-      data: { shipmentId, driverId, vehicleId },
+      data: { shipmentId, driverId, vehicleId, tenantId: opts.tenantId ?? null },
       include: {
         shipment: { select: { id: true, trackingNumber: true, destination: true } },
         driver: { select: { name: true, phone: true } },
