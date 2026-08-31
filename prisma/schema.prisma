@@ -142,6 +142,7 @@ model DailyReport {
 
 model DeliveryAssignment {
   id         String   @id @default(cuid())
+  tenantId   String?
   shipmentId String
   driverId   String
   vehicleId  String?
@@ -149,10 +150,12 @@ model DeliveryAssignment {
   driver     Driver   @relation(fields: [driverId], references: [id])
   shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([driverId, assignedAt])
   @@index([shipmentId])
   @@index([vehicleId])
+  @@index([tenantId])
 }
 
 model DemoRequest {
@@ -280,6 +283,7 @@ model GeofenceEvent {
 
 model GpsLog {
   id        String   @id @default(cuid())
+  tenantId  String?
   ingestKey String?  @unique
   driverId  String
   vehicleId String?
@@ -293,10 +297,12 @@ model GpsLog {
   legalHold Boolean  @default(false)
   driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
   vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
   @@index([driverId, createdAt])
   @@index([vehicleId])
+  @@index([tenantId, createdAt])
 }
 
 model JobQueue {
@@ -881,11 +887,13 @@ model Tenant {
   branches              Branch[]
   companies             Company[]
   customers            Customer[]
+  deliveryAssignments  DeliveryAssignment[]
   demoRequests         DemoRequest[]
   departments          Department[]
   drivers              Driver[]
   exceptions           Exception[]
   geofences            Geofence[]
+  gpsLogs              GpsLog[]
   hubs                 Hub[]
   integrationConfigs   IntegrationConfig[]
   invoices             Invoice[]

@@ -38,6 +38,7 @@ const TENANT_SCOPED = new Set([
   'uploadedFile', 'demoRequest', 'rolePermission',
   'auditLog', 'notification', 'message', 'tenantRateLimit',
   'organization', 'region', 'whiteLabel', 'tenantOnboarding', 'tenantHealthMetric',
+  'deliveryAssignment', 'gpsLog',
 ]);
 
 // Model dengan tenantId nullable yang wajib boleh ditulis tanpa konteks tenant
@@ -175,5 +176,7 @@ export const prisma = basePrisma.$extends({
     whiteLabel: modelExtension('whiteLabel'),
     tenantOnboarding: modelExtension('tenantOnboarding'),
     tenantHealthMetric: modelExtension('tenantHealthMetric'),
+    deliveryAssignment: modelExtension('deliveryAssignment'),
+    gpsLog: modelExtension('gpsLog'),
   },
 });
