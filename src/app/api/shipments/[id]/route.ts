@@ -25,6 +25,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       },
     });
     if (!shipment) return NextResponse.json({ error: 'Shipment tidak ditemukan' }, { status: 404 });
+    if (session?.branchId && shipment.branchId && shipment.branchId !== session.branchId) {
+      return NextResponse.json({ error: 'Shipment di luar scope cabang Anda' }, { status: 403 });
+    }
     return NextResponse.json(shipment);
   });
 }

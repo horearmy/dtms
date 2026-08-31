@@ -3,8 +3,11 @@ import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { STATUS_LABELS } from '@/lib/constants';
-
-const PRE_DISPATCH_STATUSES = ['WAREHOUSE_RECEIVED', 'SORTING', 'PICKED_UP'] as const;
+import {
+  PRE_DISPATCH_STATUSES,
+  applyStatusTransition,
+  notifyStatusChange,
+} from '@/lib/shipment-transitions';
 
 function parseDispatchCode(raw: string): { employeeId: string; shipmentId: string } | null {
   const trimmed = String(raw || '').trim();
@@ -114,39 +117,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const event = await prisma.trackingEvent.create({
-      data: {
-        shipmentId: shipment.id,
-        status: 'DISPATCHED',
-        latitude: parsedLat,
-        longitude: parsedLng,
-        notes: `Diberangkatkan oleh gudang — diverifikasi via QR driver ${driver.employeeId}`,
-        createdBy: session?.id,
-      },
-    });
+    const dispatchNote = `Diberangkatkan oleh gudang — diverifikasi via QR driver ${driver.employeeId}`;
+    let updated;
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const transitioned = await applyStatusTransition(tx, {
+          shipmentId: shipment.id,
+          status: 'DISPATCHED',
+          lat: parsedLat,
+          lng: parsedLng,
+          notes: dispatchNote,
+          createdBy: session?.id,
+          notifyMessage: `${shipment.trackingNumber}: ${STATUS_LABELS.DISPATCHED} — diverifikasi via QR driver ${driver.employeeId}`,
+        });
+        await (tx as { warehouseScan: { create: (args: unknown) => Promise<unknown> } }).warehouseScan.create({
+          data: {
+            shipmentId: shipment.id,
+            action: 'DISPATCHED',
+            scannedBy: session?.id,
+            latitude: parsedLat,
+            longitude: parsedLng,
+            notes: `QR driver ${driver.employeeId} (${driver.name})`,
+          },
+        });
+        return transitioned;
+      });
+      updated = result.updated;
+    } catch (txErr) {
+      console.error('[dispatch-driver POST] transaction error', txErr);
+      return NextResponse.json({ error: 'Gagal memberangkatkan shipment' }, { status: 500 });
+    }
 
-    const updated = await prisma.shipment.update({
-      where: { id: shipment.id },
-      data: { status: 'DISPATCHED' },
-    });
-
-    await prisma.warehouseScan.create({
-      data: {
-        shipmentId: shipment.id,
-        action: 'DISPATCHED',
-        scannedBy: session?.id,
-        latitude: parsedLat,
-        longitude: parsedLng,
-        notes: `QR driver ${driver.employeeId} (${driver.name})`,
-      },
-    });
-
-    await prisma.notification.create({
-      data: {
-        shipmentId: shipment.id,
-        message: `${shipment.trackingNumber}: ${STATUS_LABELS.DISPATCHED} — diverifikasi via QR driver ${driver.employeeId}`,
-      },
-    });
+    await notifyStatusChange(shipment.id, 'DISPATCHED', dispatchNote);
 
     await logAudit(
       session,

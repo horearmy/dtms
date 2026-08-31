@@ -8,6 +8,7 @@ const {
   mockWarehouseScan,
   mockTrackingEvent,
   mockNotification,
+  mockTransaction,
   mockGuard,
   mockLogAudit,
 } = vi.hoisted(() => ({
@@ -17,6 +18,7 @@ const {
   mockWarehouseScan: { create: vi.fn() },
   mockTrackingEvent: { create: vi.fn() },
   mockNotification: { create: vi.fn() },
+  mockTransaction: vi.fn(),
   mockGuard: vi.fn(),
   mockLogAudit: vi.fn(),
 }));
@@ -29,9 +31,11 @@ vi.mock('@/lib/prisma', () => ({
     warehouseScan: mockWarehouseScan,
     trackingEvent: mockTrackingEvent,
     notification: mockNotification,
+    $transaction: mockTransaction,
   },
 }));
 vi.mock('@/lib/api-guard', () => ({ guard: mockGuard, guardPermission: mockGuard, logAudit: mockLogAudit, runWithTenant: (_tenantId: string | null | undefined, fn: () => Promise<unknown>) => fn() }));
+vi.mock('@/lib/whatsapp', () => ({ isWhatsAppEnabled: () => false }));
 
 import { POST } from '../../shipments/[id]/scan/route';
 
@@ -49,6 +53,12 @@ function scanReq(body: unknown) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+function mockTx() {
+  mockTransaction.mockImplementation(async (cb) =>
+    cb({ shipment: mockShipment, trackingEvent: mockTrackingEvent, notification: mockNotification, warehouseScan: mockWarehouseScan })
+  );
 }
 
 describe('POST /api/shipments/[id]/scan', () => {
@@ -119,8 +129,11 @@ describe('POST /api/shipments/[id]/scan', () => {
     mockShipment.findUnique.mockResolvedValue(SHIPMENT);
     mockAssignment.findFirst.mockResolvedValue({ driverId: 'd1', vehicleId: 'v1' });
     mockVehicle.findUnique.mockResolvedValue({ id: 'v1', status: 'AVAILABLE', returning: false });
-    mockWarehouseScan.create.mockResolvedValue({ id: 'sc1', action: 'DISPATCHED' });
+    mockTx();
+    mockTrackingEvent.create.mockResolvedValue({ id: 'e1' });
     mockShipment.update.mockResolvedValue({ ...SHIPMENT, status: 'DISPATCHED' });
+    mockNotification.create.mockResolvedValue({ id: 'n1' });
+    mockWarehouseScan.create.mockResolvedValue({ id: 'sc1', action: 'DISPATCHED' });
 
     const res = await POST(
       scanReq({ action: 'DISPATCHED', lat: -6.2, lng: 106.8, notes: 'muat selesai' }),
@@ -143,5 +156,37 @@ describe('POST /api/shipments/[id]/scan', () => {
        expect.objectContaining({ newData: expect.objectContaining({ status: 'DISPATCHED' }) }),
       expect.anything()
     );
+  });
+
+  it('berhasil scan WAREHOUSE_RECEIVED -> SORTING (200)', async () => {
+    mockGuard.mockResolvedValue({ session: SESSION, error: null });
+    mockShipment.findUnique.mockResolvedValue(SHIPMENT);
+    mockTx();
+    mockTrackingEvent.create.mockResolvedValue({ id: 'e1' });
+    mockShipment.update.mockResolvedValue({ ...SHIPMENT, status: 'SORTING' });
+    mockNotification.create.mockResolvedValue({ id: 'n1' });
+    mockWarehouseScan.create.mockResolvedValue({ id: 'sc2', action: 'SORTING' });
+
+    const res = await POST(scanReq({ action: 'SORTING' }), { params: Promise.resolve({ id: 's1' }) });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.shipment.status).toBe('SORTING');
+  });
+
+  it('berhasil scan SORTING -> DISPATCHED (200)', async () => {
+    mockGuard.mockResolvedValue({ session: SESSION, error: null });
+    mockShipment.findUnique.mockResolvedValue({ ...SHIPMENT, status: 'SORTING' });
+    mockAssignment.findFirst.mockResolvedValue({ driverId: 'd1', vehicleId: 'v1' });
+    mockVehicle.findUnique.mockResolvedValue({ id: 'v1', status: 'AVAILABLE', returning: false });
+    mockTx();
+    mockTrackingEvent.create.mockResolvedValue({ id: 'e1' });
+    mockShipment.update.mockResolvedValue({ ...SHIPMENT, status: 'DISPATCHED' });
+    mockNotification.create.mockResolvedValue({ id: 'n1' });
+    mockWarehouseScan.create.mockResolvedValue({ id: 'sc3', action: 'DISPATCHED' });
+
+    const res = await POST(scanReq({ action: 'DISPATCHED' }), { params: Promise.resolve({ id: 's1' }) });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.shipment.status).toBe('DISPATCHED');
   });
 });

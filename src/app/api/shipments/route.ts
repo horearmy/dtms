@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
 
     const where: Record<string, unknown> = {};
     if (status) where.status = status;
+    if (session?.branchId) where.branchId = session.branchId;
     if (q) {
       where.OR = [
         { trackingNumber: { contains: q } },
@@ -125,6 +126,7 @@ export async function POST(req: NextRequest) {
           data: {
             trackingNumber,
             tenantId: session?.tenantId ?? null,
+            branchId: session?.branchId ?? null,
             senderId: senderStop.customerId as string,
             receiverId,
             origin,

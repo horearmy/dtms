@@ -3,19 +3,18 @@ import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { STATUS_LABELS } from '@/lib/constants';
-import { isWhatsAppEnabled, sendShipmentStatusUpdate, sendDeliveryFailedAlert } from '@/lib/whatsapp';
+import {
+  VALID_SHIPMENT_STATUSES,
+  DRIVER_FLOW,
+  DRIVER_FAILURE_STATUSES,
+  ON_ROAD_FLOW_STATUSES,
+  applyStatusTransition,
+  notifyStatusChange,
+} from '@/lib/shipment-transitions';
 
-const VALID_SHIPMENT_STATUSES = [
-  'ORDER_CREATED', 'PICKUP_SCHEDULED', 'PICKED_UP', 'WAREHOUSE_RECEIVED', 'SORTING',
-  'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY', 'DELIVERED',
-  'DELIVERY_FAILED', 'RESCHEDULED', 'RETURN_TO_SENDER', 'RETURNED',
-] as const;
-
-const DRIVER_FLOW: Record<string, string> = {
-  DISPATCHED: 'IN_TRANSIT',
-  IN_TRANSIT: 'ARRIVED_AT_HUB',
-  ARRIVED_AT_HUB: 'OUT_FOR_DELIVERY',
-};
+function isValidShipmentStatus(value: string): value is (typeof VALID_SHIPMENT_STATUSES)[number] {
+  return (VALID_SHIPMENT_STATUSES as readonly string[]).includes(value);
+}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -29,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!trimmedStatus) {
       return NextResponse.json({ error: 'Status wajib diisi' }, { status: 400 });
     }
-    if (!(VALID_SHIPMENT_STATUSES as readonly string[]).includes(trimmedStatus)) {
+    if (!isValidShipmentStatus(trimmedStatus)) {
       return NextResponse.json({ error: `Status tidak valid. Nilai yang diizinkan: ${VALID_SHIPMENT_STATUSES.join(', ')}` }, { status: 400 });
     }
     const sanitizedNotes = notes ? String(notes).trim().slice(0, 500) : null;
@@ -90,16 +89,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!assignment) {
         return NextResponse.json({ error: 'Shipment ini bukan tugas Anda' }, { status: 403 });
       }
-      const expected = DRIVER_FLOW[shipment.status];
-      if (!expected || trimmedStatus !== expected) {
-        return NextResponse.json(
-          {
-            error: expected
-              ? `Driver hanya dapat melanjutkan ke langkah berikutnya (${STATUS_LABELS[expected]}), saat ini ${STATUS_LABELS[shipment.status] || shipment.status}`
-              : 'Driver tidak dapat mengubah status saat ini',
-          },
-          { status: 400 }
-        );
+
+      // Jalur kegagalan: driver boleh melaporkan Gagal / Jadwal Ulang saat perjalanan berlangsung.
+      if ((DRIVER_FAILURE_STATUSES as readonly string[]).includes(trimmedStatus)) {
+        if (!(ON_ROAD_FLOW_STATUSES as readonly string[]).includes(shipment.status)) {
+          return NextResponse.json(
+            {
+              error: `Status ${STATUS_LABELS[trimmedStatus] || trimmedStatus} hanya dapat dilaporkan saat pengiriman berlangsung (${ON_ROAD_FLOW_STATUSES.map((s) => STATUS_LABELS[s]).join(', ')})`,
+            },
+            { status: 400 }
+          );
+        }
+      } else {
+        const expected = DRIVER_FLOW[shipment.status];
+        if (!expected || trimmedStatus !== expected) {
+          return NextResponse.json(
+            {
+              error: expected
+                ? `Driver hanya dapat melanjutkan ke langkah berikutnya (${STATUS_LABELS[expected]}), saat ini ${STATUS_LABELS[shipment.status] || shipment.status}`
+                : 'Driver tidak dapat mengubah status saat ini',
+            },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -126,40 +138,44 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    const event = await prisma.trackingEvent.create({
-      data: {
-        shipmentId: shipment.id,
-        status: trimmedStatus as never,
-        latitude: parsedLat,
-        longitude: parsedLng,
-        notes: sanitizedNotes,
-        createdBy: session?.id,
-      },
-    });
-
-    const updated = await prisma.shipment.update({
-      where: { id },
-      data: { status: trimmedStatus as never },
-    });
-
-    await prisma.notification.create({
-      data: {
-        shipmentId: id,
-        message: `${shipment.trackingNumber}: ${STATUS_LABELS[trimmedStatus] || trimmedStatus}`,
-      },
-    });
+    let event;
+    let updated;
+    try {
+      const result = await prisma.$transaction((tx) =>
+        applyStatusTransition(tx, {
+          shipmentId: shipment.id,
+          status: trimmedStatus,
+          lat: parsedLat,
+          lng: parsedLng,
+          notes: sanitizedNotes,
+          createdBy: session?.id,
+          notifyMessage: `${shipment.trackingNumber}: ${STATUS_LABELS[trimmedStatus] || trimmedStatus}`,
+        })
+      );
+      event = result.event;
+      updated = result.updated;
+    } catch (txErr) {
+      console.error('[events POST] transaction error', txErr);
+      return NextResponse.json({ error: 'Gagal memperbarui status shipment' }, { status: 500 });
+    }
 
     if (trimmedStatus === 'IN_TRANSIT' && session?.role === 'DRIVER') {
-      await prisma.notification.create({
-        data: {
-          userId: session.id,
-          tenantId: session.tenantId,
-          type: 'INFO',
-          title: 'Hati-hati selama perjalanan',
-          message: `Hati-hati selama perjalanan — ${shipment.trackingNumber} telah berangkat menuju ${shipment.destination}. Selamat bertugas!`,
-        },
-      });
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: session.id,
+            tenantId: session.tenantId,
+            type: 'INFO',
+            title: 'Hati-hati selama perjalanan',
+            message: `Hati-hati selama perjalanan — ${shipment.trackingNumber} telah berangkat menuju ${shipment.destination}. Selamat bertugas!`,
+          },
+        });
+      } catch {
+        // non-critical
+      }
     }
+
+    await notifyStatusChange(shipment.id, trimmedStatus, sanitizedNotes);
 
     await logAudit(
       session,
@@ -168,42 +184,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       { oldData: { status: shipment.status }, newData: { status: trimmedStatus, notes: sanitizedNotes } },
       req
     );
-
-    if (isWhatsAppEnabled()) {
-      try {
-        const fullShipment = await prisma.shipment.findUnique({
-          where: { id },
-          include: { receiver: true },
-        });
-        if (fullShipment?.receiver?.phone) {
-          if (trimmedStatus === 'DELIVERY_FAILED') {
-            await sendDeliveryFailedAlert(
-              shipment.trackingNumber,
-              fullShipment.receiver.name,
-              sanitizedNotes || 'Tidak diketahui'
-            );
-          } else if (trimmedStatus === 'RETURNED' || trimmedStatus === 'RETURN_TO_SENDER') {
-            await sendDeliveryFailedAlert(
-              shipment.trackingNumber,
-              fullShipment.receiver.name,
-              `Paket dikembalikan: ${sanitizedNotes || 'Tidak diketahui'}`
-            );
-          } else {
-            const sla = fullShipment.slaDeadline;
-            await sendShipmentStatusUpdate(
-              shipment.trackingNumber,
-              trimmedStatus,
-              fullShipment.receiver.phone,
-              fullShipment.receiver.name,
-              fullShipment.destination,
-              sla
-            );
-          }
-        }
-      } catch {
-        // WhatsApp send is non-critical, don't fail the request
-      }
-    }
 
     return NextResponse.json({ event, shipment: updated });
   });

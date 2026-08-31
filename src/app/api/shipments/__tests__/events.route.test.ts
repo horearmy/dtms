@@ -8,6 +8,7 @@ const {
   mockVehicle,
   mockTrackingEvent,
   mockNotification,
+  mockTransaction,
   mockGuard,
   mockLogAudit,
 } = vi.hoisted(() => ({
@@ -17,6 +18,7 @@ const {
   mockVehicle: { findUnique: vi.fn() },
   mockTrackingEvent: { create: vi.fn() },
   mockNotification: { create: vi.fn() },
+  mockTransaction: vi.fn(),
   mockGuard: vi.fn(),
   mockLogAudit: vi.fn(),
 }));
@@ -29,6 +31,7 @@ vi.mock('@/lib/prisma', () => ({
     vehicle: mockVehicle,
     trackingEvent: mockTrackingEvent,
     notification: mockNotification,
+    $transaction: mockTransaction,
   },
 }));
 vi.mock('@/lib/api-guard', () => ({ guard: mockGuard, guardPermission: mockGuard, logAudit: mockLogAudit, runWithTenant: (_t: string | null | undefined, fn: () => Promise<unknown>) => fn() }));
@@ -47,6 +50,12 @@ function eventsReq(body: unknown) {
   });
 }
 
+function mockTx() {
+  mockTransaction.mockImplementation(async (cb) =>
+    cb({ shipment: mockShipment, trackingEvent: mockTrackingEvent, notification: mockNotification })
+  );
+}
+
 describe('POST /api/shipments/[id]/events — admin hanya memantau', () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -62,13 +71,14 @@ describe('POST /api/shipments/[id]/events — admin hanya memantau', () => {
   it('admin dapat menandai DELIVERY_FAILED (200)', async () => {
     mockGuard.mockResolvedValue({ session: ADMIN, error: null });
     mockShipment.findUnique.mockResolvedValue({ id: 's1', status: 'OUT_FOR_DELIVERY', trackingNumber: 'X-1' });
-    mockAssignment.findFirst.mockResolvedValue({ driverId: 'd1', vehicleId: 'v1' });
+    mockTx();
     mockTrackingEvent.create.mockResolvedValue({ id: 'e1' });
     mockShipment.update.mockResolvedValue({ id: 's1', status: 'DELIVERY_FAILED' });
     mockNotification.create.mockResolvedValue({ id: 'n1' });
 
     const res = await POST(eventsReq({ status: 'DELIVERY_FAILED' }), { params: Promise.resolve({ id: 's1' }) });
     expect(res.status).toBe(200);
+    expect(mockTransaction).toHaveBeenCalled();
   });
 
   it('driver dapat maju sesuai alur DRIVER_FLOW (200)', async () => {
@@ -76,11 +86,57 @@ describe('POST /api/shipments/[id]/events — admin hanya memantau', () => {
     mockShipment.findUnique.mockResolvedValue({ id: 's1', status: 'IN_TRANSIT', trackingNumber: 'X-1' });
     mockDriver.findUnique.mockResolvedValue({ id: 'd1', userId: 'u1' });
     mockAssignment.findFirst.mockResolvedValue({ shipmentId: 's1', driverId: 'd1', vehicleId: 'v1' });
+    mockTx();
     mockTrackingEvent.create.mockResolvedValue({ id: 'e1' });
     mockShipment.update.mockResolvedValue({ id: 's1', status: 'ARRIVED_AT_HUB' });
     mockNotification.create.mockResolvedValue({ id: 'n1' });
 
     const res = await POST(eventsReq({ status: 'ARRIVED_AT_HUB' }), { params: Promise.resolve({ id: 's1' }) });
     expect(res.status).toBe(200);
+  });
+
+  it('driver dapat melaporkan DELIVERY_FAILED saat on-road (200)', async () => {
+    mockGuard.mockResolvedValue({ session: DRIVER_SESSION, error: null });
+    mockShipment.findUnique.mockResolvedValue({ id: 's1', status: 'OUT_FOR_DELIVERY', trackingNumber: 'X-1' });
+    mockDriver.findUnique.mockResolvedValue({ id: 'd1', userId: 'u1' });
+    mockAssignment.findFirst.mockResolvedValue({ shipmentId: 's1', driverId: 'd1', vehicleId: 'v1' });
+    mockTx();
+    mockTrackingEvent.create.mockResolvedValue({ id: 'e1' });
+    mockShipment.update.mockResolvedValue({ id: 's1', status: 'DELIVERY_FAILED' });
+    mockNotification.create.mockResolvedValue({ id: 'n1' });
+
+    const res = await POST(
+      eventsReq({ status: 'DELIVERY_FAILED', notes: 'Penerima tidak berada di lokasi' }),
+      { params: Promise.resolve({ id: 's1' }) }
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.shipment.status).toBe('DELIVERY_FAILED');
+  });
+
+  it('driver dapat melaporkan RESCHEDULED saat on-road (200)', async () => {
+    mockGuard.mockResolvedValue({ session: DRIVER_SESSION, error: null });
+    mockShipment.findUnique.mockResolvedValue({ id: 's1', status: 'IN_TRANSIT', trackingNumber: 'X-1' });
+    mockDriver.findUnique.mockResolvedValue({ id: 'd1', userId: 'u1' });
+    mockAssignment.findFirst.mockResolvedValue({ shipmentId: 's1', driverId: 'd1', vehicleId: 'v1' });
+    mockTx();
+    mockTrackingEvent.create.mockResolvedValue({ id: 'e1' });
+    mockShipment.update.mockResolvedValue({ id: 's1', status: 'RESCHEDULED' });
+    mockNotification.create.mockResolvedValue({ id: 'n1' });
+
+    const res = await POST(eventsReq({ status: 'RESCHEDULED' }), { params: Promise.resolve({ id: 's1' }) });
+    expect(res.status).toBe(200);
+  });
+
+  it('driver TIDAK bisa melaporkan DELIVERY_FAILED saat belum on-road (400)', async () => {
+    mockGuard.mockResolvedValue({ session: DRIVER_SESSION, error: null });
+    mockShipment.findUnique.mockResolvedValue({ id: 's1', status: 'WAREHOUSE_RECEIVED', trackingNumber: 'X-1' });
+    mockDriver.findUnique.mockResolvedValue({ id: 'd1', userId: 'u1' });
+    mockAssignment.findFirst.mockResolvedValue({ shipmentId: 's1', driverId: 'd1', vehicleId: 'v1' });
+
+    const res = await POST(eventsReq({ status: 'DELIVERY_FAILED' }), { params: Promise.resolve({ id: 's1' }) });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('saat pengiriman berlangsung');
   });
 });

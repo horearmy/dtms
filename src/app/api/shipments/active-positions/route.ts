@@ -19,6 +19,7 @@ export async function GET() {
         shipment: {
           status: { in: ACTIVE },
           ...(session?.tenantId ? { tenantId: session.tenantId } : {}),
+          ...(session?.branchId ? { branchId: session.branchId } : {}),
         },
       },
       include: {

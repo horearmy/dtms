@@ -9,6 +9,7 @@ const {
   mockWarehouseScan,
   mockTrackingEvent,
   mockNotification,
+  mockTransaction,
   mockGuard,
   mockLogAudit,
 } = vi.hoisted(() => ({
@@ -19,6 +20,7 @@ const {
   mockWarehouseScan: { create: vi.fn() },
   mockTrackingEvent: { create: vi.fn() },
   mockNotification: { create: vi.fn() },
+  mockTransaction: vi.fn(),
   mockGuard: vi.fn(),
   mockLogAudit: vi.fn(),
 }));
@@ -32,9 +34,11 @@ vi.mock('@/lib/prisma', () => ({
     warehouseScan: mockWarehouseScan,
     trackingEvent: mockTrackingEvent,
     notification: mockNotification,
+    $transaction: mockTransaction,
   },
 }));
 vi.mock('@/lib/api-guard', () => ({ guard: mockGuard, guardPermission: mockGuard, logAudit: mockLogAudit, runWithTenant: (_tenantId: string | null | undefined, fn: () => Promise<unknown>) => fn() }));
+vi.mock('@/lib/whatsapp', () => ({ isWhatsAppEnabled: () => false }));
 
 import { POST } from '../dispatch-driver/route';
 
@@ -51,6 +55,12 @@ function dispatchReq(body: unknown) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+function mockTx() {
+  mockTransaction.mockImplementation(async (cb) =>
+    cb({ shipment: mockShipment, trackingEvent: mockTrackingEvent, notification: mockNotification, warehouseScan: mockWarehouseScan })
+  );
 }
 
 describe('POST /api/warehouse/dispatch-driver', () => {
@@ -148,8 +158,10 @@ describe('POST /api/warehouse/dispatch-driver', () => {
     mockShipment.findUnique.mockResolvedValue(SHIPMENT);
     mockAssignment.findFirst.mockResolvedValue(ASSIGNMENT);
     mockVehicle.findUnique.mockResolvedValue(VEHICLE);
+    mockTx();
     mockTrackingEvent.create.mockResolvedValue({ id: 'e1' });
     mockShipment.update.mockResolvedValue({ ...SHIPMENT, status: 'DISPATCHED' });
+    mockNotification.create.mockResolvedValue({ id: 'n1' });
     mockWarehouseScan.create.mockResolvedValue({ id: 'sc1' });
 
     const res = await POST(dispatchReq({ code: 'DRV:DRV001:SHP:s1' }));

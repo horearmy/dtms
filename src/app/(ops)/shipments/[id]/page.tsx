@@ -295,7 +295,10 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
             <div><b>Fragile:</b> {s.fragile ? 'Ya' : 'Tidak'}</div>
           </div>
         </InfoCard>
-        <InfoCard title="Penugasan">
+        <InfoCard
+          title="Penugasan"
+          className={assignment ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}
+        >
           {assignment ? (
             <div className="space-y-1 text-xs text-[#667085]">
               <div><b>Driver:</b> {assignment.driver?.name}</div>
@@ -303,7 +306,7 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
               <div><b>Tugas:</b> {formatDateTime(assignment.assignedAt)}</div>
             </div>
           ) : (
-            <p className="text-xs text-[#667085]">Belum ditugaskan</p>
+            <p className="text-xs font-medium text-red-600">Belum ditugaskan</p>
           )}
           {!isSuperAdmin && (
             <button onClick={openAssign} className="mt-2 text-xs font-bold text-[#0D6EFD] hover:underline">
@@ -539,9 +542,9 @@ export default function ShipmentDetailPage({ params }: { params: Promise<{ id: s
   );
 }
 
-function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
+function InfoCard({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+    <div className={`rounded-xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${className}`}>
       <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#667085]">{title}</div>
       {children}
     </div>

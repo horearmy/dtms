@@ -84,6 +84,8 @@ describe('Auth — Logout', () => {
   });
 
   it('re-login after logout → 200', async () => {
+    // Reset trauma brute-force agar re-login tidak terdampak sisa state suite lain
+    await clearLoginAttempts();
     tenantA = await login('admin00001', 'admin123', TENANT_A_ID);
     expect(tenantA.cookie).toContain('dtms_token=');
   });

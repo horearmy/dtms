@@ -3,20 +3,17 @@ import { prisma } from '@/lib/prisma';
 import { guardPermission, logAudit, runWithTenant } from '@/lib/api-guard';
 import { PERMISSIONS } from '@/lib/permissions';
 import { STATUS_LABELS } from '@/lib/constants';
+import {
+  VALID_SHIPMENT_STATUSES,
+  WAREHOUSE_FLOW,
+  WAREHOUSE_FLOW_LABEL,
+  applyStatusTransition,
+  notifyStatusChange,
+} from '@/lib/shipment-transitions';
 
-const VALID_SHIPMENT_STATUSES = [
-  'ORDER_CREATED', 'PICKUP_SCHEDULED', 'PICKED_UP', 'WAREHOUSE_RECEIVED', 'SORTING',
-  'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY', 'DELIVERED',
-  'DELIVERY_FAILED', 'RESCHEDULED', 'RETURN_TO_SENDER', 'RETURNED',
-] as const;
-
-const WAREHOUSE_FLOW: Record<string, string> = {
-  ORDER_CREATED: 'WAREHOUSE_RECEIVED',
-  PICKUP_SCHEDULED: 'WAREHOUSE_RECEIVED',
-  PICKED_UP: 'WAREHOUSE_RECEIVED',
-  WAREHOUSE_RECEIVED: 'DISPATCHED',
-  SORTING: 'DISPATCHED',
-};
+function isValidShipmentStatus(value: string): value is (typeof VALID_SHIPMENT_STATUSES)[number] {
+  return (VALID_SHIPMENT_STATUSES as readonly string[]).includes(value);
+}
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -38,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!trimmedAction) {
       return NextResponse.json({ error: 'Action wajib diisi' }, { status: 400 });
     }
-    if (!(VALID_SHIPMENT_STATUSES as readonly string[]).includes(trimmedAction)) {
+    if (!isValidShipmentStatus(trimmedAction)) {
       return NextResponse.json({ error: `Status tidak valid. Nilai yang diizinkan: ${VALID_SHIPMENT_STATUSES.join(', ')}` }, { status: 400 });
     }
 
@@ -67,13 +64,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Shipment sudah selesai (terminal status)' }, { status: 400 });
     }
 
-    const expected = WAREHOUSE_FLOW[shipment.status];
-    if (!expected || trimmedAction !== expected) {
+    const allowed = WAREHOUSE_FLOW[shipment.status];
+    if (!allowed || !(allowed as readonly string[]).includes(trimmedAction)) {
       return NextResponse.json(
         {
-          error: expected
-            ? `Alur gudang hanya mengizinkan ${STATUS_LABELS[expected]} saat ini, bukan ${STATUS_LABELS[trimmedAction] || trimmedAction}`
-            : 'Status saat ini di luar alur gudang (ORDER_CREATED → WAREHOUSE_RECEIVED → DISPATCHED)',
+          error: allowed
+            ? `Alur gudang hanya mengizinkan ${allowed.map((s) => STATUS_LABELS[s]).join(' / ')} saat ini, bukan ${STATUS_LABELS[trimmedAction] || trimmedAction}`
+            : WAREHOUSE_FLOW_LABEL,
         },
         { status: 400 }
       );
@@ -102,39 +99,39 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    const event = await prisma.trackingEvent.create({
-      data: {
-        shipmentId: shipment.id,
-        status: trimmedAction as never,
-        latitude: parsedLat,
-        longitude: parsedLng,
-        notes: sanitizedNotes,
-        createdBy: session?.id,
-      },
-    });
+    let event;
+    let updated;
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const transitioned = await applyStatusTransition(tx, {
+          shipmentId: shipment.id,
+          status: trimmedAction,
+          lat: parsedLat,
+          lng: parsedLng,
+          notes: sanitizedNotes,
+          createdBy: session?.id,
+          notifyMessage: `${shipment.trackingNumber}: ${STATUS_LABELS[trimmedAction] || trimmedAction}`,
+        });
+        await (tx as { warehouseScan: { create: (args: unknown) => Promise<unknown> } }).warehouseScan.create({
+          data: {
+            shipmentId: shipment.id,
+            action: trimmedAction,
+            scannedBy: session?.id,
+            latitude: parsedLat,
+            longitude: parsedLng,
+            notes: sanitizedNotes,
+          },
+        });
+        return transitioned;
+      });
+      event = result.event;
+      updated = result.updated;
+    } catch (txErr) {
+      console.error('[scan POST] transaction error', txErr);
+      return NextResponse.json({ error: 'Gagal menyimpan hasil scan' }, { status: 500 });
+    }
 
-    const updated = await prisma.shipment.update({
-      where: { id },
-      data: { status: trimmedAction as never },
-    });
-
-    await prisma.warehouseScan.create({
-      data: {
-        shipmentId: shipment.id,
-        action: trimmedAction,
-        scannedBy: session?.id,
-        latitude: parsedLat,
-        longitude: parsedLng,
-        notes: sanitizedNotes,
-      },
-    });
-
-    await prisma.notification.create({
-      data: {
-        shipmentId: id,
-        message: `${shipment.trackingNumber}: ${STATUS_LABELS[trimmedAction] || trimmedAction}`,
-      },
-    });
+    await notifyStatusChange(shipment.id, trimmedAction, sanitizedNotes);
 
     await logAudit(
       session,
