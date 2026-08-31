@@ -6,6 +6,7 @@ import StatusBadge from '@/components/StatusBadge';
 import { getGPS } from '@/lib/gps';
 import { btnGhost } from '@/components/ui';
 import { formatDateTime, formatNumber } from '@/lib/constants';
+import DriverArrivalConfirm from '@/components/DriverArrivalConfirm';
 
 type Task = {
   id: string;
@@ -136,8 +137,7 @@ function TaskRow({
             onClick={() => {
               if (returning) return onReturn('complete');
               if (!returnedAt) return onReturn('start');
-            }}
-            disabled={retBusy || !!returnedAt}
+            }}            disabled={retBusy || !!returnedAt}
             className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed ${
               returnedAt ? 'bg-[#EAECF0] text-[#667085]' : returning ? 'bg-amber-500 hover:bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'
             }`}
@@ -162,6 +162,8 @@ export default function DriverLaporanPage() {
   const [retMsg, setRetMsg] = useState('');
   const [gpsChecking, setGpsChecking] = useState(false);
   const [gpsResult, setGpsResult] = useState<{ on: boolean; lat: number; lng: number; ts: string } | null>(null);
+  const [arriveOpen, setArriveOpen] = useState(false);
+  const [arriveDone, setArriveDone] = useState(false);
 
   async function load() {
     const res = await fetch('/api/driver/tasks');
@@ -217,6 +219,10 @@ export default function DriverLaporanPage() {
       return;
     }
     if (retBusy) return;
+    if (action === 'complete' && returning) {
+      setArriveOpen(true);
+      return;
+    }
     setRetBusy(true);
     setRetMsg('');
     try {
@@ -236,6 +242,14 @@ export default function DriverLaporanPage() {
       setRetMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
     setRetBusy(false);
+  }
+
+  function onArriveDone() {
+    setArriveOpen(false);
+    setArriveDone(true);
+    setReturnedAt(new Date().toISOString());
+    loadStatus();
+    load();
   }
 
   async function checkGps() {
@@ -345,6 +359,12 @@ export default function DriverLaporanPage() {
             </button>
           ) : null}
         </div>
+
+        {arriveOpen && !arriveDone && (
+          <div className="mt-3">
+            <DriverArrivalConfirm onDone={onArriveDone} />
+          </div>
+        )}
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E4E7EC] bg-[#F7F9FC] p-4">
           <div className="min-w-0 flex-1">

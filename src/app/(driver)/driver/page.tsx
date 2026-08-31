@@ -9,6 +9,7 @@ import { inputCls } from '@/components/ui';
 import { getGPS } from '@/lib/gps';
 import { Package, MapPin, Phone, Truck, Clock, Navigation, CheckCircle2, ArrowRight, FileText } from 'lucide-react';
 import ShipmentQR from '@/components/ShipmentQR';
+import DriverArrivalConfirm from '@/components/DriverArrivalConfirm';
 
 type DailyReport = {
   id: string;
@@ -73,14 +74,7 @@ export default function DriverHomePage() {
   const [kartuMsg, setKartuMsg] = useState('');
 
   useEffect(() => {
-    fetch('/api/driver/status')
-      .then(async (r) => {
-        if (r.ok) {
-          const d = (await r.json()).driver;
-          setEmployeeId(d.employeeId || '');
-        }
-      })
-      .catch(() => {});
+    loadDriverStatus();
   }, []);
 
   const [reports, setReports] = useState<DailyReport[]>([]);
@@ -101,6 +95,60 @@ export default function DriverHomePage() {
   }
 
   const [advancingId, setAdvancingId] = useState('');
+
+  const [returning, setReturning] = useState(false);
+  const [returnedAt, setReturnedAt] = useState<string | null>(null);
+  const [retBusy, setRetBusy] = useState(false);
+  const [retMsg, setRetMsg] = useState('');
+  const [arriveOpen, setArriveOpen] = useState(false);
+  const [arriveDone, setArriveDone] = useState(false);
+
+  async function loadDriverStatus() {
+    try {
+      const r = await fetch('/api/driver/status');
+      if (r.ok) {
+        const d = (await r.json()).driver;
+        setEmployeeId(d.employeeId || '');
+        setReturning(!!d.returning);
+        setReturnedAt(d.returnedAt || null);
+      }
+    } catch {}
+  }
+
+  async function toggleReturn(action: 'start' | 'complete') {
+    if (retBusy) return;
+    if (action === 'complete' && returning) {
+      setArriveOpen(true);
+      return;
+    }
+    setRetBusy(true);
+    setRetMsg('');
+    try {
+      const res = await fetch('/api/driver/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Gagal menyimpan status kembali' }));
+        setRetMsg(data.error || 'Gagal menyimpan status kembali');
+      } else {
+        setRetMsg(action === 'start' ? 'OK: Perjalanan kembali ke gudang asal dimulai.' : 'OK: Driver sudah tiba di gudang.');
+        await loadDriverStatus();
+      }
+    } catch {
+      setRetMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
+    }
+    setRetBusy(false);
+  }
+
+  function onArriveDone() {
+    setArriveOpen(false);
+    setArriveDone(true);
+    setReturnedAt(new Date().toISOString());
+    loadDriverStatus();
+    loadTasks();
+  }
 
   async function loadTasks() {
     try {
@@ -127,14 +175,7 @@ export default function DriverHomePage() {
   useEffect(() => {
     const id = setInterval(() => {
       loadTasks();
-      fetch('/api/driver/status')
-        .then(async (r) => {
-          if (r.ok) {
-            const d = (await r.json()).driver;
-            setEmployeeId(d.employeeId || '');
-          }
-        })
-        .catch(() => {});
+      loadDriverStatus();
     }, 20000);
     return () => clearInterval(id);
   }, []);
@@ -212,6 +253,7 @@ export default function DriverHomePage() {
   const ACTIVE_JOURNEY = ['WAREHOUSE_RECEIVED', 'SORTING', 'PICKED_UP', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY'];
   const activeTasks = tasks.filter((t) => ACTIVE_JOURNEY.includes(t.shipment.status));
   const completedTasks = tasks.filter((t) => ['DELIVERED', 'RETURNED'].includes(t.shipment.status));
+  const deliveredTasks = completedTasks.filter((t) => t.shipment.status === 'DELIVERED');
   const onHoldTasks = tasks.filter((t) => ['DELIVERY_FAILED', 'RESCHEDULED', 'RETURN_TO_SENDER'].includes(t.shipment.status));
 
   return (
@@ -300,6 +342,50 @@ export default function DriverHomePage() {
       {kartuMsg && (
         <div className={`rounded-xl px-3 py-3 text-sm font-semibold ${kartuMsg.startsWith('OK:') ? 'bg-[#E6F9EF] text-[#16B364]' : 'bg-red-50 text-[#F5222D]'}`}>
           {kartuMsg}
+        </div>
+      )}
+
+      {(deliveredTasks.length > 0 || returning) && !returnedAt && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-amber-800">
+                {returning ? 'Dalam perjalanan kembali ke gudang asal' : 'Pengiriman selesai'}
+              </p>
+              <p className="text-xs text-amber-700">
+                {returning
+                  ? (completedTasks.length > 0 ? `${completedTasks.length} resi selesai. Aktifkan GPS, lalu tandai saat tiba di gudang.` : 'Aktifkan GPS, lalu tandai saat tiba di gudang.')
+                  : `${deliveredTasks.length} resi selesai. Tekan tombol untuk mulai perjalanan kembali ke gudang asal.`}
+              </p>
+            </div>
+            {returning ? (
+              <button
+                onClick={() => setArriveOpen(true)}
+                disabled={retBusy}
+                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+              >
+                {retBusy ? 'Menyimpan...' : 'Tiba di Gudang - Selesai'}
+              </button>
+            ) : (
+              <button
+                onClick={() => toggleReturn('start')}
+                disabled={retBusy}
+                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+              >
+                {retBusy ? 'Menyimpan...' : 'Kembali ke Gudang Asal'}
+              </button>
+            )}
+          </div>
+          {retMsg && (
+            <div className={`mt-2 rounded-lg px-3 py-2 text-xs font-semibold ${retMsg.startsWith('OK:') ? 'bg-white text-[#16B364]' : 'bg-white text-[#F5222D]'}`}>
+              {retMsg}
+            </div>
+          )}
+          {arriveOpen && !arriveDone && (
+            <div className="mt-3">
+              <DriverArrivalConfirm onDone={onArriveDone} />
+            </div>
+          )}
         </div>
       )}
 

@@ -24,6 +24,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ass
             origin: true,
             destination: true,
             weight: true,
+            createdAt: true,
+            durationMin: true,
             sender: { select: { name: true, phone: true } },
             receiver: { select: { name: true, phone: true, address: true, city: true } },
             events: {

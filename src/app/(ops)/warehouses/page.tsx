@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Warehouse, Plus, MapPin, Search } from 'lucide-react';
+import { Warehouse, Plus, MapPin, Search, QrCode } from 'lucide-react';
 import Pagination from '@/components/Pagination';
+import QRCode from 'qrcode';
 
 type WarehouseItem = {
   id: string;
@@ -31,7 +32,16 @@ export default function WarehousesPage() {
   const [form, setForm] = useState({ name: '', code: '', address: '', city: '', latitude: '', longitude: '', radiusMeters: '500', active: true });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [qrWarehouse, setQrWarehouse] = useState<WarehouseItem | null>(null);
+  const [qrSrc, setQrSrc] = useState('');
   const pageSize = 20;
+
+  useEffect(() => {
+    if (!qrWarehouse) return;
+    QRCode.toDataURL(`WH:${qrWarehouse.code || qrWarehouse.id}`, { width: 260, margin: 1 })
+      .then(setQrSrc)
+      .catch(() => setQrSrc(''));
+  }, [qrWarehouse]);
 
   const load = useCallback(async () => {
     const q = search ? `&q=${encodeURIComponent(search)}` : '';
@@ -157,6 +167,9 @@ export default function WarehousesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
+                    <button onClick={() => { setQrSrc(''); setQrWarehouse(w); }} className="mr-3 text-xs font-semibold text-[#0D6EFD] hover:underline" title="Lihat QR gudang">
+                      <QrCode size={14} className="inline" /> QR
+                    </button>
                     <button onClick={() => openEdit(w)} className="text-xs font-semibold text-[#0D6EFD] hover:underline">Edit</button>
                     <button onClick={() => remove(w)} className="ml-3 text-xs font-semibold text-[#F5222D] hover:underline">Hapus</button>
                   </td>
@@ -170,6 +183,29 @@ export default function WarehousesPage() {
         </div>
         <Pagination page={page} total={total} pageSize={pageSize} onChange={setPage} />
       </div>
+
+      {qrWarehouse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setQrWarehouse(null)}>
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-1 text-lg font-bold text-[#101828]">QR Gudang</h2>
+            <p className="mb-4 text-sm text-[#667085]">{qrWarehouse.name} ({qrWarehouse.code || '-'})</p>
+            <div className="mx-auto mb-4 flex w-fit items-center justify-center rounded-lg border border-[#E4E7EC] p-4">
+              {qrSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={qrSrc} width={260} height={260} alt="QR Gudang" />
+              ) : (
+                <div className="h-64 w-64 animate-pulse rounded-lg bg-[#F7F9FC]" />
+              )}
+            </div>
+            <p className="mb-4 text-xs text-[#667085]">
+              Cetak dan tempel di pintu gudang. Driver memindai kode ini untuk konfirmasi tiba.
+            </p>
+            <button onClick={() => setQrWarehouse(null)} className="rounded-lg bg-[#0D6EFD] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0B5FD5]">
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOpen(false)}>

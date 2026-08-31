@@ -12,6 +12,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       where: { id },
       include: {
         maintenanceRecords: { orderBy: { performedAt: 'desc' } },
+        vehicleChecks: {
+          orderBy: { checkedAt: 'desc' },
+          include: {
+            driver: { select: { id: true, name: true, employeeId: true } },
+            warehouse: { select: { id: true, name: true, code: true } },
+          },
+        },
         assignments: {
           orderBy: { assignedAt: 'desc' },
           include: { driver: { select: { id: true, name: true, employeeId: true } },

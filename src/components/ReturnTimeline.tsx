@@ -14,6 +14,7 @@ type ReturnPoint = {
 type ReturnData = {
   driver: { id: string; name: string; returning: boolean; returnStartedAt: string | null; returnedAt: string | null };
   warehouse: { name: string | null; lat: number | null; lng: number | null };
+  return: { estimatedBackAt: string } | null;
   beforeReturn: { latitude: number; longitude: number; createdAt: string } | null;
   points: ReturnPoint[];
 };
@@ -110,7 +111,7 @@ export default function ReturnTimeline({ driverId, driverName }: { driverId?: st
               </span>
             ) : (
               <span className="rounded-full bg-[#E6F9EF] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#16B364]">
-                ✓ Selesai kembali — {formatDateTime(data!.driver.returnedAt!)}
+                ✓ Selesai kembali — {formatDateTime(data!.return?.estimatedBackAt ?? data!.driver.returnedAt)}
               </span>
             )}
             <span className="text-[11px] text-[#667085]">

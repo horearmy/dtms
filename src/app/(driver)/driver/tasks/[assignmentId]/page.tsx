@@ -7,7 +7,8 @@ import SignaturePad from '@/components/SignaturePad';
 import ShipmentQR from '@/components/ShipmentQR';
 import { getGPS } from '@/lib/gps';
 import { inputCls, btnPrimary, btnGhost } from '@/components/ui';
-import { STATUS_LABELS, formatDateTime, formatNumber } from '@/lib/constants';
+import { STATUS_LABELS, formatDateTime, formatNumber, FAILURE_REASONS } from '@/lib/constants';
+import DriverArrivalConfirm from '@/components/DriverArrivalConfirm';
 
 type Assignment = {
   id: string;
@@ -19,6 +20,8 @@ type Assignment = {
     origin: string;
     destination: string;
     weight: number;
+    createdAt: string;
+    durationMin: number | null;
     sender: { name: string; phone: string };
     receiver: { name: string; phone: string; address: string | null; city: string | null };
     events: { id: string; status: string; notes: string | null; createdAt: string }[];
@@ -49,6 +52,14 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
   const [returnedAt, setReturnedAt] = useState<string | null>(null);
   const [retBusy, setRetBusy] = useState(false);
   const [employeeId, setEmployeeId] = useState('');
+  const [arriveOpen, setArriveOpen] = useState(false);
+  const [arriveDone, setArriveDone] = useState(false);
+
+  const [showFailure, setShowFailure] = useState(false);
+  const [failureStatus, setFailureStatus] = useState('DELIVERY_FAILED');
+  const [failureReason, setFailureReason] = useState('');
+  const [failureNotes, setFailureNotes] = useState('');
+  const [failureBusy, setFailureBusy] = useState(false);
 
   async function loadDriverStatus() {
     const res = await fetch('/api/driver/status');
@@ -62,6 +73,10 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
 
   async function toggleReturn(action: 'start' | 'complete') {
     if (retBusy) return;
+    if (action === 'complete' && returning) {
+      setArriveOpen(true);
+      return;
+    }
     setRetBusy(true);
     setMsg('');
     try {
@@ -81,6 +96,14 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
       setMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
     setRetBusy(false);
+  }
+
+  function onArriveDone() {
+    setArriveOpen(false);
+    setArriveDone(true);
+    setReturnedAt(new Date().toISOString());
+    loadDriverStatus();
+    load();
   }
 
   const load = useCallback(async () => {
@@ -140,6 +163,39 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
     });
   }
 
+  async function reportFailure(e: React.FormEvent) {
+    e.preventDefault();
+    if (failureBusy) return;
+    setFailureBusy(true);
+    setMsg('');
+    let lat: number | null = null;
+    let lng: number | null = null;
+    try {
+      const pos = await getGPS();
+      lat = pos.lat;
+      lng = pos.lng;
+    } catch {
+      // lokasi opsional
+    }
+    const combined = [failureReason, failureNotes].filter(Boolean).join(' — ') || undefined;
+    try {
+      const res = await updateStatus(failureStatus, `Driver melapor kendala: ${combined || 'tanpa keterangan'}`, lat, lng);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Gagal mengirim laporan' }));
+        setMsg(data.error || 'Gagal mengirim laporan');
+      } else {
+        setMsg(failureStatus === 'DELIVERY_FAILED' ? 'Berhasil! Pengiriman ditandai gagal. Petugas akan menindaklanjuti.' : 'Berhasil! Pengiriman dijadwalkan ulang.');
+        setShowFailure(false);
+        setFailureReason('');
+        setFailureNotes('');
+      }
+    } catch {
+      setMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.');
+    }
+    setFailureBusy(false);
+    await load();
+  }
+
   if (loading) return <div className="py-20 text-center text-[#667085]">Memuat tugas...</div>;
   if (err) return <div className="py-20 text-center text-[#667085]">{err}</div>;
 
@@ -148,6 +204,7 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
   const pod = s.pods[0];
   const events = s.events;
   const step = NEXT_STEP[s.status];
+  const backAt = new Date(new Date(s.createdAt).getTime() + (s.durationMin ?? 0) * 60000);
 
   async function advance() {
     if (!step || busy) return;
@@ -308,6 +365,52 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
         </form>
       )}
 
+      {!pod && ['DISPATCHED', 'IN_TRANSIT', 'ARRIVED_AT_HUB', 'OUT_FOR_DELIVERY'].includes(s.status) && (
+        <div className="rounded-xl border border-[#F3D1D4] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          {!showFailure ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[#F5222D]">Ada kendala pengiriman?</p>
+                <p className="text-xs text-[#667085]">Laporkan gagal atau minta jadwal ulang. Petugas operasional akan menindaklanjuti.</p>
+              </div>
+              <button onClick={() => setShowFailure(true)} className="rounded-lg border border-[#F5222D] bg-white px-4 py-2 text-sm font-semibold text-[#F5222D] hover:bg-red-50">
+                Laporkan Kendala
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={reportFailure} className="space-y-3">
+              <h3 className="text-sm font-bold text-[#101828]">Laporan Kendala Pengiriman</h3>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#667085]">Jenis Laporan</label>
+                <select value={failureStatus} onChange={(e) => setFailureStatus(e.target.value)} className={inputCls}>
+                  <option value="DELIVERY_FAILED">Gagal Dikirim</option>
+                  <option value="RESCHEDULED">Tunda / Jadwal Ulang</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#667085]">Alasan</label>
+                <select value={failureReason} onChange={(e) => setFailureReason(e.target.value)} className={inputCls}>
+                  <option value="">Pilih alasan...</option>
+                  {FAILURE_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#667085]">Catatan (opsional)</label>
+                <textarea value={failureNotes} onChange={(e) => setFailureNotes(e.target.value)} className={inputCls} rows={2} placeholder="Penjelasan tambahan, situasi di lapangan, dst" />
+              </div>
+              <div className="flex gap-2">
+                <button type="submit" disabled={failureBusy} className={btnPrimary + ' flex-1'}>
+                  {failureBusy ? 'Mengirim...' : 'Kirim Laporan'}
+                </button>
+                <button type="button" onClick={() => setShowFailure(false)} className={btnGhost}>
+                  Batal
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
       {pod && (
         <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <div className="flex items-center justify-between gap-3">
@@ -363,13 +466,13 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
                   {returning
                     ? 'Aktifkan GPS supaya rute kembali tampil kuning di peta admin, lalu tandai saat tiba.'
                     : returnedAt
-                      ? `Anda telah tiba di gudang asal pada ${formatDateTime(returnedAt)}.`
+                      ? `Anda telah tiba di gudang asal pada ${formatDateTime(backAt)}.`
                       : 'Tandai untuk mulai perjalanan kembali ke gudang asal (rute kembali tampil kuning di peta admin).'}
                 </p>
               </div>
               {returning ? (
                 <button
-                  onClick={() => toggleReturn('complete')}
+                  onClick={() => setArriveOpen(true)}
                   disabled={retBusy}
                   className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
                 >
@@ -386,6 +489,11 @@ export default function TaskPage({ params }: { params: Promise<{ assignmentId: s
               ) : null}
             </div>
           </div>
+          {arriveOpen && !arriveDone && (
+            <div className="mt-3">
+              <DriverArrivalConfirm onDone={onArriveDone} />
+            </div>
+          )}
         </div>
       )}
 

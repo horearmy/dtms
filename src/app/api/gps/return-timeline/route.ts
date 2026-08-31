@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       where: { driverId: driver.id },
       orderBy: { assignedAt: 'desc' },
       select: { shipment: {
-          select: { origin: true, originLat: true, originLng: true, events: { orderBy: { createdAt: 'desc' }, take: 1 } },
+          select: { origin: true, originLat: true, originLng: true, createdAt: true, durationMin: true, events: { orderBy: { createdAt: 'desc' }, take: 1 } },
         },
       },
     });
@@ -70,6 +70,9 @@ export async function GET(req: NextRequest) {
         lat: latest?.shipment.originLat ?? latest?.shipment.events[0]?.latitude ?? null,
         lng: latest?.shipment.originLng ?? latest?.shipment.events[0]?.longitude ?? null,
       },
+      return: latest
+        ? { estimatedBackAt: new Date(new Date(latest.shipment.createdAt).getTime() + (latest.shipment.durationMin ?? 0) * 60000).toISOString() }
+        : null,
       beforeReturn: beforeReturn
         ? { latitude: beforeReturn.latitude, longitude: beforeReturn.longitude, createdAt: beforeReturn.createdAt }
         : null,

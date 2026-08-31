@@ -34,6 +34,17 @@ type MaintenanceRow = {
   createdAt: string;
 };
 
+type VehicleCheckRow = {
+  id: string;
+  answers: Record<string, 'ok' | 'issue'>;
+  issues: string[];
+  hasIssue: boolean;
+  notes: string | null;
+  checkedAt: string;
+  driver: { id: string; name: string; employeeId: string };
+  warehouse: { id: string; name: string; code: string | null };
+};
+
 type VehicleDetail = {
   id: string;
   vehicleNumber: string;
@@ -47,6 +58,7 @@ type VehicleDetail = {
   photoLeft: string | null;
   returning: boolean;
   maintenanceRecords: MaintenanceRow[];
+  vehicleChecks: VehicleCheckRow[];
   assignments: AssignmentRow[];
 };
 
@@ -246,6 +258,41 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
                 </tr>
               ))}
               {v.maintenanceRecords.length === 0 && <EmptyRow colSpan={5} text="Belum ada riwayat pemeliharaan" />}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <h2 className="mb-3 text-sm font-bold text-[#101828]">Ceklist Pasca Perjalanan ({v.vehicleChecks.length})</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-[#F7F9FC] text-left text-[11px] font-semibold uppercase tracking-wider text-[#667085]">
+                <th className="px-4 py-3">Waktu</th>
+                <th className="px-4 py-3">Driver</th>
+                <th className="px-4 py-3">Gudang</th>
+                <th className="px-4 py-3">Hasil</th>
+                <th className="px-4 py-3">Catatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {v.vehicleChecks.map((c) => (
+                <tr key={c.id} className="border-b border-[#E4E7EC] last:border-0 hover:bg-[#F7F9FC]/50">
+                  <td className="px-4 py-3 text-xs text-[#667085]">{formatDateTime(c.checkedAt)}</td>
+                  <td className="px-4 py-3 text-[#101828]">{c.driver.name}</td>
+                  <td className="px-4 py-3 text-[#667085]">{c.warehouse.name} ({c.warehouse.code || '-'})</td>
+                  <td className="px-4 py-3">
+                    {c.hasIssue ? (
+                      <span className="rounded-full bg-[#FEF0F0] px-2 py-0.5 text-xs font-semibold text-[#F5222D]">Ada Masalah</span>
+                    ) : (
+                      <span className="rounded-full bg-[#E6F9EF] px-2 py-0.5 text-xs font-semibold text-[#16B364]">Normal</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-[#667085]">{c.notes || '-'}</td>
+                </tr>
+              ))}
+              {v.vehicleChecks.length === 0 && <EmptyRow colSpan={5} text="Belum ada ceklist pasca perjalanan" />}
             </tbody>
           </table>
         </div>
