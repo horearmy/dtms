@@ -43,12 +43,13 @@ export default function DispatchBoard() {
 
   async function assign(shipmentId: string) {
     if (!selectedDriver) { setError('Pilih driver terlebih dahulu'); return; }
+    if (!selectedVehicle) { setError('Pilih kendaraan terlebih dahulu (wajib)'); return; }
     setAssigning(shipmentId);
     setError('');
     const res = await fetch('/api/dispatch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shipmentId, driverId: selectedDriver, vehicleId: selectedVehicle || null }),
+      body: JSON.stringify({ shipmentId, driverId: selectedDriver, vehicleId: selectedVehicle }),
     });
     const result = await res.json();
     if (!res.ok) { setError(result.error || 'Gagal menugaskan'); setAssigning(null); return; }
@@ -108,7 +109,7 @@ export default function DispatchBoard() {
                     </select>
                     <select value={selectedVehicle} onChange={(e) => setSelectedVehicle(e.target.value)}
                       className="w-40 rounded-lg border border-[#E4E7EC] px-2 py-1.5 text-sm focus:border-[#0D6EFD] focus:outline-none">
-                      <option value="">Tanpa Kendaraan</option>
+                      <option value="">Pilih Kendaraan</option>
                       {data.availableVehicles.map((v) => (
                         <option key={v.id} value={v.id}>{v.vehicleNumber} ({v.capacity}kg)</option>
                       ))}
@@ -125,9 +126,9 @@ export default function DispatchBoard() {
         </div>
 
         <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#667085]">Active Dispatches</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#667085]">Penugasan & Dispatch Aktif</h2>
           {data.activeAssignments.length === 0 ? (
-            <div className="rounded-xl border border-[#E4E7EC] bg-white p-4 text-center text-[#667085]">Tidak ada dispatch aktif</div>
+            <div className="rounded-xl border border-[#E4E7EC] bg-white p-4 text-center text-[#667085]">Tidak ada penugasan aktif</div>
           ) : (
             <div className="space-y-3">
               {data.activeAssignments.map((a) => (
